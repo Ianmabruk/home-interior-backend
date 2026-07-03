@@ -28,7 +28,27 @@
 - Add SPA redirect rule if needed:
   - `_redirects` file with `/* /index.html 200`
 
-## 3. Render (Backend)
+## 3. Docker (Backend)
+
+- Build:
+  - `docker build -t hok-interior-backend .`
+- Run:
+  - `docker run -p 5000:5000 --env-file server/.env hok-interior-backend`
+
+- Required environment variables (via `server/.env` or `--env-file`):
+  - `NODE_ENV=production`
+  - `PORT=5000`
+  - `MONGO_URI=...`
+  - `JWT_ACCESS_SECRET=...`
+  - `JWT_REFRESH_SECRET=...`
+  - `CLOUDINARY_CLOUD_NAME=...`
+  - `CLOUDINARY_API_KEY=...`
+  - `CLOUDINARY_API_SECRET=...`
+  - `SENDGRID_API_KEY=...`
+  - `EMAIL_FROM=info@hokinterior.com`
+  - `CLIENT_URL=https://<your-frontend-domain>`
+
+## 4. Render (Backend)
 - Root directory: `server`
 - Build command: `npm install`
 - Start command: `npm run start`
@@ -47,7 +67,7 @@
   - `SENDGRID_API_KEY=...`
   - `EMAIL_FROM=info@hokinterior.com`
 
-## 4. Production Hardening Checklist
+## 5. Production Hardening Checklist
 - Enable MongoDB IP allowlist for Render outbound IPs or allow secure access.
 - Configure domain-level CORS in `CLIENT_URL`.
 - Rotate JWT secrets and API keys before launch.
