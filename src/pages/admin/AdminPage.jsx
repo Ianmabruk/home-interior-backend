@@ -64,6 +64,7 @@ export const AdminPage = () => {
   const [productImageFile, setProductImageFile] = useState(null)
   const [resourceType, setResourceType] = useState('video')
   const [emailTarget, setEmailTarget] = useState('')
+  const [editingProject, setEditingProject] = useState(null)
 
   const fetchAll = async () => {
     const [overviewRes, projectsRes, portfolioRes, aboutRes, virtualRes, productsRes] = await Promise.all([
@@ -118,14 +119,47 @@ export const AdminPage = () => {
       payload.append('resourceType', resourceType)
       if (mediaFile) payload.append('media', mediaFile)
 
-      await api.post('/content/projects', payload, { headers: { 'Content-Type': 'multipart/form-data' } })
+      if (editingProject) {
+        await api.patch(`/content/projects/${editingProject._id}`, payload, { headers: { 'Content-Type': 'multipart/form-data' } })
+        setEditingProject(null)
+        setSuccess('Project updated successfully.')
+      } else {
+        await api.post('/content/projects', payload, { headers: { 'Content-Type': 'multipart/form-data' } })
+        setSuccess('Project uploaded and synced to homepage.')
+      }
       setProjectForm({ title: '', description: '', order: 0 })
       setMediaFile(null)
       emitAdminDataChanged({ type: 'projects-changed' })
       await fetchAll()
-      setSuccess('Project media uploaded and synced to homepage hero.')
     } catch (error) {
-      setFailure(error, 'Project upload failed.')
+      setFailure(error, editingProject ? 'Project update failed.' : 'Project upload failed.')
+    }
+  }
+
+  const startEditProject = (item) => {
+    setEditingProject(item)
+    setProjectForm({ title: item.title, description: item.description, order: item.order || 0 })
+    setResourceType(item.media?.[0]?.type === 'image' ? 'image' : 'video')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const cancelEditProject = () => {
+    setEditingProject(null)
+    setProjectForm({ title: '', description: '', order: 0 })
+    setMediaFile(null)
+    setResourceType('video')
+  }
+
+  const deleteProject = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this project?')) return
+    try {
+      await api.delete(`/content/projects/${id}`)
+      if (editingProject?._id === id) cancelEditProject()
+      emitAdminDataChanged({ type: 'projects-changed' })
+      await fetchAll()
+      setSuccess('Project deleted successfully.')
+    } catch (error) {
+      setFailure(error, 'Project delete failed.')
     }
   }
 
@@ -380,7 +414,12 @@ export const AdminPage = () => {
             {activeTab === 'projects' ? (
               <section className="mt-6 grid gap-5 lg:grid-cols-[360px_1fr]">
                 <form onSubmit={submitProject} className="space-y-3 rounded-2xl border border-black/10 bg-cream p-5">
-                  <h2 className="font-display text-2xl">Project Upload</h2>
+                  <div className="flex items-center justify-between">
+                    <h2 className="font-display text-2xl">{editingProject ? 'Edit Project' : 'Project Upload'}</h2>
+                    {editingProject && (
+                      <button type="button" onClick={cancelEditProject} className="text-xs text-ink/50 hover:text-ink transition">Cancel</button>
+                    )}
+                  </div>
                   <input value={projectForm.title} onChange={(e) => setProjectForm((p) => ({ ...p, title: e.target.value }))} className="w-full rounded-xl border border-black/15 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/30" placeholder="Title" required />
                   <textarea value={projectForm.description} onChange={(e) => setProjectForm((p) => ({ ...p, description: e.target.value }))} className="h-20 w-full rounded-xl border border-black/15 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/30" placeholder="Description" required />
                   <input value={projectForm.order} onChange={(e) => setProjectForm((p) => ({ ...p, order: Number(e.target.value) }))} type="number" className="w-full rounded-xl border border-black/15 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/30" placeholder="Order" />
@@ -389,7 +428,9 @@ export const AdminPage = () => {
                     <option value="image">Image</option>
                   </select>
                   <input type="file" accept="video/*,image/*" onChange={(e) => setMediaFile(e.target.files?.[0] || null)} className="w-full text-sm" />
-                  <button className="w-full rounded-full bg-orange px-4 py-3 text-xs uppercase tracking-[0.14em] font-semibold text-ink hover:bg-orange/90 transition">Upload Hero Media</button>
+                  <button className="w-full rounded-full bg-orange px-4 py-3 text-xs uppercase tracking-[0.14em] font-semibold text-ink hover:bg-orange/90 transition">
+                    {editingProject ? 'Update Project' : 'Upload Hero Media'}
+                  </button>
                 </form>
 
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -402,6 +443,10 @@ export const AdminPage = () => {
                       )}
                       <div className="p-3">
                         <p className="font-display text-2xl">{item.title}</p>
+                        <div className="mt-2 flex gap-2">
+                          <button onClick={() => startEditProject(item)} className="text-xs px-3 py-1.5 rounded-lg border border-black/10 hover:bg-cream transition">Edit</button>
+                          <button onClick={() => deleteProject(item._id)} className="text-xs px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition">Delete</button>
+                        </div>
                       </div>
                     </article>
                   ))}

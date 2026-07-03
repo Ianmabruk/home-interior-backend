@@ -4,15 +4,23 @@ import bcrypt from 'bcryptjs'
 import { User } from '../models/User.js'
 
 const ensureAdminUser = async () => {
-  const existing = await User.findOne({ email: env.seedAdminEmail.toLowerCase() })
-  if (existing) return
+  const adminEmail = env.seedAdminEmail.toLowerCase()
+  const existing = await User.findOne({ email: adminEmail })
   const passwordHash = await bcrypt.hash(env.seedAdminPassword, 12)
-  await User.create({
-    fullName: 'HOK Platform Admin',
-    email: env.seedAdminEmail.toLowerCase(),
+  if (!existing) {
+    await User.create({
+      fullName: 'HOK Platform Admin',
+      email: adminEmail,
+      role: 'admin',
+      isActive: true,
+      passwordHash,
+    })
+    return
+  }
+  await User.findByIdAndUpdate(existing._id, {
+    passwordHash,
     role: 'admin',
     isActive: true,
-    passwordHash,
   })
 }
 

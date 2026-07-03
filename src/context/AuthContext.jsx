@@ -35,6 +35,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('hok_access_token', response.data.accessToken)
     localStorage.setItem('hok_refresh_token', response.data.refreshToken)
     setUser(response.data.user)
+    return response
   }
 
   const register = async (fullName, email, password) => {

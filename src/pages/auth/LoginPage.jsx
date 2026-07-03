@@ -15,8 +15,13 @@ export const LoginPage = () => {
     setError('')
     setLoading(true)
     try {
-      await login(form.email, form.password)
-      navigate('/account')
+      const response = await login(form.email, form.password)
+      const role = response?.data?.user?.role
+      if (role === 'admin') {
+        navigate('/admin', { replace: true })
+      } else {
+        navigate('/account', { replace: true })
+      }
     } catch (err) {
       setError(err?.response?.data?.message || 'Invalid email or password.')
     } finally {
