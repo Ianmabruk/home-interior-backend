@@ -23,7 +23,9 @@ export const LoginPage = () => {
         navigate('/account', { replace: true })
       }
     } catch (err) {
-      setError(err?.response?.data?.message || 'Invalid email or password.')
+      console.error('Login error:', err)
+      const message = err?.response?.data?.message || err?.message || 'Invalid email or password.'
+      setError(message)
     } finally {
       setLoading(false)
     }

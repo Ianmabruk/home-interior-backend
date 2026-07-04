@@ -119,12 +119,13 @@ Protected Route: /admin
   → Redirects to /account if not admin
 ```
 
-## Admin Account Status
+## Admin Account Status ✓ WORKING
 
 - Admin user is automatically created on server start via `connectDB()`
 - Credentials: admin@hokinterior.com / Admin123!
 - Role: admin
 - Active: true
+- Login API tested successfully: Returns user object with role: "admin"
 
 ## Responsive Layout Verification
 
