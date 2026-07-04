@@ -1,4 +1,4 @@
-import { Heart, ShoppingBag } from 'lucide-react'
+import { Heart, ShoppingBag, Eye } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useShop } from '../../context/ShopContext'
 
@@ -14,7 +14,7 @@ export const ProductCard = ({ product, onQuickView }) => {
   return (
     <article className="group">
       {/* Image */}
-      <div className="relative overflow-hidden bg-linen aspect-[3/4]">
+      <div className="relative overflow-hidden bg-linen aspect-[3/4] rounded-2xl shadow-card">
         <img
           src={primaryImage}
           alt={product.name}
@@ -25,12 +25,12 @@ export const ProductCard = ({ product, onQuickView }) => {
         {/* Badges */}
         <div className="absolute left-3 top-3 flex flex-col gap-1.5">
           {salePercent && (
-            <span className="bg-ink px-2.5 py-1 text-2xs font-medium uppercase tracking-wide text-white">
+            <span className="bg-orange px-2.5 py-1 text-2xs font-medium uppercase tracking-wide text-white">
               −{salePercent}%
             </span>
           )}
           {product.stock === 0 && (
-            <span className="bg-stone/80 px-2.5 py-1 text-2xs font-medium uppercase tracking-wide text-white">
+            <span className="bg-charcoal px-2.5 py-1 text-2xs font-medium uppercase tracking-wide text-white">
               Sold Out
             </span>
           )}
@@ -40,7 +40,7 @@ export const ProductCard = ({ product, onQuickView }) => {
         <div className="absolute right-3 top-3 flex flex-col gap-2 translate-x-10 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100">
           <button
             onClick={() => toggleWishlist(product)}
-            className={`flex h-9 w-9 items-center justify-center bg-white shadow-card transition hover:bg-linen ${isWishlisted ? 'text-ink' : 'text-ink/50'}`}
+            className={`flex h-9 w-9 items-center justify-center bg-white rounded-full shadow-lg transition hover:bg-linen ${isWishlisted ? 'text-orange' : 'text-ink/50'}`}
             aria-label="Add to wishlist"
           >
             <Heart size={15} strokeWidth={1.5} fill={isWishlisted ? 'currentColor' : 'none'} />
@@ -48,36 +48,36 @@ export const ProductCard = ({ product, onQuickView }) => {
           <button
             onClick={() => addToCart(product, 1)}
             disabled={product.stock === 0}
-            className="flex h-9 w-9 items-center justify-center bg-white shadow-card text-ink/50 transition hover:bg-linen disabled:opacity-40"
+            className="flex h-9 w-9 items-center justify-center bg-white rounded-full shadow-lg text-ink/50 transition hover:bg-linen disabled:opacity-40"
             aria-label="Add to cart"
           >
             <ShoppingBag size={15} strokeWidth={1.5} />
           </button>
-        </div>
-
-        {/* Quick view */}
-        <div className="absolute bottom-0 left-0 right-0 translate-y-full transition-transform duration-300 group-hover:translate-y-0">
           <button
             onClick={() => onQuickView?.(product)}
-            className="w-full bg-ink/90 py-3 text-2xs font-medium uppercase tracking-widest text-white transition hover:bg-ink"
+            className="flex h-9 w-9 items-center justify-center bg-white rounded-full shadow-lg text-ink/50 transition hover:bg-linen"
+            aria-label="Quick view"
           >
-            Quick View
+            <Eye size={15} strokeWidth={1.5} />
           </button>
         </div>
+
+        {/* Quick view overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
       </div>
 
       {/* Info */}
       <div className="pt-4">
         <p className="text-2xs font-medium uppercase tracking-widest text-ink/40">{product.category}</p>
         <h3 className="mt-1 font-display text-xl font-medium leading-snug text-ink">
-          <Link to={`/shop/${product._id}`} className="hover:text-warm transition-colors">
+          <Link to={`/shop/${product._id}`} className="hover:text-orange transition-colors">
             {product.name}
           </Link>
         </h3>
         <div className="mt-2 flex items-center gap-3">
-          <span className="text-sm font-medium text-ink">${price}</span>
+          <span className="text-sm font-medium text-ink">${price.toLocaleString()}</span>
           {product.discountPrice && (
-            <span className="text-sm text-ink/35 line-through">${product.price}</span>
+            <span className="text-sm text-ink/35 line-through">${product.price.toLocaleString()}</span>
           )}
         </div>
       </div>

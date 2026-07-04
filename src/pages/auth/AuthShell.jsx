@@ -15,7 +15,7 @@ export const AuthShell = () => {
         <div className="absolute bottom-12 left-12 max-w-sm">
           <Link to="/">
             <p className="font-display text-4xl font-semibold text-white">HOK</p>
-            <p className="text-2xs font-medium uppercase tracking-widest text-clay">Interior Designs</p>
+            <p className="text-2xs font-medium uppercase tracking-widest text-orange">Interior Designs</p>
           </Link>
           <p className="mt-6 font-display text-3xl font-medium leading-snug text-white/85">
             Luxury spaces begin here.
@@ -30,7 +30,7 @@ export const AuthShell = () => {
           <div className="mb-10 md:hidden">
             <Link to="/">
               <p className="font-display text-3xl font-semibold text-ink">HOK</p>
-              <p className="text-2xs font-medium uppercase tracking-widest text-warm">Interior Designs</p>
+              <p className="text-2xs font-medium uppercase tracking-widest text-orange">Interior Designs</p>
             </Link>
           </div>
           <Outlet />

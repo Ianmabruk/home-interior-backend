@@ -1,6 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
 import { X, ArrowRight } from 'lucide-react'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
@@ -12,10 +11,17 @@ const getFirstMedia = (project) => {
   return null
 }
 
+const getCategories = (projects) => {
+  const cats = new Set()
+  projects.forEach((p) => p.category && cats.add(p.category))
+  return Array.from(cats)
+}
+
 export const ProjectsPage = () => {
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
+  const [categoryFilter, setCategoryFilter] = useState('')
 
   const loadProjects = () => {
     api.get('/content/projects')
@@ -42,10 +48,17 @@ export const ProjectsPage = () => {
     return () => { document.body.style.overflow = '' }
   }, [selected])
 
+  const categories = useMemo(() => getCategories(projects), [projects])
+
+  const filtered = useMemo(() => {
+    if (!categoryFilter) return projects
+    return projects.filter((p) => p.category === categoryFilter)
+  }, [projects, categoryFilter])
+
   return (
     <div>
       {/* Header */}
-      <div className="section-pad bg-linen pb-12">
+      <div className="section-pad bg-cream pb-12">
         <div className="container-wide px-6 md:px-12 lg:px-20">
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <p className="eyebrow mb-4">Design Work</p>
@@ -56,6 +69,35 @@ export const ProjectsPage = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* Category filters */}
+      {categories.length > 0 && (
+        <div className="border-b border-sand bg-linen">
+          <div className="container-wide overflow-x-auto px-6 md:px-12 lg:px-20">
+            <div className="flex items-center gap-1 py-4 min-w-max">
+              <button
+                onClick={() => setCategoryFilter('')}
+                className={`px-5 py-2 text-2xs font-medium uppercase tracking-widest transition ${
+                  !categoryFilter ? 'bg-ink text-white' : 'text-ink/50 hover:text-ink'
+                }`}
+              >
+                All
+              </button>
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setCategoryFilter(cat === categoryFilter ? '' : cat)}
+                  className={`px-5 py-2 text-2xs font-medium uppercase tracking-widest transition ${
+                    categoryFilter === cat ? 'bg-ink text-white' : 'text-ink/50 hover:text-ink'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Grid */}
       <div className="section-pad bg-cream pt-12">
@@ -74,15 +116,17 @@ export const ProjectsPage = () => {
             </div>
           )}
 
-          {!loading && projects.length === 0 && (
+          {!loading && filtered.length === 0 && (
             <div className="py-24 text-center">
               <p className="font-display text-3xl text-ink/30">No projects published yet.</p>
             </div>
           )}
 
           <div className="grid gap-10 md:grid-cols-2">
-            {projects.map((project, i) => {
+            {filtered.map((project, i) => {
               const firstMedia = getFirstMedia(project)
+              const allMedia = project.media?.length ? project.media : [firstMedia].filter(Boolean)
+              const beforeAfter = project.beforeAfterImages || []
               return (
                 <motion.article
                   key={project._id}
@@ -112,18 +156,23 @@ export const ProjectsPage = () => {
                       </div>
                     )}
                     <div className="absolute inset-0 bg-ink/0 transition-all duration-500 group-hover:bg-ink/15" />
-                    {Array.isArray(project.media) && project.media.length > 1 && (
+                    {allMedia.length > 1 && (
                       <span className="absolute right-4 top-4 bg-white/90 px-3 py-1 text-2xs font-medium uppercase tracking-widest text-ink">
-                        {project.media.length} items
+                        {allMedia.length} items
+                      </span>
+                    )}
+                    {beforeAfter.length > 0 && (
+                      <span className="absolute right-4 bottom-4 bg-orange/90 px-3 py-1 text-2xs font-medium uppercase tracking-widest text-white">
+                        Before/After
                       </span>
                     )}
                   </div>
                   <div className="pt-5">
-                    <h2 className="font-display text-3xl font-medium text-ink transition-colors group-hover:text-warm">
+                    <h2 className="font-display text-3xl font-medium text-ink transition-colors group-hover:text-orange">
                       {project.title}
                     </h2>
                     <p className="mt-2 text-sm leading-relaxed text-ink/50 line-clamp-2">{project.description}</p>
-                    <span className="mt-4 inline-flex items-center gap-2 text-2xs font-medium uppercase tracking-widest text-ink/40 transition group-hover:text-ink">
+                    <span className="mt-4 inline-flex items-center gap-2 text-2xs font-medium uppercase tracking-widest text-ink/40 transition group-hover:text-orange">
                       View Project <ArrowRight size={12} strokeWidth={1.5} />
                     </span>
                   </div>
@@ -131,16 +180,10 @@ export const ProjectsPage = () => {
               )
             })}
           </div>
-
-          <div className="mt-16 text-center">
-            <Link to="/portfolio" className="btn-outline">
-              View Full Portfolio <ArrowRight size={14} strokeWidth={1.5} />
-            </Link>
-          </div>
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modal - Full Project View */}
       <AnimatePresence>
         {selected && (
           <motion.div
@@ -148,7 +191,7 @@ export const ProjectsPage = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-ink/90 p-4 md:p-8"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-ink/95 p-4 md:p-8"
             onClick={() => setSelected(null)}
           >
             <motion.div
@@ -156,34 +199,53 @@ export const ProjectsPage = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.96, opacity: 0 }}
               transition={{ duration: 0.25 }}
-              className="relative max-h-[90vh] w-full max-w-5xl overflow-hidden bg-white"
+              className="relative max-h-[90vh] w-full max-w-6xl overflow-hidden bg-white rounded-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={() => setSelected(null)}
-                className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center bg-white/90 text-ink transition hover:bg-white"
+                className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center bg-white/90 text-ink transition hover:bg-white rounded-full"
                 aria-label="Close"
               >
                 <X size={16} strokeWidth={1.5} />
               </button>
-              <div className="max-h-[70vh] overflow-y-auto">
-                {(selected.media?.length
-                  ? selected.media
-                  : [getFirstMedia(selected)].filter(Boolean)
-                ).map((m, idx) =>
-                  m.type === 'video' ? (
-                    <video key={idx} src={m.url} controls autoPlay muted loop playsInline className="w-full" />
-                  ) : (
-                    <img key={idx} src={m.url} alt={selected.title} className="w-full object-contain" />
-                  ),
+              
+              <div className="max-h-[70vh] overflow-y-auto p-6">
+                <h2 className="font-display text-3xl font-medium mb-4">{selected.title}</h2>
+                {selected.description && (
+                  <p className="text-sm text-ink/60 mb-6">{selected.description}</p>
                 )}
-              </div>
-              <div className="flex items-center justify-between p-6">
-                <div>
-                  <h2 className="font-display text-3xl font-medium">{selected.title}</h2>
-                  {selected.description && <p className="mt-1 text-sm text-ink/55">{selected.description}</p>}
+                
+                {/* Before/After Section */}
+                {selected.beforeAfterImages?.length > 0 && (
+                  <div className="mb-8">
+                    <p className="text-2xs font-medium uppercase tracking-widest text-orange mb-4">Before & After</p>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {selected.beforeAfterImages.map((img, idx) => (
+                        <div key={idx} className="relative">
+                          <img src={img.url} alt={img.label || `View ${idx + 1}`} className="w-full object-cover aspect-[4/3] rounded-lg" />
+                          {img.label && (
+                            <p className="absolute bottom-2 left-2 bg-ink/70 text-white text-2xs px-2 py-1 rounded">{img.label}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Project Gallery */}
+                <div className="grid gap-6">
+                  {(selected.media?.length
+                    ? selected.media
+                    : [getFirstMedia(selected)].filter(Boolean)
+                  ).map((m, idx) =>
+                    m.type === 'video' ? (
+                      <video key={idx} src={m.url} controls autoPlay muted loop playsInline className="w-full rounded-lg" />
+                    ) : (
+                      <img key={idx} src={m.url} alt={`${selected.title} ${idx + 1}`} className="w-full object-contain rounded-lg" />
+                    ),
+                  )}
                 </div>
-                <button onClick={() => setSelected(null)} className="btn-ghost text-ink/40">Close</button>
               </div>
             </motion.div>
           </motion.div>

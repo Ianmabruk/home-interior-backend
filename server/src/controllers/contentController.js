@@ -34,6 +34,12 @@ const crudFactory = (Model) => ({
     const parsedServices = parseMaybeJson(req.body.services, null)
     if (parsedServices) payload.services = parsedServices
 
+    const parsedBeforeAfter = parseMaybeJson(req.body.beforeAfterImages, null)
+    if (parsedBeforeAfter) payload.beforeAfterImages = parsedBeforeAfter
+
+    const parsedTags = parseMaybeJson(req.body.tags, null)
+    if (parsedTags) payload.tags = parsedTags
+
     const upload = await handleFileUpload(req, `hok/${Model.modelName.toLowerCase()}`)
     if (upload) {
       if (Model.modelName === 'Project') {
@@ -77,6 +83,12 @@ const crudFactory = (Model) => ({
 
     const parsedServices = parseMaybeJson(req.body.services, null)
     if (parsedServices) payload.services = parsedServices
+
+    const parsedBeforeAfter = parseMaybeJson(req.body.beforeAfterImages, null)
+    if (parsedBeforeAfter) payload.beforeAfterImages = parsedBeforeAfter
+
+    const parsedTags = parseMaybeJson(req.body.tags, null)
+    if (parsedTags) payload.tags = parsedTags
 
     // For Project: merge new media into existing array instead of replacing
     const parsedMedia = Array.isArray(req.body.media) ? req.body.media : parseMaybeJson(req.body.media, null)
@@ -155,13 +167,12 @@ export const upsertAbout = asyncHandler(async (req, res) => {
 })
 
 export const homepageFeed = asyncHandler(async (req, res) => {
-  const [projects, portfolio, about, virtualDesign, products] = await Promise.all([
+  const [projects, portfolio, about, virtualDesign] = await Promise.all([
     Project.find({ isPublished: true }).sort({ order: 1, createdAt: -1 }).limit(6),
     Portfolio.find({ isPublished: true }).sort({ order: 1, createdAt: -1 }).limit(12),
     About.findOne({}).sort({ createdAt: -1 }),
     VirtualDesign.find({ isPublished: true }).sort({ createdAt: -1 }).limit(4),
-    Product.find({ isPublished: true }).sort({ createdAt: -1 }).limit(8),
   ])
 
-  res.json({ projects, portfolio, about, virtualDesign, products })
+  res.json({ projects, portfolio, about, virtualDesign })
 })

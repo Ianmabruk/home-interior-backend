@@ -62,8 +62,8 @@ export const Navbar = () => {
       <div className="container-wide flex items-center justify-between px-6 py-4 md:px-12 lg:px-20">
         {/* Logo */}
         <Link to="/" className="flex-shrink-0 leading-tight">
-          <p className="font-display text-2xl font-semibold tracking-wide text-ink md:text-3xl">HOK</p>
-          <p className="text-2xs font-medium uppercase tracking-widest text-warm">Interior Designs</p>
+          <p className="font-display text-2xl font-semibold tracking-wide text-black md:text-3xl">HOK</p>
+          <p className="text-2xs font-medium uppercase tracking-widest text-orange">Interior Designs</p>
         </Link>
 
         {/* Desktop Nav */}

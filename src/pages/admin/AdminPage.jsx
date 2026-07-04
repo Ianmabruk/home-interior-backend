@@ -49,7 +49,7 @@ export const AdminPage = () => {
     pinterest: '',
     facebook: '',
   })
-  const [virtualForm, setVirtualForm] = useState({ title: '', description: '', servicesJson: '[]' })
+  const [virtualForm, setVirtualForm] = useState({ title: '', description: '', servicesJson: '[]', category: '', tagsJson: '[]' })
   const [productForm, setProductForm] = useState({
     name: '',
     description: '',
@@ -222,11 +222,13 @@ export const AdminPage = () => {
       payload.append('title', virtualForm.title)
       payload.append('description', virtualForm.description)
       payload.append('services', virtualForm.servicesJson)
+      payload.append('category', virtualForm.category)
+      payload.append('tags', virtualForm.tagsJson)
       payload.append('resourceType', 'video')
       if (mediaFile) payload.append('media', mediaFile)
 
       await api.post('/content/virtual-design', payload, { headers: { 'Content-Type': 'multipart/form-data' } })
-      setVirtualForm({ title: '', description: '', servicesJson: '[]' })
+      setVirtualForm({ title: '', description: '', servicesJson: '[]', category: '', tagsJson: '[]' })
       setMediaFile(null)
       emitAdminDataChanged({ type: 'virtual-changed' })
       await fetchAll()
@@ -516,14 +518,16 @@ export const AdminPage = () => {
               </section>
             ) : null}
 
-            {activeTab === 'virtual' ? (
+{activeTab === 'virtual' ? (
               <section className="mt-6 grid gap-5 lg:grid-cols-[360px_1fr]">
                 <form onSubmit={submitVirtual} className="space-y-3 rounded-2xl border border-black/10 bg-cream p-5">
                   <h2 className="font-display text-2xl">Virtual Interior Dashboard</h2>
                   <input value={virtualForm.title} onChange={(e) => setVirtualForm((p) => ({ ...p, title: e.target.value }))} className="w-full rounded-xl border border-black/15 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/30" placeholder="Title" required />
                   <textarea value={virtualForm.description} onChange={(e) => setVirtualForm((p) => ({ ...p, description: e.target.value }))} className="h-20 w-full rounded-xl border border-black/15 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/30" placeholder="Description" required />
-                  <textarea value={virtualForm.servicesJson} onChange={(e) => setVirtualForm((p) => ({ ...p, servicesJson: e.target.value }))} className="h-24 w-full rounded-xl border border-black/15 bg-white px-3 py-2.5 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-orange/30" placeholder='[{"title":"Walkthrough","description":"..."}]' />
-                  <input type="file" accept="video/*" onChange={(e) => setMediaFile(e.target.files?.[0] || null)} className="w-full text-sm" />
+                  <input value={virtualForm.category} onChange={(e) => setVirtualForm((p) => ({ ...p, category: e.target.value }))} className="w-full rounded-xl border border-black/15 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange/30" placeholder="Category (optional)" />
+                  <textarea value={virtualForm.servicesJson} onChange={(e) => setVirtualForm((p) => ({ ...p, servicesJson: e.target.value }))} className="h-24 w-full rounded-xl border border-black/15 bg-white px-3 py-2.5 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-orange/30" placeholder='[{"title":"Walkthrough","description":"..."}] (optional)' />
+                  <input value={virtualForm.tagsJson} onChange={(e) => setVirtualForm((p) => ({ ...p, tagsJson: e.target.value }))} className="w-full rounded-xl border border-black/15 bg-white px-3 py-2.5 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-orange/30" placeholder='["tag1", "tag2"] (optional)' />
+                  <input type="file" accept="video/*" onChange={(e) => setMediaFile(e.target.files?.[0] || null)} className="w-full text-sm" required />
                   <button className="w-full rounded-full bg-orange px-4 py-3 text-xs uppercase tracking-[0.14em] font-semibold text-ink hover:bg-orange/90 transition">Upload Virtual Media</button>
                 </form>
 
@@ -533,6 +537,10 @@ export const AdminPage = () => {
                       <video src={item.videoUrl} className="h-44 w-full object-cover" autoPlay muted loop playsInline />
                       <div className="p-3">
                         <p className="font-display text-2xl">{item.title}</p>
+                        {item.category && <p className="text-xs uppercase tracking-widest text-orange mt-1">{item.category}</p>}
+                        {item.beforeAfterImages?.length > 0 && (
+                          <p className="text-xs text-ink/50 mt-1">{item.beforeAfterImages.length} before/after images</p>
+                        )}
                       </div>
                     </article>
                   ))}

@@ -1,6 +1,6 @@
 import { BedDouble, BriefcaseBusiness, Building2, Lamp, Sparkles, Sofa, TreePalm, UtensilsCrossed, SlidersHorizontal, X } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
 import { ProductCard } from '../../components/shop/ProductCard'
 import { api } from '../../services/api'
 import { SHOP_CATEGORIES } from '../../utils/constants'
@@ -26,6 +26,7 @@ export const ShopPage = () => {
   const [query, setQuery] = useState('')
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
+  const [sortBy, setSortBy] = useState('newest')
   const [filtersOpen, setFiltersOpen] = useState(false)
 
   const loadProducts = () => {
@@ -56,8 +57,23 @@ export const ShopPage = () => {
     if (category) next = next.filter((item) => item.category === category)
     if (minPrice) next = next.filter((item) => (item.discountPrice || item.price) >= Number(minPrice))
     if (maxPrice) next = next.filter((item) => (item.discountPrice || item.price) <= Number(maxPrice))
-    return next.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-  }, [allProducts, category, query, minPrice, maxPrice])
+    
+    // Sorting
+    switch (sortBy) {
+      case 'price-low':
+        next.sort((a, b) => (a.discountPrice || a.price) - (b.discountPrice || b.price))
+        break
+      case 'price-high':
+        next.sort((a, b) => (b.discountPrice || b.price) - (a.discountPrice || a.price))
+        break
+      case 'name':
+        next.sort((a, b) => a.name.localeCompare(b.name))
+        break
+      default:
+        next.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    }
+    return next
+  }, [allProducts, category, query, minPrice, maxPrice, sortBy])
 
   const hasFilters = category || query || minPrice || maxPrice
   const clearFilters = () => { setCategory(''); setQuery(''); setMinPrice(''); setMaxPrice('') }
@@ -80,8 +96,8 @@ export const ShopPage = () => {
           <div className="flex items-center gap-1 py-4 min-w-max">
             <button
               onClick={() => setCategory('')}
-              className={`px-5 py-2 text-2xs font-medium uppercase tracking-widest transition ${
-                !category ? 'bg-ink text-white' : 'text-ink/50 hover:text-ink'
+              className={`px-5 py-2 text-2xs font-medium uppercase tracking-widest transition rounded-full ${
+                !category ? 'bg-orange text-white' : 'text-ink/50 hover:text-ink bg-white border border-sand'
               }`}
             >
               All
@@ -92,8 +108,8 @@ export const ShopPage = () => {
                 <button
                   key={cat}
                   onClick={() => setCategory(cat === category ? '' : cat)}
-                  className={`flex items-center gap-1.5 px-5 py-2 text-2xs font-medium uppercase tracking-widest transition ${
-                    category === cat ? 'bg-ink text-white' : 'text-ink/50 hover:text-ink'
+                  className={`flex items-center gap-1.5 px-5 py-2 text-2xs font-medium uppercase tracking-widest transition rounded-full ${
+                    category === cat ? 'bg-orange text-white' : 'text-ink/50 hover:text-ink bg-white border border-sand'
                   }`}
                 >
                   <Icon size={12} strokeWidth={1.5} />
@@ -105,46 +121,87 @@ export const ShopPage = () => {
         </div>
       </div>
 
-      {/* Search + filter bar */}
-      <div className="sticky top-[88px] z-30 border-b border-sand bg-cream/95 backdrop-blur-sm md:top-[108px]">
-        <div className="container-wide px-6 py-3 md:px-12 lg:px-20">
-          <div className="flex items-center gap-3">
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search products..."
-              className="input-box flex-1 max-w-xs py-2 text-xs"
-            />
-            <button
-              onClick={() => setFiltersOpen((p) => !p)}
-              className="flex items-center gap-2 border border-sand px-4 py-2 text-2xs font-medium uppercase tracking-widest text-ink/50 transition hover:border-ink/40 hover:text-ink"
-            >
-              <SlidersHorizontal size={13} strokeWidth={1.5} />
-              Filters
-            </button>
-            {hasFilters && (
-              <button
-                onClick={clearFilters}
-                className="flex items-center gap-1.5 text-2xs font-medium uppercase tracking-widest text-ink/40 transition hover:text-ink"
+      {/* Search + filter bar - Sticky */}
+      <div className="sticky top-[88px] z-30 border-b border-sand bg-luxuryBeige/95 backdrop-blur-sm md:top-[108px]">
+        <div className="container-wide px-6 py-4 md:px-12 lg:px-20">
+          <div className="flex flex-col lg:flex-row items-center gap-4">
+            <div className="relative flex-1 max-w-md w-full">
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search products..."
+                className="w-full rounded-full border border-sand bg-white pl-10 pr-4 py-2.5 text-sm outline-none placeholder:text-ink/35 focus:border-orange focus:ring-2 focus:ring-orange/20 transition"
+              />
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            
+            <div className="flex items-center gap-3 ml-auto">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="rounded-full border border-sand bg-white px-4 py-2 text-2xs font-medium uppercase tracking-widest text-ink/70 focus:outline-none focus:ring-2 focus:ring-orange/20"
               >
-                <X size={12} strokeWidth={1.5} /> Clear
+                <option value="newest">Newest</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+                <option value="name">Name A-Z</option>
+              </select>
+              
+              <button
+                onClick={() => setFiltersOpen((p) => !p)}
+                className="flex items-center gap-2 rounded-full border border-sand bg-white px-4 py-2 text-2xs font-medium uppercase tracking-widest text-ink/50 transition hover:border-orange hover:text-orange"
+              >
+                <SlidersHorizontal size={13} strokeWidth={1.5} />
+                Filters
               </button>
-            )}
-            <span className="ml-auto text-2xs text-ink/35">{products.length} items</span>
+              
+              {hasFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="flex items-center gap-1.5 text-2xs font-medium uppercase tracking-widest text-ink/40 transition hover:text-orange"
+                >
+                  <X size={12} strokeWidth={1.5} /> Clear
+                </button>
+              )}
+              
+              <span className="text-2xs text-ink/50">{products.length} items</span>
+            </div>
           </div>
 
-          {filtersOpen && (
-            <div className="flex flex-wrap gap-4 py-3 border-t border-sand mt-3">
-              <div>
-                <label className="label">Min Price</label>
-                <input value={minPrice} onChange={(e) => setMinPrice(e.target.value)} placeholder="$0" className="input-box w-28 py-2 text-xs" />
-              </div>
-              <div>
-                <label className="label">Max Price</label>
-                <input value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} placeholder="Any" className="input-box w-28 py-2 text-xs" />
-              </div>
-            </div>
-          )}
+          {/* Expanded filters */}
+          <AnimatePresence>
+            {filtersOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="flex flex-col lg:flex-row gap-4 pt-4 overflow-hidden"
+              >
+                <div>
+                  <label className="label">Min Price</label>
+                  <input
+                    value={minPrice}
+                    onChange={(e) => setMinPrice(e.target.value)}
+                    placeholder="$0"
+                    type="number"
+                    className="w-full rounded-full border border-sand bg-white px-4 py-2 text-sm outline-none placeholder:text-ink/35 focus:border-orange focus:ring-2 focus:ring-orange/20 transition"
+                  />
+                </div>
+                <div>
+                  <label className="label">Max Price</label>
+                  <input
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(e.target.value)}
+                    placeholder="Any"
+                    type="number"
+                    className="w-full rounded-full border border-sand bg-white px-4 py-2 text-sm outline-none placeholder:text-ink/35 focus:border-orange focus:ring-2 focus:ring-orange/20 transition"
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -155,7 +212,7 @@ export const ShopPage = () => {
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                 <div key={i}>
-                  <div className="skeleton aspect-[3/4] w-full" />
+                  <div className="skeleton aspect-[3/4] w-full rounded-2xl" />
                   <div className="mt-3 space-y-2">
                     <div className="skeleton h-3 w-20" />
                     <div className="skeleton h-5 w-40" />

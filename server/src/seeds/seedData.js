@@ -196,9 +196,23 @@ export const virtualDesignSeed = [
     description: 'End-to-end room concepting, sourcing and final styling guide delivered remotely.',
     videoUrl: 'https://cdn.coverr.co/videos/coverr-modern-living-room-1577/1080p.mp4',
     videoPublicId: 'seed/virtual-full-room',
+    category: 'Living Room',
+    tags: ['virtual', 'design', 'interior'],
     services: [
       { title: 'Concept Board', description: 'Material, color and layout direction.' },
       { title: 'Shopping List', description: 'Curated linked product list.' },
+    ],
+    beforeAfterImages: [
+      {
+        url: 'https://images.unsplash.com/photo-1484101403633-562f891dc89a?auto=format&fit=crop&w=1200&q=80',
+        publicId: 'seed/virtual-before',
+        label: 'Before',
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1556912172-45b7abe8b7e1?auto=format&fit=crop&w=1200&q=80',
+        publicId: 'seed/virtual-after',
+        label: 'After',
+      },
     ],
     isPublished: true,
   },
