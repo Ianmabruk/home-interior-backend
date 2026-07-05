@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { User } from '../models/User.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
-import { sendEmail } from '../config/sendgrid.js'
+import { sendEmail, buildWelcomeEmailTemplate, buildLoginEmailTemplate } from '../config/sendgrid.js'
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/tokens.js'
 
 const registerSchema = z.object({
@@ -40,6 +40,17 @@ export const register = asyncHandler(async (req, res) => {
   user.refreshToken = tokens.refreshToken
   await user.save()
 
+  // Send welcome email
+  try {
+    await sendEmail({
+      to: body.email,
+      subject: 'Welcome to HOK Interior Designs',
+      html: buildWelcomeEmailTemplate({ fullName: body.fullName, email: body.email }),
+    })
+  } catch (err) {
+    console.error('Welcome email failed:', err)
+  }
+
   res.status(201).json({
     user: { id: user._id, fullName: user.fullName, email: user.email, role: user.role },
     ...tokens,
@@ -61,6 +72,17 @@ export const login = asyncHandler(async (req, res) => {
   const tokens = makeAuthResponse(user)
   user.refreshToken = tokens.refreshToken
   await user.save()
+
+  // Send login alert email
+  try {
+    await sendEmail({
+      to: body.email,
+      subject: 'HOK Interior - New Login Detected',
+      html: buildLoginEmailTemplate({ fullName: user.fullName, email: body.email, timestamp: new Date().toISOString() }),
+    })
+  } catch (err) {
+    console.error('Login email failed:', err)
+  }
 
   res.json({
     user: { id: user._id, fullName: user.fullName, email: user.email, role: user.role },

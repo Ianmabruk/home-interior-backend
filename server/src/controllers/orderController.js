@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { Order } from '../models/Order.js'
 import { Product } from '../models/Product.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
+import { sendEmail, buildReceiptEmailTemplate } from '../config/sendgrid.js'
 
 const orderSchema = z.object({
   items: z.array(
@@ -48,6 +49,23 @@ export const createOrder = asyncHandler(async (req, res) => {
     total,
     shippingAddress: data.shippingAddress,
   })
+
+  // Send receipt email
+  try {
+    const user = req.user
+    await sendEmail({
+      to: user.email,
+      subject: `HOK Interior - Order Confirmation #${order._id.toString().slice(-8)}`,
+      html: buildReceiptEmailTemplate({
+        orderId: order._id.toString().slice(-8),
+        items,
+        total,
+        customerName: user.fullName || user.email,
+      }),
+    })
+  } catch (err) {
+    console.error('Receipt email failed:', err)
+  }
 
   res.status(201).json(order)
 })

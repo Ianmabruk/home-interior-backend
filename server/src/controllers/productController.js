@@ -1,8 +1,10 @@
 import { z } from 'zod'
 import { Product } from '../models/Product.js'
+import { User } from '../models/User.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { uploadToCloudinary } from '../services/uploadService.js'
+import { sendEmail, buildNewProductEmailTemplate } from '../config/sendgrid.js'
 
 const productSchema = z.object({
   name: z.string().min(2),
@@ -75,6 +77,24 @@ export const createProduct = asyncHandler(async (req, res) => {
     images: uploads.map((item) => ({ url: item.secure_url, publicId: item.public_id })),
     colorVariants,
   })
+
+  // Notify admin of new product
+  try {
+    const admin = await User.findOne({ role: 'admin' })
+    if (admin) {
+      await sendEmail({
+        to: admin.email,
+        subject: 'New Product Added - HOK Interior',
+        html: buildNewProductEmailTemplate({
+          productName: product.name,
+          productPrice: product.discountPrice || product.price,
+          productImageUrl: product.images?.[0]?.url,
+        }),
+      })
+    }
+  } catch (err) {
+    console.error('New product notification email failed:', err)
+  }
 
   res.status(201).json(product)
 })
