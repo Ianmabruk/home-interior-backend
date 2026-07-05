@@ -12,6 +12,7 @@ import { AboutPage } from '../pages/public/AboutPage'
 import { CartPage } from '../pages/account/CartPage'
 import { WishlistPage } from '../pages/account/WishlistPage'
 import { ChatPage } from '../pages/public/ChatPage'
+import { AdminChatPage } from '../pages/admin/AdminChatPage'
 import { HomePage } from '../pages/public/HomePage'
 import { ProductDetailPage } from '../pages/public/ProductDetailPage'
 import { PortfolioPage } from '../pages/public/PortfolioPage'
@@ -43,6 +44,7 @@ export const AppRouter = () => {
 
         <Route element={<ProtectedRoute adminOnly />}>
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/admin/chat" element={<AdminChatPage />} />
         </Route>
       </Route>
 

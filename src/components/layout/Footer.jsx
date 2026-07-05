@@ -22,13 +22,13 @@ export const Footer = () => {
   const socials = about?.socials || {}
 
   return (
-    <footer className="text-ink">
+    <footer className="bg-black text-white">
       {/* Newsletter band */}
-      <div className="border-b border-luxuryBeigeLight bg-luxuryBeige">
+      <div className="border-b border-white/10 bg-black/90">
         <div className="container-wide flex flex-col items-center gap-6 px-6 py-12 text-center md:flex-row md:justify-between md:text-left md:px-12 lg:px-20">
           <div>
             <p className="text-2xs font-medium uppercase tracking-widest text-orange mb-2">Stay Inspired</p>
-            <h3 className="font-display text-3xl font-medium text-ink md:text-4xl">
+            <h3 className="font-display text-3xl font-medium text-white md:text-4xl">
               Design Notes & Curated Drops
             </h3>
           </div>
@@ -43,10 +43,10 @@ export const Footer = () => {
         {/* Brand */}
         <div>
           <Link to="/">
-            <p className="font-display text-3xl font-semibold text-ink">HOK</p>
+            <p className="font-display text-3xl font-semibold text-white">HOK</p>
             <p className="text-2xs font-medium uppercase tracking-widest text-orange">Interior Designs</p>
           </Link>
-          <p className="mt-5 text-sm leading-relaxed text-ink/55">
+          <p className="mt-5 text-sm leading-relaxed text-white/60">
             Crafting spaces that inspire — from concept to completion.
           </p>
           {/* Social Icons */}
@@ -59,33 +59,31 @@ export const Footer = () => {
                   target="_blank"
                   rel="noreferrer noopener"
                   aria-label={label}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink/15 bg-linen text-ink/60 transition-all duration-200 hover:-translate-y-0.5 hover:border-orange hover:bg-orange/10 hover:text-orange hover:shadow-md"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white/70 transition-all duration-200 hover:-translate-y-0.5 hover:border-orange hover:bg-orange/20 hover:text-orange hover:shadow-md"
                 >
                   <Icon size={15} />
                 </a>
-              ) : null
-            )}
-            {/* Show placeholder icons when no socials configured */}
-            {!Object.values(socials).some(Boolean) &&
-              SOCIAL_LINKS.map(({ key, Icon, label }) => (
+              ) : (
                 <span
                   key={key}
                   aria-label={label}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink/10 text-ink/30"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-white/30"
                 >
                   <Icon size={15} />
                 </span>
-              ))}
+              )
+            )}
           </div>
         </div>
 
         {/* Explore */}
         <div>
-          <p className="text-2xs font-medium uppercase tracking-widest text-ink/55 mb-5">Explore</p>
-          <ul className="space-y-3 text-sm text-ink/70">
+          <p className="text-2xs font-medium uppercase tracking-widest text-white/40 mb-5">Explore</p>
+          <ul className="space-y-3 text-sm text-white/70">
             {[
               { to: '/shop', label: 'Shop' },
               { to: '/portfolio', label: 'Portfolio' },
+              { to: '/projects', label: 'Projects' },
               { to: '/virtual-interior-design', label: 'Virtual Interior Design' },
               { to: '/about', label: 'About Us' },
             ].map((link) => (
@@ -100,9 +98,9 @@ export const Footer = () => {
 
         {/* Shop Categories */}
         <div>
-          <p className="text-2xs font-medium uppercase tracking-widest text-ink/55 mb-5">Shop</p>
-          <ul className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm text-ink/70">
-            {SHOP_CATEGORIES.slice(0, 10).map((category) => (
+          <p className="text-2xs font-medium uppercase tracking-widest text-white/40 mb-5">Shop Categories</p>
+          <ul className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm text-white/70">
+            {SHOP_CATEGORIES.map((category) => (
               <li key={category}>
                 <Link
                   to={`/shop?category=${encodeURIComponent(category)}`}
@@ -117,27 +115,30 @@ export const Footer = () => {
 
         {/* Contact */}
         <div>
-          <p className="text-2xs font-medium uppercase tracking-widest text-ink/55 mb-5">Contact</p>
-          <div className="space-y-3 text-sm text-ink/70">
+          <p className="text-2xs font-medium uppercase tracking-widest text-white/40 mb-5">Contact</p>
+          <div className="space-y-3 text-sm">
             {about?.location && (
-              <p className="flex items-start gap-2">
+              <p className="flex items-start gap-2 text-white/70">
                 <span className="mt-0.5 text-orange">↟</span>
                 {about.location}
               </p>
             )}
             {about?.contactEmail && (
               <p>
-                <a href={`mailto:${about.contactEmail}`} className="transition-colors hover:text-orange">
+                <a href={`mailto:${about.contactEmail}`} className="text-white/70 transition hover:text-orange">
                   {about.contactEmail}
                 </a>
               </p>
             )}
             {!about?.location && !about?.contactEmail && (
-              <p className="text-ink/45">Contact info not configured</p>
+              <p className="text-white/30">Contact info not configured</p>
             )}
           </div>
           <div className="mt-8">
-            <Link to="/about" className="inline-flex items-center gap-2 border border-ink/20 px-5 py-2.5 text-2xs font-medium uppercase tracking-widest text-ink/60 transition hover:border-orange hover:text-orange">
+            <Link
+              to="/chat"
+              className="inline-flex items-center gap-2 border border-white/20 px-5 py-2.5 text-2xs font-medium uppercase tracking-widest text-white/60 transition hover:border-orange hover:text-orange"
+            >
               Get In Touch
             </Link>
           </div>
@@ -145,8 +146,8 @@ export const Footer = () => {
       </div>
 
       {/* Bottom bar */}
-      <div className="border-t border-luxuryBeigeLight px-6 py-5 md:px-12 lg:px-20">
-        <div className="container-wide flex flex-col items-center justify-between gap-3 text-2xs text-ink/50 md:flex-row">
+      <div className="border-t border-white/10 px-6 py-5 md:px-12 lg:px-20">
+        <div className="container-wide flex flex-col items-center justify-between gap-3 text-2xs text-white/40 md:flex-row">
           <p>© {new Date().getFullYear()} HOK Interior Designs. All rights reserved.</p>
           <div className="flex gap-6">
             <Link to="/about" className="hover:text-orange transition-colors">Privacy</Link>

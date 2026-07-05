@@ -19,3 +19,15 @@ export const listMessages = asyncHandler(async (req, res) => {
   const messages = await Message.find({}).sort({ createdAt: -1 })
   res.json(messages)
 })
+
+export const replyToMessage = asyncHandler(async (req, res) => {
+  const { messageId, reply } = req.body
+  const message = await Message.findById(messageId)
+  if (!message) {
+    return res.status(404).json({ message: 'Message not found' })
+  }
+  message.isRead = true
+  await message.save()
+  // In production, this would send an email reply
+  res.json({ message: 'Reply sent', isRead: true })
+})

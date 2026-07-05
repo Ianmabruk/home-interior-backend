@@ -1,10 +1,12 @@
 import { asyncHandler } from '../utils/asyncHandler.js'
+import { ApiError } from '../utils/ApiError.js'
 import { Product } from '../models/Product.js'
 import { User } from '../models/User.js'
 import { Order } from '../models/Order.js'
 import { Analytics } from '../models/Analytics.js'
 import { Portfolio } from '../models/Portfolio.js'
 import { Project } from '../models/Project.js'
+import { Settings } from '../models/Settings.js'
 import { env } from '../config/env.js'
 import { buildAdminTestEmailTemplate, sendEmail } from '../config/sendgrid.js'
 
@@ -84,6 +86,21 @@ export const listUsers = asyncHandler(async (req, res) => {
   res.json(users)
 })
 
+export const manageUser = asyncHandler(async (req, res) => {
+  const { action } = req.params
+  const user = await User.findById(req.params.id)
+  if (!user) {
+    throw new ApiError(404, 'User not found')
+  }
+
+  if (action === 'suspend') user.isActive = false
+  else if (action === 'activate') user.isActive = true
+  else throw new ApiError(400, 'Invalid action')
+
+  await user.save()
+  res.json({ message: `User ${action}d successfully`, user })
+})
+
 export const listAllOrders = asyncHandler(async (req, res) => {
   const orders = await Order.find({}).populate('user', 'fullName email').sort({ createdAt: -1 })
   res.json(orders)
@@ -101,6 +118,24 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
   order.status = status
   await order.save()
   res.json(order)
+})
+
+export const getSettings = asyncHandler(async (req, res) => {
+  const settings = await Settings.findOne({}).sort({ createdAt: -1 })
+  res.json(settings || {})
+})
+
+export const updateSettings = asyncHandler(async (req, res) => {
+  const payload = { ...req.body }
+  const existing = await Settings.findOne({})
+  if (!existing) {
+    const created = await Settings.create(payload)
+    res.status(201).json(created)
+    return
+  }
+  Object.assign(existing, payload)
+  await existing.save()
+  res.json(existing)
 })
 
 export const sendAdminTestEmail = asyncHandler(async (req, res) => {

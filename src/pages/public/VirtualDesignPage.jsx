@@ -1,5 +1,5 @@
-import { AnimatePresence, motion } from 'framer-motion'
-import { Maximize2, X, Filter } from 'lucide-react'
+import { Maximize2, X } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
@@ -20,7 +20,6 @@ export const VirtualDesignPage = () => {
 
   useEffect(() => { loadVirtualDesign() }, [])
 
-  // Listen for admin changes
   useEffect(() => {
     const handler = (event) => {
       const payload = getAdminDataChangedPayload(event)
@@ -36,7 +35,6 @@ export const VirtualDesignPage = () => {
     return () => { document.body.style.overflow = '' }
   }, [fullscreen])
 
-  // Extract categories for filtering
   const categories = useMemo(() => {
     const cats = new Set()
     items.forEach(item => item.category && cats.add(item.category))
@@ -56,44 +54,46 @@ export const VirtualDesignPage = () => {
   }, [items, query, categoryFilter])
 
   return (
-    <div>
-      {/* Header */}
-      <div className="section-pad bg-cream pb-12">
-        <div className="container-wide px-6 md:px-12 lg:px-20">
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <p className="eyebrow mb-4">Immersive Design</p>
-            <h1 className="font-display text-6xl font-medium leading-tight text-ink md:text-7xl">
-              Project Showcase
-            </h1>
-            <p className="mt-4 max-w-xl text-base text-ink/50">
-              Explore our luxury interior design projects with cinematic walkthroughs, before & after galleries, and detailed presentations.
+    <div className="bg-cream min-h-screen">
+      <section className="relative h-[70vh] overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=2000&q=80')] bg-cover bg-center" />
+        <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/40 to-transparent" />
+        <div className="relative flex h-full items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.3 }}
+            className="text-center"
+          >
+            <p className="eyebrow mb-4 text-cream">Immersive Design</p>
+            <h1 className="font-display text-6xl font-medium text-white md:text-7xl">Virtual Interiors</h1>
+            <p className="mt-4 max-w-xl mx-auto text-lg text-cream/80">
+              Explore our luxury interior design projects with cinematic walkthroughs and detailed presentations.
             </p>
           </motion.div>
         </div>
-      </div>
+      </section>
 
-      {/* Search + Filter bar */}
       <div className="sticky top-[88px] z-30 border-b border-sand bg-cream/95 backdrop-blur-sm md:top-[108px]">
-        <div className="container-wide px-6 py-3 md:px-12 lg:px-20">
-          <div className="flex flex-col sm:flex-row items-center gap-3">
+        <div className="container-wide px-6 py-4 md:px-12 lg:px-20">
+          <div className="flex flex-col sm:flex-row items-center gap-4">
             <div className="relative flex-1 max-w-sm">
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search projects..."
-                className="w-full rounded-full border border-sand bg-white pl-10 pr-4 py-2.5 text-sm outline-none placeholder:text-ink/35 focus:border-orange focus:ring-2 focus:ring-orange/20 transition"
+                className="w-full rounded-full border border-sand bg-white pl-10 pr-4 py-2.5 text-sm outline-none placeholder:text-ink/35 focus:border-orange focus:ring-2 focus:ring-orange/30 transition"
               />
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
             {categories.length > 0 && (
-              <div className="flex items-center gap-2 overflow-x-auto">
-                <Filter size={14} className="text-ink/40" />
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setCategoryFilter('')}
                   className={`px-4 py-1.5 text-2xs font-medium uppercase tracking-widest rounded-full transition ${
-                    !categoryFilter ? 'bg-orange text-white' : 'bg-linen text-ink/60 hover:bg-sand'
+                    !categoryFilter ? 'bg-ink text-white' : 'bg-linen text-ink/60 hover:bg-sand'
                   }`}
                 >
                   All
@@ -103,7 +103,7 @@ export const VirtualDesignPage = () => {
                     key={cat}
                     onClick={() => setCategoryFilter(cat === categoryFilter ? '' : cat)}
                     className={`px-4 py-1.5 text-2xs font-medium uppercase tracking-widest rounded-full transition ${
-                      categoryFilter === cat ? 'bg-orange text-white' : 'bg-linen text-ink/60 hover:bg-sand'
+                      categoryFilter === cat ? 'bg-ink text-white' : 'bg-linen text-ink/60 hover:bg-sand'
                     }`}
                   >
                     {cat}
@@ -111,12 +111,12 @@ export const VirtualDesignPage = () => {
                 ))}
               </div>
             )}
+            <span className="text-2xs text-ink/50">{filtered.length} projects</span>
           </div>
         </div>
       </div>
 
-      {/* Grid - Project Showcases */}
-      <div className="section-pad bg-cream pt-12">
+      <div className="section-pad pt-12">
         <div className="container-wide px-6 md:px-12 lg:px-20">
           {loading && (
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -142,14 +142,14 @@ export const VirtualDesignPage = () => {
 
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((item, i) => (
-              <motion.article
+              <motion.div
                 key={item._id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.07, duration: 0.6 }}
                 className="group"
               >
-                <div className="relative overflow-hidden bg-linen aspect-[4/3] rounded-2xl shadow-card">
+                <div className="relative overflow-hidden bg-linen aspect-[4/3] rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
                   <video
                     src={item.videoUrl}
                     className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
@@ -166,7 +166,7 @@ export const VirtualDesignPage = () => {
                     className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center bg-white/90 text-ink rounded-full opacity-0 transition-all duration-300 group-hover:opacity-100 hover:bg-white"
                     aria-label="Full screen"
                   >
-                    <Maximize2 size={15} strokeWidth={1.5} />
+                    <Maximize2 size={18} strokeWidth={1.5} />
                   </button>
                 </div>
                 <div className="pt-5">
@@ -174,38 +174,25 @@ export const VirtualDesignPage = () => {
                   {item.description && (
                     <p className="mt-2 text-sm leading-relaxed text-ink/50 line-clamp-2">{item.description}</p>
                   )}
+                  {item.category && (
+                    <p className="mt-2 text-2xs font-medium uppercase tracking-widest text-orange">{item.category}</p>
+                  )}
                   {item.services?.length > 0 && (
-                    <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="mt-3 flex flex-wrap gap-2">
                       {item.services.map((s, idx) => (
-                        <span key={idx} className="border border-sand px-3 py-1 text-2xs font-medium uppercase tracking-widest text-ink/50 rounded-full">
+                        <span key={idx} className="border border-sand px-3 py-1 text-2xs font-medium uppercase tracking-widest text-ink/55 rounded-full">
                           {s.title}
                         </span>
                       ))}
                     </div>
                   )}
-                  {item.tags?.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {item.tags.map((tag, idx) => (
-                        <span key={idx} className="text-2xs text-ink/40">#{tag}</span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="mt-5 flex gap-3">
-                    <button
-                      onClick={() => setFullscreen(item)}
-                      className="btn-outline py-2.5 px-6 text-2xs flex-1"
-                    >
-                      Watch Video
-                    </button>
-                  </div>
                 </div>
-              </motion.article>
+              </motion.div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Fullscreen modal */}
       <AnimatePresence>
         {fullscreen && (
           <motion.div
@@ -213,6 +200,7 @@ export const VirtualDesignPage = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-ink"
+            onClick={() => setFullscreen(null)}
           >
             <button
               onClick={() => setFullscreen(null)}
@@ -232,8 +220,7 @@ export const VirtualDesignPage = () => {
                 {fullscreen.description && (
                   <p className="mt-2 text-sm text-ink/60">{fullscreen.description}</p>
                 )}
-                
-                {/* Before/After Gallery */}
+
                 {fullscreen.beforeAfterImages?.length > 0 && (
                   <div className="mt-6">
                     <p className="text-2xs font-medium uppercase tracking-widest text-orange mb-4">Before & After Gallery</p>
@@ -249,7 +236,7 @@ export const VirtualDesignPage = () => {
                     </div>
                   </div>
                 )}
-                
+
                 {fullscreen.services?.length > 0 && (
                   <div className="mt-6">
                     <p className="text-2xs font-medium uppercase tracking-widest text-orange mb-3">Services Included</p>

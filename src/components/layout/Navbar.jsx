@@ -1,14 +1,16 @@
-import { Heart, Menu, MessageCircle, ShoppingBag, User, X, ChevronDown } from 'lucide-react'
+import { Heart, Menu, MessageCircle, ShoppingBag, User, X, ChevronDown, Globe } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useShop } from '../../context/ShopContext'
+import { useCurrency } from '../../context/CurrencyContext'
 
-const NAV_ITEMS = [
+const FULL_NAV_ITEMS = [
+  { to: '/', label: 'Home' },
   { to: '/shop', label: 'Shop' },
-  { to: '/portfolio', label: 'Portfolio' },
   { to: '/virtual-interior-design', label: 'Virtual Interior Design' },
+  { to: '/projects', label: 'Projects' },
   { to: '/about', label: 'About' },
 ]
 
@@ -18,6 +20,7 @@ export const Navbar = () => {
   const [scrolled, setScrolled] = useState(false)
   const { user, logout } = useAuth()
   const { wishlist, cart } = useShop()
+  const { currency, currencies, changeCurrency } = useCurrency()
   const location = useLocation()
 
   // Close mobile menu and profile dropdown on route change
@@ -48,6 +51,8 @@ export const Navbar = () => {
     return () => document.removeEventListener('mousedown', handler)
   }, [profileOpen])
 
+  const visibleNavItems = location.pathname === '/' ? FULL_NAV_ITEMS.filter((item) => item.to !== '/') : FULL_NAV_ITEMS
+
   return (
     <header
       className={`fixed left-0 right-0 top-0 z-50 transition-all duration-500 ${
@@ -68,12 +73,12 @@ export const Navbar = () => {
 
         {/* Desktop Nav */}
         <nav className="hidden items-center gap-8 md:flex lg:gap-10">
-          {NAV_ITEMS.map((item) => (
+          {visibleNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               className={({ isActive }) =>
-                `relative text-2xs font-medium uppercase tracking-widest transition-colors duration-200 after:absolute after:-bottom-0.5 after:left-0 after:h-px after:bg-ink after:transition-all after:duration-300 ${
+                `relative text-2xs font-medium uppercase tracking-widest transition-colors duration-200 after:absolute after:-bottom-0.5 after:left-0 after:h-px after:bg-ink after:transition-all after:duration-300 hover:scale-105 transform-gpu ${
                   isActive
                     ? 'text-ink after:w-full'
                     : 'text-ink/50 hover:text-ink after:w-0 hover:after:w-full'
@@ -119,6 +124,22 @@ export const Navbar = () => {
           <Link to="/chat" className="p-2.5 text-ink/55 transition-colors hover:text-ink" aria-label="Chat">
             <MessageCircle size={17} strokeWidth={1.5} />
           </Link>
+
+          {/* Currency Switcher */}
+          <div className="relative ml-1" data-currency-menu>
+            <button
+              className="flex items-center gap-1 p-2.5 text-ink/55 transition-colors hover:text-ink"
+              aria-label="Switch currency"
+              onClick={() => {
+                const next = currencies[(currencies.findIndex((c) => c.code === currency) + 1) % currencies.length]
+                changeCurrency(next.code)
+              }}
+              title="Switch currency"
+            >
+              <Globe size={17} strokeWidth={1.5} />
+              <span className="text-2xs font-medium">{currency}</span>
+            </button>
+          </div>
 
           {/* Profile */}
           <div className="relative ml-1" data-profile-menu>
@@ -221,20 +242,20 @@ export const Navbar = () => {
             transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
             className="overflow-hidden border-t border-sand bg-cream md:hidden"
           >
-            <nav className="flex flex-col px-6 py-6">
-              {NAV_ITEMS.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    `border-b border-sand/60 py-4 text-sm font-medium uppercase tracking-widest transition-colors ${
-                      isActive ? 'text-ink' : 'text-ink/50 hover:text-ink'
-                    }`
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              ))}
+<nav className="flex flex-col px-6 py-6">
+               {visibleNavItems.map((item) => (
+                 <NavLink
+                   key={item.to}
+                   to={item.to}
+                   className={({ isActive }) =>
+                     `border-b border-sand/60 py-4 text-sm font-medium uppercase tracking-widest transition-all duration-200 hover:translate-x-1 ${
+                       isActive ? 'text-ink' : 'text-ink/50 hover:text-ink'
+                     }`
+                   }
+                 >
+                   {item.label}
+                 </NavLink>
+               ))}
               <Link to="/chat" className="border-b border-sand/60 py-4 text-sm font-medium uppercase tracking-widest text-ink/50 hover:text-ink transition-colors">
                 Chat
               </Link>

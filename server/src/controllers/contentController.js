@@ -167,12 +167,22 @@ export const upsertAbout = asyncHandler(async (req, res) => {
 })
 
 export const homepageFeed = asyncHandler(async (req, res) => {
-  const [projects, portfolio, about, virtualDesign] = await Promise.all([
+  const [projects, portfolio, about] = await Promise.all([
     Project.find({ isPublished: true }).sort({ order: 1, createdAt: -1 }).limit(6),
     Portfolio.find({ isPublished: true }).sort({ order: 1, createdAt: -1 }).limit(12),
     About.findOne({}).sort({ createdAt: -1 }),
-    VirtualDesign.find({ isPublished: true }).sort({ createdAt: -1 }).limit(4),
   ])
 
-  res.json({ projects, portfolio, about, virtualDesign })
+  const heroVideo = projects?.[0]?.videoUrl ? {
+    url: projects[0].videoUrl,
+    title: projects[0].title,
+    description: projects[0].description,
+  } : null
+
+  res.json({ heroVideo, portfolio, about })
+})
+
+export const getAnalytics = asyncHandler(async (req, res) => {
+  const analytics = await Analytics.find({}).sort({ date: 1 })
+  res.json(analytics)
 })

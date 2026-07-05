@@ -1,10 +1,13 @@
 import { Heart, ShoppingBag, Eye } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { useShop } from '../../context/ShopContext'
+import { useCurrency } from '../../context/CurrencyContext'
 
 export const ProductCard = ({ product, onQuickView }) => {
   const { addToCart, toggleWishlist, wishlist } = useShop()
-  const primaryImage = product.images?.[0]?.url || 'https://images.unsplash.com/photo-1484101403633-562f891dc89a?auto=format&fit=crop&w=900&q=80'
+  const { formatPrice } = useCurrency()
+  const primaryImage = product.images?.[0]?.url || 'https://images.unsplash.com/photo-1484101403633-86297.jpg'
   const salePercent = product.discountPrice
     ? Math.round(((product.price - product.discountPrice) / product.price) * 100)
     : null
@@ -12,9 +15,12 @@ export const ProductCard = ({ product, onQuickView }) => {
   const price = product.discountPrice || product.price
 
   return (
-    <article className="group">
-      {/* Image */}
-      <div className="relative overflow-hidden bg-linen aspect-[3/4] rounded-2xl shadow-card">
+    <motion.article
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.3 }}
+      className="group relative overflow-hidden rounded-2xl bg-white shadow-lg hover:shadow-xl"
+    >
+      <div className="relative aspect-[3/4] overflow-hidden bg-linen">
         <img
           src={primaryImage}
           alt={product.name}
@@ -22,25 +28,23 @@ export const ProductCard = ({ product, onQuickView }) => {
           loading="lazy"
         />
 
-        {/* Badges */}
         <div className="absolute left-3 top-3 flex flex-col gap-1.5">
           {salePercent && (
-            <span className="bg-orange px-2.5 py-1 text-2xs font-medium uppercase tracking-wide text-white">
+            <span className="bg-orange px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-white rounded-full">
               −{salePercent}%
             </span>
           )}
           {product.stock === 0 && (
-            <span className="bg-charcoal px-2.5 py-1 text-2xs font-medium uppercase tracking-wide text-white">
+            <span className="bg-ink px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-white rounded-full">
               Sold Out
             </span>
           )}
         </div>
 
-        {/* Hover actions */}
         <div className="absolute right-3 top-3 flex flex-col gap-2 translate-x-10 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100">
           <button
             onClick={() => toggleWishlist(product)}
-            className={`flex h-9 w-9 items-center justify-center bg-white rounded-full shadow-lg transition hover:bg-linen ${isWishlisted ? 'text-orange' : 'text-ink/50'}`}
+            className={`flex h-9 w-9 items-center justify-center bg-white rounded-full shadow-md transition hover:bg-linen ${isWishlisted ? 'text-orange' : 'text-ink/50'}`}
             aria-label="Add to wishlist"
           >
             <Heart size={15} strokeWidth={1.5} fill={isWishlisted ? 'currentColor' : 'none'} />
@@ -48,39 +52,46 @@ export const ProductCard = ({ product, onQuickView }) => {
           <button
             onClick={() => addToCart(product, 1)}
             disabled={product.stock === 0}
-            className="flex h-9 w-9 items-center justify-center bg-white rounded-full shadow-lg text-ink/50 transition hover:bg-linen disabled:opacity-40"
+            className="flex h-9 w-9 items-center justify-center bg-white rounded-full shadow-md text-ink/50 transition hover:bg-linen disabled:opacity-40"
             aria-label="Add to cart"
           >
             <ShoppingBag size={15} strokeWidth={1.5} />
           </button>
           <button
             onClick={() => onQuickView?.(product)}
-            className="flex h-9 w-9 items-center justify-center bg-white rounded-full shadow-lg text-ink/50 transition hover:bg-linen"
+            className="flex h-9 w-9 items-center justify-center bg-white rounded-full shadow-md text-ink/50 transition hover:bg-linen"
             aria-label="Quick view"
           >
             <Eye size={15} strokeWidth={1.5} />
           </button>
         </div>
 
-        {/* Quick view overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        <div className="absolute inset-0 bg-ink/0 transition-all duration-500 group-hover:bg-ink/20" />
+
+        <Link
+          to={`/shop/${product._id}`}
+          className="absolute inset-0 flex items-center justify-center bg-ink/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        >
+          <span className="rounded-full bg-white px-6 py-2.5 text-xs font-medium uppercase tracking-wider text-ink">
+            View Product
+          </span>
+        </Link>
       </div>
 
-      {/* Info */}
-      <div className="pt-4">
-        <p className="text-2xs font-medium uppercase tracking-widest text-ink/40">{product.category}</p>
-        <h3 className="mt-1 font-display text-xl font-medium leading-snug text-ink">
+      <div className="p-5">
+        <p className="text-2xs font-medium uppercase tracking-widest text-orange">{product.category}</p>
+        <h3 className="mt-2 font-display text-xl font-medium leading-snug text-ink">
           <Link to={`/shop/${product._id}`} className="hover:text-orange transition-colors">
             {product.name}
           </Link>
         </h3>
-        <div className="mt-2 flex items-center gap-3">
-          <span className="text-sm font-medium text-ink">${price.toLocaleString()}</span>
+        <div className="mt-3 flex items-baseline gap-2">
+          <span className="font-medium text-ink">{formatPrice(price)}</span>
           {product.discountPrice && (
-            <span className="text-sm text-ink/35 line-through">${product.price.toLocaleString()}</span>
+            <span className="text-sm text-ink/35 line-through">{formatPrice(product.price)}</span>
           )}
         </div>
       </div>
-    </article>
+    </motion.article>
   )
 }

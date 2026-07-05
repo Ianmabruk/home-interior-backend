@@ -100,6 +100,7 @@ export const projectsSeed = [
   {
     title: 'Belgravia Townhouse',
     description: 'A layered neutral renovation balancing contemporary flow and artisanal detail.',
+    category: 'Residential',
     media: [
       {
         type: 'video',
@@ -121,6 +122,7 @@ export const projectsSeed = [
   {
     title: 'Monarch Penthouse',
     description: 'Soft monochrome interiors with sculptural lighting and gallery-worthy composition.',
+    category: 'Residential',
     media: [
       {
         type: 'video',
@@ -177,7 +179,7 @@ export const aboutSeed = {
     'To transform every home into a sanctuary through intentional design and architectural clarity.',
   vision:
     'To become the most trusted digital-first premium interior design platform globally.',
-  location: '48 Design Row, New York, NY',
+  location: 'Nairobi, Kenya',
   contactEmail: 'info@hokinterior.com',
   aboutImageUrl:
     'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=1400&q=80',
@@ -190,33 +192,7 @@ export const aboutSeed = {
   },
 }
 
-export const virtualDesignSeed = [
-  {
-    title: 'Full Room Virtual Design',
-    description: 'End-to-end room concepting, sourcing and final styling guide delivered remotely.',
-    videoUrl: 'https://cdn.coverr.co/videos/coverr-modern-living-room-1577/1080p.mp4',
-    videoPublicId: 'seed/virtual-full-room',
-    category: 'Living Room',
-    tags: ['virtual', 'design', 'interior'],
-    services: [
-      { title: 'Concept Board', description: 'Material, color and layout direction.' },
-      { title: 'Shopping List', description: 'Curated linked product list.' },
-    ],
-    beforeAfterImages: [
-      {
-        url: 'https://images.unsplash.com/photo-1484101403633-562f891dc89a?auto=format&fit=crop&w=1200&q=80',
-        publicId: 'seed/virtual-before',
-        label: 'Before',
-      },
-      {
-        url: 'https://images.unsplash.com/photo-1556912172-45b7abe8b7e1?auto=format&fit=crop&w=1200&q=80',
-        publicId: 'seed/virtual-after',
-        label: 'After',
-      },
-    ],
-    isPublished: true,
-  },
-]
+export const virtualDesignSeed = []
 
 export const analyticsSeed = [
   { date: new Date('2026-01-01'), visits: 1240, revenue: 18300, orders: 21, newUsers: 55 },

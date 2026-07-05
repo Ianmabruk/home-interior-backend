@@ -7,6 +7,7 @@ import {
   projectsController,
   upsertAbout,
   virtualDesignController,
+  getAnalytics,
 } from '../controllers/contentController.js'
 import { auth, authorize } from '../middleware/auth.js'
 
@@ -14,6 +15,7 @@ const router = Router()
 const upload = multer({ storage: multer.memoryStorage() })
 
 router.get('/homepage', homepageFeed)
+router.get('/analytics', getAnalytics)
 
 router.get('/projects', projectsController.list)
 router.post('/projects', auth, authorize('admin'), upload.single('media'), projectsController.create)

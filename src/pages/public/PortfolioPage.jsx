@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
-import { X, ArrowRight } from 'lucide-react'
+import { X, ArrowRight, GitCompare } from 'lucide-react'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
 
@@ -13,6 +13,7 @@ export const PortfolioPage = () => {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
   const [page, setPage] = useState(1)
+  const [beforeAfterView, setBeforeAfterView] = useState(false)
 
   const loadPortfolio = () => {
     api.get('/content/portfolio')
@@ -23,7 +24,6 @@ export const PortfolioPage = () => {
 
   useEffect(() => { loadPortfolio() }, [])
 
-  // Listen for admin changes
   useEffect(() => {
     const handler = (event) => {
       const payload = getAdminDataChangedPayload(event)
@@ -56,6 +56,8 @@ export const PortfolioPage = () => {
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  const toggleBeforeAfter = () => setBeforeAfterView((v) => !v)
 
   return (
     <div>
@@ -128,13 +130,13 @@ export const PortfolioPage = () => {
 
           <div className="columns-1 gap-4 sm:columns-2 lg:columns-3">
             {paginated.map((item, index) => (
-              <motion.button
+              <motion.figure
                 key={item._id}
                 onClick={() => setSelected(item)}
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.04, duration: 0.5 }}
-                className="group mb-4 w-full overflow-hidden bg-linen text-left"
+                className="group mb-4 w-full overflow-hidden bg-linen text-left cursor-pointer"
               >
                 <div className="relative overflow-hidden">
                   <img
@@ -144,6 +146,11 @@ export const PortfolioPage = () => {
                     loading="lazy"
                   />
                   <div className="absolute inset-0 bg-ink/0 transition-all duration-500 group-hover:bg-ink/25" />
+                  {item.beforeAfterImages?.length > 0 && (
+                    <span className="absolute right-3 top-3 bg-orange/90 px-3 py-1 text-2xs font-medium uppercase tracking-widest text-white rounded-full">
+                      Before/After
+                    </span>
+                  )}
                   <div className="absolute inset-0 flex items-end p-5 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                     <div>
                       <p className="font-display text-2xl font-medium text-white">{item.title}</p>
@@ -151,11 +158,7 @@ export const PortfolioPage = () => {
                     </div>
                   </div>
                 </div>
-                <div className="p-4 md:hidden">
-                  <p className="font-display text-xl font-medium">{item.title}</p>
-                  {item.category && <p className="text-2xs font-medium uppercase tracking-widest text-warm">{item.category}</p>}
-                </div>
-              </motion.button>
+              </motion.figure>
             ))}
           </div>
 
@@ -192,7 +195,7 @@ export const PortfolioPage = () => {
         </div>
       </div>
 
-      {/* Lightbox */}
+      {/* Lightbox with Before/After */}
       <AnimatePresence>
         {selected && (
           <motion.div
@@ -200,7 +203,7 @@ export const PortfolioPage = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-ink/90 p-4 md:p-8"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-ink/95 p-4 md:p-8"
             onClick={() => setSelected(null)}
           >
             <motion.div
@@ -208,25 +211,63 @@ export const PortfolioPage = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.96, opacity: 0 }}
               transition={{ duration: 0.25 }}
-              className="relative max-h-[90vh] max-w-4xl w-full overflow-hidden bg-white"
+              className="relative max-h-[90vh] max-w-5xl w-full overflow-hidden bg-white rounded-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={() => setSelected(null)}
-                className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center bg-white/90 text-ink transition hover:bg-white"
+                className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center bg-white/90 text-ink transition hover:bg-white rounded-full"
                 aria-label="Close"
               >
-                <X size={16} strokeWidth={1.5} />
+                <X size={18} strokeWidth={1.5} />
               </button>
-              <img
-                src={selected.imageUrl}
-                alt={selected.title}
-                className="max-h-[72vh] w-full object-contain"
-              />
-              <div className="flex items-center justify-between p-6">
+
+              {selected.beforeAfterImages?.length > 0 && (
+                <button
+                  onClick={toggleBeforeAfter}
+                  className="absolute left-4 top-4 z-10 flex items-center gap-2 bg-orange text-white px-3 py-1.5 text-2xs font-medium uppercase tracking-widest rounded-full"
+                >
+                  <GitCompare size={12} />
+                  {beforeAfterView ? 'View Image' : 'Compare Before/After'}
+                </button>
+              )}
+
+              <div className="max-h-[70vh] overflow-y-auto p-6">
+                {beforeAfterView && selected.beforeAfterImages?.length > 0 ? (
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <div>
+                      <p className="text-2xs font-medium uppercase tracking-widest text-orange mb-3">Before</p>
+                      <img src={selected.beforeAfterImages[0]?.url} alt="Before" className="w-full object-contain rounded-lg" />
+                    </div>
+                    <div>
+                      <p className="text-2xs font-medium uppercase tracking-widest text-orange mb-3">After</p>
+                      <img src={selected.imageUrl} alt="After" className="w-full object-contain rounded-lg" />
+                    </div>
+                  </div>
+                ) : (
+                  <img
+                    src={selected.imageUrl}
+                    alt={selected.title}
+                    className="max-h-[60vh] w-full object-contain rounded-lg"
+                  />
+                )}
+
+                {selected.beforeAfterImages?.length > 2 && (
+                  <div className="mt-6">
+                    <p className="text-2xs font-medium uppercase tracking-widest text-orange mb-3">Gallery</p>
+                    <div className="grid grid-cols-4 gap-3">
+                      {selected.beforeAfterImages.map((img, idx) => (
+                        <img key={idx} src={img.url} alt={img.label || `View ${idx + 1}`} className="w-full object-cover aspect-[4/3] rounded" />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between p-6 border-t border-sand">
                 <div>
                   <h2 className="font-display text-3xl font-medium">{selected.title}</h2>
-                  {selected.category && <p className="text-2xs font-medium uppercase tracking-widest text-warm">{selected.category}</p>}
+                  {selected.category && <p className="text-2xs font-medium uppercase tracking-widest text-orange mt-1">{selected.category}</p>}
                 </div>
                 <button onClick={() => setSelected(null)} className="btn-ghost text-ink/40">
                   Close <ArrowRight size={13} strokeWidth={1.5} />
