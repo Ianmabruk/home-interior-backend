@@ -12,6 +12,12 @@ const TikTokIcon = ({ size, strokeWidth }) => (
   </svg>
 )
 
+const PinterestIcon = ({ size, strokeWidth }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" strokeWidth={strokeWidth}>
+    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.13 9.81 7.54 11.41-.11-.9-.03-2.26.2-3.37-.23-.55-.53-2.26.25-3.38 0 0 1.68-.9 5.83-1.09 2.03-.11 4-.29 4-.29s.57 2.26.69 3.89c.02.49.04.98.04 1.47 0 1.69-.18 3.36-.5 4.23C18.97 23.12 24 18.62 24 12c0-6.63-5.37-12-12-12z" />
+  </svg>
+)
+
 const SOCIAL_LINKS = [
   {
     key: 'tiktok',
@@ -30,6 +36,12 @@ const SOCIAL_LINKS = [
     Icon: Facebook,
     label: 'Facebook',
     url: 'https://www.facebook.com/share/14i3V8Sw7uo/?mibextid=wwXIfr',
+  },
+  {
+    key: 'pinterest',
+    Icon: PinterestIcon,
+    label: 'Pinterest',
+    url: 'https://www.pinterest.com/hokinterior',
   },
 ]
 
