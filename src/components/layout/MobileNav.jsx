@@ -39,8 +39,8 @@ export const MobileNav = () => {
   return (
     <>
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-md border-t border-white/10 md:hidden">
-        <div className="flex items-center justify-around px-2 py-3">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-md border-t border-white/10 md:hidden safe-area-bottom">
+        <div className="flex items-center justify-around px-2 py-3 pb-safe">
           {navItems.map((item) => {
             const Icon = item.icon
             const active = isActive(item.to, item.exact)
@@ -119,40 +119,48 @@ export const MobileNav = () => {
                   })}
                 </div>
 
-<div className="mt-8 space-y-2 border-t border-white/10 pt-5">
-                   <Link
-                     to="/portfolio"
-                     onClick={() => setDrawerOpen(false)}
-                     className="flex items-center gap-3 px-4 py-3 text-sm text-white/70 transition hover:bg-white/5 hover:text-orange rounded-lg"
-                   >
-                     <span className="text-orange">📁</span>
-                     Portfolio
-                   </Link>
-                   <Link
-                     to="/virtual-interior-design"
-                     onClick={() => setDrawerOpen(false)}
-                     className="flex items-center gap-3 px-4 py-3 text-sm text-white/70 transition hover:bg-white/5 hover:text-orange rounded-lg"
-                   >
-                     <span className="text-orange">✨</span>
-                     Virtual Interior
-                   </Link>
-                   <Link
-                     to="/about"
-                     onClick={() => setDrawerOpen(false)}
-                     className="flex items-center gap-3 px-4 py-3 text-sm text-white/70 transition hover:bg-white/5 hover:text-orange rounded-lg"
-                   >
-                     <span className="text-orange">ℹ</span>
-                     About Us
-                   </Link>
-                   <Link
-                     to="/chat"
-                     onClick={() => setDrawerOpen(false)}
-                     className="flex items-center gap-3 px-4 py-3 text-sm text-white/70 transition hover:bg-white/5 hover:text-orange rounded-lg"
-                   >
-                     <span className="text-orange">💬</span>
-                     Chat Support
-                   </Link>
-                 </div>
+                <div className="mt-6 sm:mt-8 space-y-2 border-t border-white/10 pt-5">
+                  <Link
+                    to="/portfolio"
+                    onClick={() => setDrawerOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-white/70 transition hover:bg-white/5 hover:text-orange rounded-lg"
+                  >
+                    <span className="text-orange">📁</span>
+                    Portfolio
+                  </Link>
+                  <Link
+                    to="/virtual-interior-design"
+                    onClick={() => setDrawerOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-white/70 transition hover:bg-white/5 hover:text-orange rounded-lg"
+                  >
+                    <span className="text-orange">✨</span>
+                    Virtual Interior
+                  </Link>
+                  <Link
+                    to="/projects"
+                    onClick={() => setDrawerOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-white/70 transition hover:bg-white/5 hover:text-orange rounded-lg"
+                  >
+                    <span className="text-orange">🎬</span>
+                    Projects
+                  </Link>
+                  <Link
+                    to="/about"
+                    onClick={() => setDrawerOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-white/70 transition hover:bg-white/5 hover:text-orange rounded-lg"
+                  >
+                    <span className="text-orange">ℹ</span>
+                    About Us
+                  </Link>
+                  <Link
+                    to="/chat"
+                    onClick={() => setDrawerOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-white/70 transition hover:bg-white/5 hover:text-orange rounded-lg"
+                  >
+                    <span className="text-orange">💬</span>
+                    Chat Support
+                  </Link>
+                </div>
               </div>
             </motion.div>
           </>
