@@ -23,26 +23,26 @@ export const NewsletterForm = () => {
 
   return (
     <form onSubmit={submit}>
-      <div className="flex items-end gap-3 border-b border-ink/25 pb-1">
+      <div className="flex items-end gap-3 border-b border-white/25 pb-1">
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           type="email"
           required
           placeholder="Your email address"
-          className="flex-1 bg-transparent py-2 text-sm text-ink placeholder:text-ink/35 outline-none"
+          className="flex-1 bg-transparent py-2 text-sm text-white placeholder:text-white/35 outline-none"
         />
         <button
           type="submit"
           disabled={loading}
-          className="flex-shrink-0 pb-2 text-orange transition-colors hover:text-ink disabled:opacity-40"
+          className="flex-shrink-0 pb-2 text-orange transition-colors hover:text-orange disabled:opacity-40"
           aria-label="Subscribe"
         >
           <ArrowRight size={18} strokeWidth={1.5} />
         </button>
       </div>
       {status.message && (
-        <p className={`mt-2 text-xs ${status.type === 'success' ? 'text-emerald-600' : 'text-red-600'}`}>
+        <p className={`mt-2 text-xs ${status.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
           {status.message}
         </p>
       )}

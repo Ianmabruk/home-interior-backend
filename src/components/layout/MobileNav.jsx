@@ -14,16 +14,16 @@ const navItems = [
 ]
 
 const categoryIcons = {
-  'Living Room': ShoppingBag,
-  Kitchen: () => <span className="text-sm">🍳</span>,
-  Bedroom: () => <span className="text-sm">🛏</span>,
-  Dining: () => <span className="text-sm">🍽</span>,
-  Outdoor: () => <span className="text-sm">🌿</span>,
-  Commercial: () => <span className="text-sm">🏢</span>,
-  Decor: Grid3X3,
-  Lighting: () => <span className="text-sm">💡</span>,
-  Office: () => <span className="text-sm">💼</span>,
-  'Custom Designs': () => <span className="text-sm">✨</span>,
+  'Living Room': { icon: ShoppingBag, emoji: false },
+  Kitchen: { icon: '🍳', emoji: true },
+  Bedroom: { icon: '🛏', emoji: true },
+  Dining: { icon: '🍽', emoji: true },
+  Outdoor: { icon: '🌿', emoji: true },
+  Commercial: { icon: '🏢', emoji: true },
+  Decor: { icon: Grid3X3, emoji: false },
+  Lighting: { icon: '💡', emoji: true },
+  Office: { icon: '💼', emoji: true },
+  'Custom Designs': { icon: '✨', emoji: true },
 }
 
 export const MobileNav = () => {
@@ -102,7 +102,7 @@ export const MobileNav = () => {
               <div className="p-5">
                 <div className="space-y-2">
                   {SHOP_CATEGORIES.map((cat) => {
-                    const IconComp = categoryIcons[cat] || Menu
+                    const icon = categoryIcons[cat]
                     return (
                       <Link
                         key={cat}
@@ -110,8 +110,8 @@ export const MobileNav = () => {
                         onClick={() => setDrawerOpen(false)}
                         className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 transition hover:bg-white/10 hover:text-orange rounded-xl"
                       >
-                        <span className="text-orange">
-                          <IconComp size={18} />
+                        <span className="text-orange w-5 h-5 flex items-center justify-center">
+                          {icon?.emoji ? <span className="text-sm">{icon.icon}</span> : (icon && <icon.icon size={18} />)}
                         </span>
                         {cat}
                       </Link>

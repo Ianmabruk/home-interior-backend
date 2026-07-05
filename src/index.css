@@ -70,8 +70,15 @@
   }
 
   .skeleton {
-    @apply animate-pulse bg-gradient-to-r from-linen via-sand/40 to-linen bg-[length:200%_100%];
+    background: #E5E7EB;
+    background: linear-gradient(90deg, #E5E7EB 25%, #D1D5DB 50%, #E5E7EB 75%);
+    background-size: 200% 100%;
     animation: shimmer 1.8s infinite linear;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
   }
 }
 

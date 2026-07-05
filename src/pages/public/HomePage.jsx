@@ -46,8 +46,8 @@ export const HomePage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen">
-        <div className="skeleton min-h-[560px] sm:min-h-[600px] w-full" />
+      <div className="min-h-screen bg-linen">
+        <div className="skeleton h-[560px] sm:h-[600px] w-full" />
         <div className="section-pad container-wide">
           <div className="skeleton h-64 rounded-2xl sm:h-80" />
         </div>
@@ -56,7 +56,7 @@ export const HomePage = () => {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-cream">
       {/* ══════════════════════════════════════════
           SECTION 1 — HERO SHOWCASE VIDEO
           Cinematic full-width video showcase

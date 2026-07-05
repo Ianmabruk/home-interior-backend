@@ -3,12 +3,12 @@ import { useEffect, useState } from 'react'
 import { SHOP_CATEGORIES } from '../../utils/constants'
 import { NewsletterForm } from '../common/NewsletterForm'
 import { api } from '../../services/api'
-import { Instagram, TikTok, Facebook } from 'lucide-react'
+import { Instagram, Facebook } from 'lucide-react'
 
 const SOCIAL_LINKS = [
   {
     key: 'tiktok',
-    Icon: TikTok,
+    Icon: () => <span className="text-sm">🎵</span>,
     label: 'TikTok',
     url: 'https://www.tiktok.com/@esther.k.musa?_r=1&_t=ZS-97myTEWJqDZ',
   },
