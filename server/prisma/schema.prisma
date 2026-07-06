@@ -71,7 +71,7 @@ model Product {
   vendor        String?  @default("")
   stock         Int
   sku           String   @unique
-  tags          Json     @default([])
+  tags          Json
   isFeatured    Boolean? @default(false) @map("is_featured")
   isPublished   Boolean? @default(true) @map("is_published")
   createdAt    DateTime @default(now()) @map("created_at")
