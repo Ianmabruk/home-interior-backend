@@ -173,6 +173,7 @@ export const HomePage = () => {
           SECTION 3 — ABOUT PARALLAX
       ══════════════════════════════════════════ */}
       <section className="relative bg-linen">
+        {feed.about ? (
           <div className="flex items-center justify-center py-16 sm:py-20 md:py-24">
             <div className="container-wide px-6 md:px-12 lg:px-20">
               <div className="grid items-center gap-10 sm:gap-12 md:grid-cols-2 md:gap-16">
@@ -226,7 +227,28 @@ export const HomePage = () => {
               </Link>
             </div>
           </div>
-        </section>
+        ) : (
+          <div className="flex items-center justify-center py-16 sm:py-20 md:py-24">
+            <div className="container-wide px-6 text-center md:px-12 lg:px-20">
+              <p className="eyebrow mb-4">Our Philosophy</p>
+              <h2 className="font-display text-3xl font-medium leading-tight text-ink sm:text-4xl md:text-4xl lg:text-5xl">
+                Crafting Excellence
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-ink/55 sm:text-base sm:mt-4">
+                Every space tells a story. We transform visions into reality with meticulous attention to detail.
+              </p>
+              <div className="mt-5 border-l-4 border-orange pl-5 sm:mt-6 inline-block text-left">
+                <p className="text-sm leading-relaxed text-ink/70 sm:text-base">About content has not been configured yet.</p>
+              </div>
+              <div className="mt-8">
+                <Link to="/about" className="btn-primary">
+                  Learn More <ArrowRight size={14} strokeWidth={1.5} />
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
     </div>
   )
 }
