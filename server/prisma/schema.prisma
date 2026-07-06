@@ -1,0 +1,203 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String    @id @default(uuid()) @map("_id")
+  fullName            String    @map("full_name")
+  email               String    @unique
+  passwordHash        String    @map("password_hash")
+  role                String    @default("user")
+  avatarUrl           String?   @map("avatar_url")
+  phone               String?
+  refreshToken        String?   @map("refresh_token")
+  passwordResetToken  String?   @map("password_reset_token")
+  passwordResetExpires DateTime? @map("password_reset_expires")
+  isActive            Boolean?  @default(true) @map("is_active")
+  cart                Json?
+  addresses           Json?
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  wishlist            Wishlist?
+  orders              Order[]
+  sentMessages        Message[] @relation("MessageSender")
+
+  @@map("users")
+}
+
+model Wishlist {
+  id        String   @id @default(uuid()) @map("_id")
+  userId    String   @unique @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products  Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("wishlists")
+}
+
+model Order {
+  id              String    @id @default(uuid()) @map("_id")
+  userId          String    @map("user_id")
+  user            User      @relation(fields: [userId], references: [id])
+  items           Json
+  subtotal        Float
+  shippingFee     Float     @default(0) @map("shipping_fee")
+  total           Float
+  status          String    @default("pending")
+  paymentStatus   String    @default("pending") @map("payment_status")
+  shippingAddress Json?     @map("shipping_address")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("orders")
+}
+
+model Product {
+  id            String   @id @default(uuid()) @map("_id")
+  name          String
+  description   String
+  price         Float
+  discountPrice Float?   @map("discount_price")
+  images        Json
+  colorVariants Json     @map("color_variants")
+  category      String
+  vendor        String?  @default("")
+  stock         Int
+  sku           String   @unique
+  tags          Json     @default([])
+  isFeatured    Boolean? @default(false) @map("is_featured")
+  isPublished   Boolean? @default(true) @map("is_published")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("products")
+}
+
+model Project {
+  id               String    @id @default(uuid()) @map("_id")
+  title            String
+  description      String
+  category         String?
+  media            Json
+  beforeAfterImages Json?    @map("before_after_images")
+  videoUrl         String?   @map("video_url")
+  videoPublicId    String?   @map("video_public_id")
+  coverImageUrl    String?   @map("cover_image_url")
+  order            Int?      @default(0)
+  isPublished      Boolean?  @default(true) @map("is_published")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("projects")
+}
+
+model Portfolio {
+  id            String   @id @default(uuid()) @map("_id")
+  title         String
+  category      String
+  imageUrl      String?  @map("image_url")
+  imagePublicId String?  @map("image_public_id")
+  order         Int?     @default(0)
+  isPublished   Boolean? @default(true) @map("is_published")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("portfolios")
+}
+
+model About {
+  id                  String   @id @default(uuid()) @map("_id")
+  aboutImageUrl       String?  @map("about_image_url")
+  aboutImagePublicId  String?  @map("about_image_public_id")
+  story               String
+  companyDescription  String   @map("company_description")
+  mission             String
+  vision              String
+  location            String
+  contactEmail        String   @map("contact_email")
+  socials             Json
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("abouts")
+}
+
+model VirtualDesign {
+  id               String    @id @default(uuid()) @map("_id")
+  title            String
+  description      String
+  videoUrl         String?   @map("video_url")
+  videoPublicId    String?   @map("video_public_id")
+  thumbnailUrl     String?   @map("thumbnail_url")
+  services         Json
+  beforeAfterImages Json?    @map("before_after_images")
+  category         String?
+  tags             Json
+  ctaPrimary       String?   @default("Start Your Project") @map("cta_primary")
+  ctaSecondary     String?   @default("Learn More") @map("cta_secondary")
+  isPublished      Boolean?  @default(true) @map("is_published")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("virtual_designs")
+}
+
+model Settings {
+  id            String   @id @default(uuid()) @map("_id")
+  siteName      String?  @default("HOK Interior Designs") @map("site_name")
+  supportEmail  String?  @default("info@hokinterior.com") @map("support_email")
+  maintenanceMode Boolean? @default(false) @map("maintenance_mode")
+  currency      String?  @default("USD")
+  shippingPolicy String? @default("") @map("shipping_policy")
+  returnPolicy  String?  @default("") @map("return_policy")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
+
+model NewsletterSubscription {
+  id        String   @id @default(uuid()) @map("_id")
+  email     String   @unique
+  source    String?  @default("website")
+  isActive  Boolean? @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("newsletter_subscriptions")
+}
+
+model Analytics {
+  id        String   @id @default(uuid()) @map("_id")
+  date      DateTime @unique
+  visits    Int?     @default(0)
+  revenue   Int?     @default(0)
+  orders    Int?     @default(0)
+  newUsers  Int?     @default(0) @map("new_users")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("analytics")
+}
+
+model Message {
+  id        String   @id @default(uuid()) @map("_id")
+  senderId  String?  @map("sender_id")
+  sender    User?    @relation("MessageSender", fields: [senderId], references: [id])
+  name      String
+  email     String
+  subject   String
+  content   String
+  isRead    Boolean? @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("messages")
+}

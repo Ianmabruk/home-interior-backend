@@ -13,7 +13,7 @@
 - Start API: `cd server && npm run dev`
 
 ### Seed Initial Data
-- Ensure `server/.env` contains a valid `MONGO_URI`.
+- Ensure `server/.env` contains a valid `DATABASE_URL`.
 - Optional seed admin overrides:
   - `SEED_ADMIN_EMAIL=admin@hokinterior.com`
   - `SEED_ADMIN_PASSWORD=Admin123!`
@@ -38,7 +38,7 @@
 - Required environment variables (via `server/.env` or `--env-file`):
   - `NODE_ENV=production`
   - `PORT=5000`
-  - `MONGO_URI=...`
+  - `DATABASE_URL=...`
   - `JWT_ACCESS_SECRET=...`
   - `JWT_REFRESH_SECRET=...`
   - `CLOUDINARY_CLOUD_NAME=...`
@@ -56,7 +56,7 @@
   - `NODE_ENV=production`
   - `PORT=5000`
   - `CLIENT_URL=https://<your-netlify-domain>`
-  - `MONGO_URI=...`
+  - `DATABASE_URL=...`
   - `JWT_ACCESS_SECRET=...`
   - `JWT_REFRESH_SECRET=...`
   - `ACCESS_TOKEN_TTL=15m`
@@ -68,7 +68,7 @@
   - `EMAIL_FROM=info@hokinterior.com`
 
 ## 5. Production Hardening Checklist
-- Enable MongoDB IP allowlist for Render outbound IPs or allow secure access.
+- Configure Neon database access and SSL.
 - Configure domain-level CORS in `CLIENT_URL`.
 - Rotate JWT secrets and API keys before launch.
 - Set Cloudinary upload presets and moderation if required.

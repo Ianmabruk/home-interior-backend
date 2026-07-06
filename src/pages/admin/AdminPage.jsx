@@ -209,6 +209,7 @@ const fetchAll = () => {
       }
       setVirtualForm({ title: '', description: '', services: '', videoUrl: '' })
       setVirtualVideoFile(null)
+      window.dispatchEvent(new CustomEvent('admin-data-changed', { detail: { type: 'virtual-changed' } }))
       fetchAll()
       setSuccess('Virtual design saved.')
     } catch (error) { setFailure(error, 'Virtual design save failed.') }
@@ -235,7 +236,8 @@ const fetchAll = () => {
   const submitAbout = async (event) => {
     event.preventDefault()
     try {
-      await api.put('/about', aboutForm)
+      await api.put('/content/about', aboutForm)
+      window.dispatchEvent(new CustomEvent('admin-data-changed', { detail: { type: 'about-changed' } }))
       fetchAll()
       setSuccess('About content saved.')
     } catch (error) { setFailure(error, 'About save failed.') }

@@ -1,27 +1,26 @@
+import { prisma } from '../config/db.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
-import { Product } from '../models/Product.js'
-import { User } from '../models/User.js'
-import { Order } from '../models/Order.js'
-import { Analytics } from '../models/Analytics.js'
-import { Portfolio } from '../models/Portfolio.js'
-import { Project } from '../models/Project.js'
-import { Settings } from '../models/Settings.js'
+import { sendEmail, buildAdminTestEmailTemplate } from '../config/sendgrid.js'
 import { env } from '../config/env.js'
-import { buildAdminTestEmailTemplate, sendEmail } from '../config/sendgrid.js'
+
+const withId = (item) => ({ ...item, _id: item.id })
+const withIdArray = (items) => items.map((item) => withId(item))
+const sortOrdersByDate = (orders) => orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
 export const dashboardOverview = asyncHandler(async (req, res) => {
-  const [products, userCount, orders, analytics, portfolioCount, projectCount] = await Promise.all([
-    Product.find({}).sort({ createdAt: -1 }),
-    User.countDocuments(),
-    Order.find({}).sort({ createdAt: -1 }),
-    Analytics.find({}).sort({ date: 1 }),
-    Portfolio.countDocuments(),
-    Project.countDocuments(),
+  const [products, userCount, ordersRaw, analyticsRaw, portfolioCount, projectCount] = await Promise.all([
+    prisma.product.findMany(),
+    prisma.user.count(),
+    prisma.order.findMany(),
+    prisma.analytics.findMany({ orderBy: { date: 'asc' } }),
+    prisma.portfolio.count(),
+    prisma.project.count(),
   ])
 
   const productCount = products.length
-
+  const orders = sortOrdersByDate(ordersRaw)
+  const analytics = analyticsRaw
   const totalSales = orders.reduce((sum, order) => sum + order.total, 0)
   const thisMonth = new Date()
   thisMonth.setDate(1)
@@ -30,7 +29,7 @@ export const dashboardOverview = asyncHandler(async (req, res) => {
     .filter((order) => new Date(order.createdAt) >= thisMonth)
     .reduce((sum, order) => sum + order.total, 0)
 
-  const visits = analytics.reduce((sum, row) => sum + row.visits, 0)
+  const visits = analytics.reduce((sum, row) => sum + (row.visits || 0), 0)
 
   const fulfilledOrders = orders.filter((order) => order.status !== 'cancelled')
   const soldUnits = fulfilledOrders.reduce(
@@ -52,7 +51,7 @@ export const dashboardOverview = asyncHandler(async (req, res) => {
       const key = item.product?.toString() || item.name
       const current = soldByProduct.get(key) || { productId: key, name: item.name, units: 0, revenue: 0 }
       current.units += item.quantity
-      current.revenue += item.price * item.quantity
+      current.revenue += item.price
       soldByProduct.set(key, current)
     }
   }
@@ -71,7 +70,7 @@ export const dashboardOverview = asyncHandler(async (req, res) => {
     ordersCount: orders.length,
     portfolioCount,
     projectCount,
-    charts: analytics,
+    charts: withIdArray(analytics),
     soldUnits,
     stockAvailable,
     lossAmount,
@@ -82,28 +81,35 @@ export const dashboardOverview = asyncHandler(async (req, res) => {
 })
 
 export const listUsers = asyncHandler(async (req, res) => {
-  const users = await User.find({}).sort({ createdAt: -1 }).select('-passwordHash -refreshToken')
-  res.json(users)
+  const users = await prisma.user.findMany({
+    select: { id: true, fullName: true, email: true, role: true, isActive: true, createdAt: true },
+    orderBy: { createdAt: 'desc' },
+  })
+  res.json(withIdArray(users))
 })
 
 export const manageUser = asyncHandler(async (req, res) => {
   const { action } = req.params
-  const user = await User.findById(req.params.id)
+  const user = await prisma.user.findUnique({ where: { id: req.params.id } })
   if (!user) {
     throw new ApiError(404, 'User not found')
   }
 
-  if (action === 'suspend') user.isActive = false
-  else if (action === 'activate') user.isActive = true
+  if (action === 'suspend') await prisma.user.update({ where: { id: user.id }, data: { isActive: false } })
+  else if (action === 'activate') await prisma.user.update({ where: { id: user.id }, data: { isActive: true } })
   else throw new ApiError(400, 'Invalid action')
 
-  await user.save()
-  res.json({ message: `User ${action}d successfully`, user })
+  const updated = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { id: true, fullName: true, email: true, role: true, isActive: true, createdAt: true },
+  })
+  res.json({ message: `User ${action}d successfully`, user: withId(updated) })
 })
 
 export const listAllOrders = asyncHandler(async (req, res) => {
-  const orders = await Order.find({}).populate('user', 'fullName email').sort({ createdAt: -1 })
-  res.json(orders)
+  const orders = await prisma.order.findMany()
+  const sorted = sortOrdersByDate(orders)
+  res.json(withIdArray(sorted))
 })
 
 export const updateOrderStatus = asyncHandler(async (req, res) => {
@@ -111,31 +117,35 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
   if (!status) {
     throw new ApiError(400, 'Status is required')
   }
-  const order = await Order.findById(req.params.id)
+
+  const order = await prisma.order.findUnique({ where: { id: req.params.id } })
   if (!order) {
     throw new ApiError(404, 'Order not found')
   }
-  order.status = status
-  await order.save()
-  res.json(order)
+
+  const updated = await prisma.order.update({
+    where: { id: req.params.id },
+    data: { status },
+  })
+  res.json(withId(updated))
 })
 
 export const getSettings = asyncHandler(async (req, res) => {
-  const settings = await Settings.findOne({}).sort({ createdAt: -1 })
-  res.json(settings || {})
+  const settings = await prisma.settings.findFirst({ orderBy: { createdAt: 'desc' } })
+  res.json(withId(settings))
 })
 
 export const updateSettings = asyncHandler(async (req, res) => {
   const payload = { ...req.body }
-  const existing = await Settings.findOne({})
+  const existing = await prisma.settings.findFirst()
+
   if (!existing) {
-    const created = await Settings.create(payload)
-    res.status(201).json(created)
-    return
+    const created = await prisma.settings.create({ data: payload })
+    return res.status(201).json(withId(created))
   }
-  Object.assign(existing, payload)
-  await existing.save()
-  res.json(existing)
+
+  const updated = await prisma.settings.update({ where: { id: existing.id }, data: payload })
+  res.json(withId(updated))
 })
 
 export const sendAdminTestEmail = asyncHandler(async (req, res) => {

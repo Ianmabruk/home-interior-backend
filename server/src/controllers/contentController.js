@@ -1,17 +1,23 @@
 import { asyncHandler } from '../utils/asyncHandler.js'
-import { Project } from '../models/Project.js'
-import { Portfolio } from '../models/Portfolio.js'
-import { About } from '../models/About.js'
-import { VirtualDesign } from '../models/VirtualDesign.js'
-import { Product } from '../models/Product.js'
+import { prisma } from '../config/db.js'
 import { uploadToCloudinary } from '../services/uploadService.js'
+
+const withId = (item) => item ? { ...item, _id: item.id } : null
+const withIdArray = (items) => items.map((item) => withId(item))
 
 const parseMaybeJson = (value, fallback = null) => {
   if (typeof value !== 'string') return fallback
   try { return JSON.parse(value) } catch { return fallback }
 }
 
-// Upload file and return { url, publicId, kind }
+const parseServices = (value) => {
+  const parsed = parseMaybeJson(value, null)
+  if (Array.isArray(parsed)) return parsed
+  if (parsed) return parsed.split(',').map(s => ({ title: s.trim() })).filter(s => s.title)
+  if (typeof value === 'string' && value.trim()) return value.split(',').map(s => ({ title: s.trim() })).filter(s => s.title)
+  return []
+}
+
 const handleFileUpload = async (req, folder, defaultKind = 'image') => {
   if (!req.file) return null
   const kind = req.body.resourceType === 'video' ? 'video' : defaultKind
@@ -19,10 +25,16 @@ const handleFileUpload = async (req, folder, defaultKind = 'image') => {
   return { url: result.secure_url, publicId: result.public_id, kind }
 }
 
-const crudFactory = (Model) => ({
+const sortByOrderThenDate = (items) => items.sort((a, b) => {
+  const orderDiff = (a.order || 0) - (b.order || 0)
+  if (orderDiff !== 0) return orderDiff
+  return new Date(b.createdAt) - new Date(a.createdAt)
+})
+
+export const projectsController = {
   list: asyncHandler(async (req, res) => {
-    const items = await Model.find({}).sort({ order: 1, createdAt: -1 })
-    res.json(items)
+    const items = await prisma.project.findMany()
+    res.json(withIdArray(sortByOrderThenDate(items)))
   }),
 
   create: asyncHandler(async (req, res) => {
@@ -31,8 +43,8 @@ const crudFactory = (Model) => ({
     const parsedMedia = parseMaybeJson(req.body.media, null)
     if (parsedMedia) payload.media = parsedMedia
 
-    const parsedServices = parseMaybeJson(req.body.services, null)
-    if (parsedServices) payload.services = parsedServices
+    const parsedServices = parseServices(req.body.services)
+    if (parsedServices.length) payload.services = parsedServices
 
     const parsedBeforeAfter = parseMaybeJson(req.body.beforeAfterImages, null)
     if (parsedBeforeAfter) payload.beforeAfterImages = parsedBeforeAfter
@@ -40,49 +52,32 @@ const crudFactory = (Model) => ({
     const parsedTags = parseMaybeJson(req.body.tags, null)
     if (parsedTags) payload.tags = parsedTags
 
-    const upload = await handleFileUpload(req, `hok/${Model.modelName.toLowerCase()}`)
+    const upload = await handleFileUpload(req, 'hok/projects')
     if (upload) {
-      if (Model.modelName === 'Project') {
-        const mediaItem = { type: upload.kind, url: upload.url, publicId: upload.publicId }
-        payload.media = [...(Array.isArray(payload.media) ? payload.media : []), mediaItem]
-        if (upload.kind === 'video') {
-          payload.videoUrl = upload.url
-          payload.videoPublicId = upload.publicId
-        } else {
-          payload.coverImageUrl = upload.url
-        }
-      } else if (Model.modelName === 'Portfolio') {
-        payload.imageUrl = upload.url
-        payload.imagePublicId = upload.publicId
-      } else if (Model.modelName === 'VirtualDesign') {
+      const mediaItem = { type: upload.kind, url: upload.url, publicId: upload.publicId }
+      payload.media = [...(Array.isArray(payload.media) ? payload.media : []), mediaItem]
+      if (upload.kind === 'video') {
         payload.videoUrl = upload.url
         payload.videoPublicId = upload.publicId
       } else {
-        if (upload.kind === 'video') {
-          payload.videoUrl = upload.url
-          payload.videoPublicId = upload.publicId
-        } else {
-          payload.imageUrl = upload.url
-          payload.imagePublicId = upload.publicId
-        }
+        payload.coverImageUrl = upload.url
       }
     }
 
-    const item = await Model.create(payload)
-    res.status(201).json(item)
+    const item = await prisma.project.create({ data: payload })
+    res.status(201).json(withId(item))
   }),
 
   update: asyncHandler(async (req, res) => {
-    const existing = await Model.findById(req.params.id)
+    const existing = await prisma.project.findUnique({ where: { id: req.params.id } })
     if (!existing) {
-      res.status(404).json({ message: `${Model.modelName} not found` })
-      return
+      return res.status(404).json({ message: 'Project not found' })
     }
 
     const payload = { ...req.body }
 
-    const parsedServices = parseMaybeJson(req.body.services, null)
-    if (parsedServices) payload.services = parsedServices
+    const parsedServices = parseServices(req.body.services)
+    if (parsedServices.length) payload.services = parsedServices
 
     const parsedBeforeAfter = parseMaybeJson(req.body.beforeAfterImages, null)
     if (parsedBeforeAfter) payload.beforeAfterImages = parsedBeforeAfter
@@ -90,57 +85,136 @@ const crudFactory = (Model) => ({
     const parsedTags = parseMaybeJson(req.body.tags, null)
     if (parsedTags) payload.tags = parsedTags
 
-    // For Project: merge new media into existing array instead of replacing
     const parsedMedia = Array.isArray(req.body.media) ? req.body.media : parseMaybeJson(req.body.media, null)
     if (parsedMedia) payload.media = parsedMedia
 
-    const upload = await handleFileUpload(req, `hok/${Model.modelName.toLowerCase()}`)
+    const upload = await handleFileUpload(req, 'hok/projects')
     if (upload) {
-      if (Model.modelName === 'Project') {
-        const mediaItem = { type: upload.kind, url: upload.url, publicId: upload.publicId }
-        // Merge: keep existing media, append new item
-        const currentMedia = Array.isArray(existing.media) ? existing.media.map((m) => m.toObject ? m.toObject() : m) : []
-        payload.media = [...currentMedia, mediaItem]
-        if (upload.kind === 'video') {
-          payload.videoUrl = upload.url
-          payload.videoPublicId = upload.publicId
-        } else {
-          payload.coverImageUrl = upload.url
-        }
-      } else if (Model.modelName === 'Portfolio') {
-        payload.imageUrl = upload.url
-        payload.imagePublicId = upload.publicId
-      } else if (Model.modelName === 'VirtualDesign') {
+      const mediaItem = { type: upload.kind, url: upload.url, publicId: upload.publicId }
+      const currentMedia = Array.isArray(existing.media) ? existing.media : []
+      payload.media = [...currentMedia, mediaItem]
+      if (upload.kind === 'video') {
         payload.videoUrl = upload.url
         payload.videoPublicId = upload.publicId
       } else {
-        if (upload.kind === 'video') {
-          payload.videoUrl = upload.url
-          payload.videoPublicId = upload.publicId
-        } else {
-          payload.imageUrl = upload.url
-          payload.imagePublicId = upload.publicId
-        }
+        payload.coverImageUrl = upload.url
       }
     }
 
-    const item = await Model.findByIdAndUpdate(req.params.id, payload, { new: true })
-    res.json(item)
+    const item = await prisma.project.update({ where: { id: req.params.id }, data: payload })
+    res.json(withId(item))
   }),
 
   remove: asyncHandler(async (req, res) => {
-    await Model.findByIdAndDelete(req.params.id)
-    res.json({ message: `${Model.modelName} deleted` })
+    await prisma.project.delete({ where: { id: req.params.id } })
+    res.json({ message: 'Project deleted' })
   }),
-})
+}
 
-export const projectsController = crudFactory(Project)
-export const portfolioController = crudFactory(Portfolio)
-export const virtualDesignController = crudFactory(VirtualDesign)
+export const portfolioController = {
+  list: asyncHandler(async (req, res) => {
+    const items = await prisma.portfolio.findMany()
+    res.json(withIdArray(sortByOrderThenDate(items)))
+  }),
+
+  create: asyncHandler(async (req, res) => {
+    const payload = { ...req.body }
+    const upload = await handleFileUpload(req, 'hok/portfolio')
+    if (upload) {
+      payload.imageUrl = upload.url
+      payload.imagePublicId = upload.publicId
+    }
+    const item = await prisma.portfolio.create({ data: payload })
+    res.status(201).json(withId(item))
+  }),
+
+  update: asyncHandler(async (req, res) => {
+    const existing = await prisma.portfolio.findUnique({ where: { id: req.params.id } })
+    if (!existing) {
+      return res.status(404).json({ message: 'Portfolio not found' })
+    }
+
+    const payload = { ...req.body }
+    const upload = await handleFileUpload(req, 'hok/portfolio')
+    if (upload) {
+      payload.imageUrl = upload.url
+      payload.imagePublicId = upload.publicId
+    }
+
+    const item = await prisma.portfolio.update({ where: { id: req.params.id }, data: payload })
+    res.json(withId(item))
+  }),
+
+  remove: asyncHandler(async (req, res) => {
+    await prisma.portfolio.delete({ where: { id: req.params.id } })
+    res.json({ message: 'Portfolio deleted' })
+  }),
+}
+
+export const virtualDesignController = {
+  list: asyncHandler(async (req, res) => {
+    const items = await prisma.virtualDesign.findMany()
+    res.json(withIdArray(items))
+  }),
+
+  create: asyncHandler(async (req, res) => {
+    const payload = { ...req.body }
+
+    const parsedServices = parseServices(req.body.services)
+    if (parsedServices.length) payload.services = parsedServices
+
+    const parsedBeforeAfter = parseMaybeJson(req.body.beforeAfterImages, null)
+    if (parsedBeforeAfter) payload.beforeAfterImages = parsedBeforeAfter
+
+    const parsedTags = parseMaybeJson(req.body.tags, null)
+    if (parsedTags) payload.tags = parsedTags
+
+    const upload = await handleFileUpload(req, 'hok/virtual-design')
+    if (upload) {
+      payload.videoUrl = upload.url
+      payload.videoPublicId = upload.publicId
+    }
+
+    const item = await prisma.virtualDesign.create({ data: payload })
+    res.status(201).json(withId(item))
+  }),
+
+  update: asyncHandler(async (req, res) => {
+    const existing = await prisma.virtualDesign.findUnique({ where: { id: req.params.id } })
+    if (!existing) {
+      return res.status(404).json({ message: 'VirtualDesign not found' })
+    }
+
+    const payload = { ...req.body }
+
+    const parsedServices = parseServices(req.body.services)
+    if (parsedServices.length) payload.services = parsedServices
+
+    const parsedBeforeAfter = parseMaybeJson(req.body.beforeAfterImages, null)
+    if (parsedBeforeAfter) payload.beforeAfterImages = parsedBeforeAfter
+
+    const parsedTags = parseMaybeJson(req.body.tags, null)
+    if (parsedTags) payload.tags = parsedTags
+
+    const upload = await handleFileUpload(req, 'hok/virtual-design')
+    if (upload) {
+      payload.videoUrl = upload.url
+      payload.videoPublicId = upload.publicId
+    }
+
+    const item = await prisma.virtualDesign.update({ where: { id: req.params.id }, data: payload })
+    res.json(withId(item))
+  }),
+
+  remove: asyncHandler(async (req, res) => {
+    await prisma.virtualDesign.delete({ where: { id: req.params.id } })
+    res.json({ message: 'VirtualDesign deleted' })
+  }),
+}
 
 export const getAbout = asyncHandler(async (req, res) => {
-  const about = await About.findOne({}).sort({ createdAt: -1 })
-  res.json(about)
+  const about = await prisma.about.findFirst({ orderBy: { createdAt: 'desc' } })
+  res.json(withId(about))
 })
 
 export const upsertAbout = asyncHandler(async (req, res) => {
@@ -154,35 +228,36 @@ export const upsertAbout = asyncHandler(async (req, res) => {
     payload.aboutImagePublicId = upload.public_id
   }
 
-  const existing = await About.findOne({})
+  const existing = await prisma.about.findFirst()
   if (!existing) {
-    const created = await About.create(payload)
-    res.status(201).json(created)
-    return
+    const created = await prisma.about.create({ data: payload })
+    return res.status(201).json(withId(created))
   }
 
-  Object.assign(existing, payload)
-  await existing.save()
-  res.json(existing)
+  const updated = await prisma.about.update({ where: { id: existing.id }, data: payload })
+  res.json(withId(updated))
 })
 
 export const homepageFeed = asyncHandler(async (req, res) => {
   const [projects, portfolio, about] = await Promise.all([
-    Project.find({ isPublished: true }).sort({ order: 1, createdAt: -1 }).limit(6),
-    Portfolio.find({ isPublished: true }).sort({ order: 1, createdAt: -1 }).limit(12),
-    About.findOne({}).sort({ createdAt: -1 }),
+    prisma.project.findMany({ where: { isPublished: true } }),
+    prisma.portfolio.findMany({ where: { isPublished: true } }),
+    prisma.about.findFirst({ orderBy: { createdAt: 'desc' } }),
   ])
 
-  const heroVideo = projects?.[0]?.videoUrl ? {
-    url: projects[0].videoUrl,
-    title: projects[0].title,
-    description: projects[0].description,
+  const sortedProjects = sortByOrderThenDate(projects).slice(0, 6)
+  const sortedPortfolio = sortByOrderThenDate(portfolio).slice(0, 12)
+
+  const heroVideo = sortedProjects?.[0]?.videoUrl ? {
+    url: sortedProjects[0].videoUrl,
+    title: sortedProjects[0].title,
+    description: sortedProjects[0].description,
   } : null
 
-  res.json({ heroVideo, portfolio, about })
+  res.json({ heroVideo, portfolio: withIdArray(sortedPortfolio), about: withId(about) })
 })
 
 export const getAnalytics = asyncHandler(async (req, res) => {
-  const analytics = await Analytics.find({}).sort({ date: 1 })
-  res.json(analytics)
+  const analytics = await prisma.analytics.findMany({ orderBy: { date: 'asc' } })
+  res.json(withIdArray(analytics))
 })

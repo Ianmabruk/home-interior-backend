@@ -8,6 +8,8 @@ export const productsSeed = [
     stock: 12,
     sku: 'HOK-LIV-001',
     tags: ['sofa', 'linen', 'living'],
+    colorVariants: [],
+    colorVariants: [],
     isFeatured: true,
     images: [
       {
@@ -25,6 +27,8 @@ export const productsSeed = [
     stock: 8,
     sku: 'HOK-DIN-002',
     tags: ['dining', 'marble', 'table'],
+    colorVariants: [],
+    colorVariants: [],
     isFeatured: true,
     images: [
       {
@@ -41,6 +45,7 @@ export const productsSeed = [
     stock: 26,
     sku: 'HOK-LIG-003',
     tags: ['lighting', 'pendant'],
+    colorVariants: [],
     images: [
       {
         url: 'https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=1200&q=80',
@@ -56,6 +61,7 @@ export const productsSeed = [
     stock: 14,
     sku: 'HOK-BED-004',
     tags: ['bedroom', 'console', 'walnut'],
+    colorVariants: [],
     images: [
       {
         url: 'https://images.unsplash.com/photo-1505693314120-0d443867891c?auto=format&fit=crop&w=1200&q=80',
@@ -71,6 +77,7 @@ export const productsSeed = [
     stock: 30,
     sku: 'HOK-OFF-005',
     tags: ['office', 'chair'],
+    colorVariants: [],
     images: [
       {
         url: 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80',
@@ -87,6 +94,7 @@ export const productsSeed = [
     stock: 5,
     sku: 'HOK-OUT-006',
     tags: ['outdoor', 'lounge'],
+    colorVariants: [],
     images: [
       {
         url: 'https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=1200&q=80',
@@ -103,18 +111,11 @@ export const projectsSeed = [
     category: 'Residential',
     media: [
       {
-        type: 'video',
-        url: 'https://cdn.coverr.co/videos/coverr-a-modern-house-interior-3864/1080p.mp4',
-        publicId: 'seed/project-belgravia-video',
-      },
-      {
         type: 'image',
         url: 'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1600&q=80',
         publicId: 'seed/project-belgravia-image',
       },
     ],
-    videoUrl: 'https://cdn.coverr.co/videos/coverr-a-modern-house-interior-3864/1080p.mp4',
-    videoPublicId: 'seed/project-belgravia-video',
     coverImageUrl: 'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1600&q=80',
     order: 1,
     isPublished: true,
@@ -125,18 +126,11 @@ export const projectsSeed = [
     category: 'Residential',
     media: [
       {
-        type: 'video',
-        url: 'https://cdn.coverr.co/videos/coverr-luxury-house-interior-1579/1080p.mp4',
-        publicId: 'seed/project-monarch-video',
-      },
-      {
         type: 'image',
         url: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1600&q=80',
         publicId: 'seed/project-monarch-image',
       },
     ],
-    videoUrl: 'https://cdn.coverr.co/videos/coverr-luxury-house-interior-1579/1080p.mp4',
-    videoPublicId: 'seed/project-monarch-video',
     coverImageUrl: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1600&q=80',
     order: 2,
     isPublished: true,

@@ -1,8 +1,11 @@
 import { z } from 'zod'
-import { Message } from '../models/Message.js'
-import { User } from '../models/User.js'
+import { prisma } from '../config/db.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
+import { ApiError } from '../utils/ApiError.js'
 import { sendEmail, buildQuoteEmailTemplate } from '../config/sendgrid.js'
+
+const withId = (item) => ({ ...item, _id: item.id })
+const withIdArray = (items) => items.map((item) => withId(item))
 
 const messageSchema = z.object({
   name: z.string().min(2),
@@ -21,22 +24,23 @@ const quoteSchema = z.object({
 
 export const createMessage = asyncHandler(async (req, res) => {
   const payload = messageSchema.parse(req.body)
-  const created = await Message.create(payload)
-  res.status(201).json(created)
+  const created = await prisma.message.create({ data: payload })
+  res.status(201).json(withId(created))
 })
 
 export const createQuote = asyncHandler(async (req, res) => {
   const payload = quoteSchema.parse(req.body)
-  const created = await Message.create({
-    ...payload,
-    subject: `Quote Request: ${payload.projectType}`,
-    content: payload.message,
-    isRead: false,
+  const created = await prisma.message.create({
+    data: {
+      ...payload,
+      subject: `Quote Request: ${payload.projectType}`,
+      content: payload.message,
+      isRead: false,
+    },
   })
 
-  // Notify admin of new quote
   try {
-    const admin = await User.findOne({ role: 'admin' })
+    const admin = await prisma.user.findFirst({ where: { role: 'admin' } })
     if (admin) {
       await sendEmail({
         to: admin.email,
@@ -54,22 +58,27 @@ export const createQuote = asyncHandler(async (req, res) => {
     console.error('Quote notification email failed:', err)
   }
 
-  res.status(201).json(created)
+  res.status(201).json(withId(created))
 })
 
 export const listMessages = asyncHandler(async (req, res) => {
-  const messages = await Message.find({}).sort({ createdAt: -1 })
-  res.json(messages)
+  const messages = await prisma.message.findMany({
+    orderBy: { createdAt: 'desc' },
+  })
+  res.json(withIdArray(messages))
 })
 
 export const replyToMessage = asyncHandler(async (req, res) => {
   const { messageId, reply } = req.body
-  const message = await Message.findById(messageId)
+  const message = await prisma.message.findUnique({ where: { id: messageId } })
   if (!message) {
     return res.status(404).json({ message: 'Message not found' })
   }
-  message.isRead = true
-  await message.save()
-  // In production, this would send an email reply
+
+  await prisma.message.update({
+    where: { id: messageId },
+    data: { isRead: true },
+  })
+
   res.json({ message: 'Reply sent', isRead: true })
 })

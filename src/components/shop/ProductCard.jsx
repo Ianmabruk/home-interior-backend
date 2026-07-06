@@ -7,7 +7,7 @@ import { useCurrency } from '../../context/CurrencyContext'
 export const ProductCard = ({ product, onQuickView }) => {
   const { addToCart, toggleWishlist, wishlist } = useShop()
   const { formatPrice } = useCurrency()
-  const primaryImage = product.images?.[0]?.url || 'https://images.unsplash.com/photo-1484101403633-86297.jpg'
+  const primaryImage = product.images?.[0]?.url || 'https://images.unsplash.com/photo-1586023943478-ae8b06f48d80?auto=format&fit=crop&w=800&q=80'
   const salePercent = product.discountPrice
     ? Math.round(((product.price - product.discountPrice) / product.price) * 100)
     : null

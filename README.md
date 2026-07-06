@@ -22,7 +22,7 @@ Production-ready full-stack platform for premium interior design services and e-
 
 1. Install dependencies:
 	- `cd server && npm install`
-2. Create env file from `server/.env.example` and set `MONGO_URI`.
+2. Create env file from `server/.env.example` and set `DATABASE_URL`.
 3. Start backend API:
 	- `cd server && npm run dev`
 

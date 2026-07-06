@@ -1,10 +1,12 @@
 import { z } from 'zod'
-import { Product } from '../models/Product.js'
-import { User } from '../models/User.js'
+import { prisma } from '../config/db.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { uploadToCloudinary } from '../services/uploadService.js'
 import { sendEmail, buildNewProductEmailTemplate } from '../config/sendgrid.js'
+
+const withId = (item) => ({ ...item, _id: item.id })
+const withIdArray = (items) => items.map((item) => withId(item))
 
 const productSchema = z.object({
   name: z.string().min(2),
@@ -27,35 +29,47 @@ const parseMaybeJson = (value, fallback) => {
 
 export const listProducts = asyncHandler(async (req, res) => {
   const { q, category, sort = '-createdAt', page = 1, limit = 12 } = req.query
-  const filter = { isPublished: true }
+  const where = { isPublished: true }
 
   if (q) {
-    filter.$text = { $search: q }
+    const search = String(q)
+    where.OR = [
+      { name: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
+      { category: { contains: search, mode: 'insensitive' } },
+      { sku: { contains: search, mode: 'insensitive' } },
+      { vendor: { contains: search, mode: 'insensitive' } },
+    ]
   }
   if (category) {
-    filter.category = category
+    where.category = String(category)
   }
+
+  const sortField = sort.startsWith('-') ? sort.slice(1) : sort
+  const sortOrder = sort.startsWith('-') ? 'desc' : 'asc'
 
   const safeLimit = Math.min(Number(limit), 200)
   const safePage = Number(page)
 
   const [items, total] = await Promise.all([
-    Product.find(filter)
-      .sort(sort)
-      .skip((safePage - 1) * safeLimit)
-      .limit(safeLimit),
-    Product.countDocuments(filter),
+    prisma.product.findMany({
+      where,
+      orderBy: { [sortField]: sortOrder },
+      skip: (safePage - 1) * safeLimit,
+      take: safeLimit,
+    }),
+    prisma.product.count({ where }),
   ])
 
-  res.json({ items, total, page: safePage, pages: Math.ceil(total / safeLimit) })
+  res.json({ items: withIdArray(items), total, page: safePage, pages: Math.ceil(total / safeLimit) })
 })
 
 export const getProduct = asyncHandler(async (req, res) => {
-  const item = await Product.findById(req.params.id)
+  const item = await prisma.product.findUnique({ where: { id: req.params.id } })
   if (!item) {
     throw new ApiError(404, 'Product not found')
   }
-  res.json(item)
+  res.json(withId(item))
 })
 
 export const createProduct = asyncHandler(async (req, res) => {
@@ -66,21 +80,21 @@ export const createProduct = asyncHandler(async (req, res) => {
     files.map((file) => uploadToCloudinary(file.buffer, 'hok/products', 'image')),
   )
 
-  // Handle color variants with per-color images
   const colorVariantsRaw = Array.isArray(req.body.colorVariants)
     ? req.body.colorVariants
     : parseMaybeJson(req.body.colorVariants, [])
   const colorVariants = Array.isArray(colorVariantsRaw) ? colorVariantsRaw : []
 
-  const product = await Product.create({
-    ...data,
-    images: uploads.map((item) => ({ url: item.secure_url, publicId: item.public_id })),
-    colorVariants,
+  const product = await prisma.product.create({
+    data: {
+      ...data,
+      images: uploads.map((item) => ({ url: item.secure_url, publicId: item.public_id })),
+      colorVariants,
+    },
   })
 
-  // Notify admin of new product
   try {
-    const admin = await User.findOne({ role: 'admin' })
+    const admin = await prisma.user.findFirst({ where: { role: 'admin' } })
     if (admin) {
       await sendEmail({
         to: admin.email,
@@ -96,12 +110,12 @@ export const createProduct = asyncHandler(async (req, res) => {
     console.error('New product notification email failed:', err)
   }
 
-  res.status(201).json(product)
+  res.status(201).json(withId(product))
 })
 
 export const updateProduct = asyncHandler(async (req, res) => {
   const data = productSchema.partial().parse(req.body)
-  const product = await Product.findById(req.params.id)
+  const product = await prisma.product.findUnique({ where: { id: req.params.id } })
   if (!product) {
     throw new ApiError(404, 'Product not found')
   }
@@ -121,21 +135,21 @@ export const updateProduct = asyncHandler(async (req, res) => {
     data.colorVariants = colorVariantsRaw
   }
 
-  const updated = await Product.findByIdAndUpdate(req.params.id, data, { new: true })
-  res.json(updated)
+  const updated = await prisma.product.update({ where: { id: req.params.id }, data })
+  res.json(withId(updated))
 })
 
 export const deleteProduct = asyncHandler(async (req, res) => {
-  const product = await Product.findByIdAndDelete(req.params.id)
+  const product = await prisma.product.findUnique({ where: { id: req.params.id } })
   if (!product) {
     throw new ApiError(404, 'Product not found')
   }
+  await prisma.product.delete({ where: { id: req.params.id } })
   res.json({ message: 'Product deleted' })
 })
 
-// Upload a single color variant image for a product
 export const addColorVariant = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id)
+  const product = await prisma.product.findUnique({ where: { id: req.params.id } })
   if (!product) throw new ApiError(404, 'Product not found')
 
   const { colorName, colorHex = '' } = req.body
@@ -144,18 +158,29 @@ export const addColorVariant = asyncHandler(async (req, res) => {
 
   const upload = await uploadToCloudinary(req.file.buffer, 'hok/products/variants', 'image')
 
-  product.colorVariants = product.colorVariants.filter((v) => v.colorName !== colorName)
-  product.colorVariants.push({ colorName, colorHex, imageUrl: upload.secure_url, imagePublicId: upload.public_id })
-  await product.save()
+  const currentVariants = Array.isArray(product.colorVariants) ? product.colorVariants : []
+  const filtered = currentVariants.filter((v) => v.colorName !== colorName)
+  const newVariant = { colorName, colorHex, imageUrl: upload.secure_url, imagePublicId: upload.public_id }
 
-  res.json(product)
+  const updated = await prisma.product.update({
+    where: { id: req.params.id },
+    data: { colorVariants: [...filtered, newVariant] },
+  })
+
+  res.json(withId(updated))
 })
 
 export const removeColorVariant = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id)
+  const product = await prisma.product.findUnique({ where: { id: req.params.id } })
   if (!product) throw new ApiError(404, 'Product not found')
 
-  product.colorVariants = product.colorVariants.filter((v) => v.colorName !== req.params.colorName)
-  await product.save()
-  res.json(product)
+  const currentVariants = Array.isArray(product.colorVariants) ? product.colorVariants : []
+  const filtered = currentVariants.filter((v) => v.colorName !== req.params.colorName)
+
+  const updated = await prisma.product.update({
+    where: { id: req.params.id },
+    data: { colorVariants: filtered },
+  })
+
+  res.json(withId(updated))
 })
