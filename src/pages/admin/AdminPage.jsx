@@ -67,7 +67,7 @@ function AdminPage() {
         api.get('/messages').catch(() => ({ data: [] })),
         api.get('/content/virtual-design').catch(() => ({ data: [] })),
         api.get('/admin/users').catch(() => ({ data: [] })),
-        api.get('/analytics').catch(() => ({ data: [] })),
+         api.get('/content/analytics').catch(() => ({ data: [] })),
       ])
         .then(([overviewRes, projectsRes, portfolioRes, productsRes, messagesRes, virtualRes, usersRes, analyticsRes]) => {
           if (overviewRes.data) setOverview(overviewRes.data)
@@ -94,7 +94,7 @@ const fetchAll = () => {
         api.get('/messages').catch(() => ({ data: [] })),
         api.get('/content/virtual-design').catch(() => ({ data: [] })),
         api.get('/admin/users').catch(() => ({ data: [] })),
-        api.get('/analytics').catch(() => ({ data: [] })),
+         api.get('/content/analytics').catch(() => ({ data: [] })),
       ])
         .then(([overviewRes, projectsRes, portfolioRes, productsRes, messagesRes, virtualRes, usersRes, analyticsRes]) => {
           if (overviewRes.data) setOverview(overviewRes.data)

@@ -31,6 +31,16 @@ const sortByOrderThenDate = (items) => items.sort((a, b) => {
   return new Date(b.createdAt) - new Date(a.createdAt)
 })
 
+const orderValue = (value) => {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : 0
+}
+
+const toNumberIfFinite = (value) => {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : null
+}
+
 export const projectsController = {
   list: asyncHandler(async (req, res) => {
     const items = await prisma.project.findMany()
@@ -39,6 +49,8 @@ export const projectsController = {
 
   create: asyncHandler(async (req, res) => {
     const payload = { ...req.body }
+
+    if (payload.order !== undefined) payload.order = orderValue(payload.order)
 
     const parsedMedia = parseMaybeJson(req.body.media, null)
     if (parsedMedia) payload.media = parsedMedia
