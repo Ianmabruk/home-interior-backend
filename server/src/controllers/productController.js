@@ -64,6 +64,43 @@ export const listProducts = asyncHandler(async (req, res) => {
   res.json({ items: withIdArray(items), total, page: safePage, pages: Math.ceil(total / safeLimit) })
 })
 
+export const listAllProducts = asyncHandler(async (req, res) => {
+  const { q, category, sort = '-createdAt', page = 1, limit = 100 } = req.query
+  const where = {}
+
+  if (q) {
+    const search = String(q)
+    where.OR = [
+      { name: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
+      { category: { contains: search, mode: 'insensitive' } },
+      { sku: { contains: search, mode: 'insensitive' } },
+      { vendor: { contains: search, mode: 'insensitive' } },
+    ]
+  }
+  if (category) {
+    where.category = String(category)
+  }
+
+  const sortField = sort.startsWith('-') ? sort.slice(1) : sort
+  const sortOrder = sort.startsWith('-') ? 'desc' : 'asc'
+
+  const safeLimit = Math.min(Number(limit), 200)
+  const safePage = Number(page)
+
+  const [items, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      orderBy: { [sortField]: sortOrder },
+      skip: (safePage - 1) * safeLimit,
+      take: safeLimit,
+    }),
+    prisma.product.count({ where }),
+  ])
+
+  res.json({ items: withIdArray(items), total, page: safePage, pages: Math.ceil(total / safeLimit) })
+})
+
 export const getProduct = asyncHandler(async (req, res) => {
   const item = await prisma.product.findUnique({ where: { id: req.params.id } })
   if (!item) {
@@ -88,6 +125,7 @@ export const createProduct = asyncHandler(async (req, res) => {
   const product = await prisma.product.create({
     data: {
       ...data,
+      isPublished: data.isPublished ?? true,
       images: uploads.map((item) => ({ url: item.secure_url, publicId: item.public_id })),
       colorVariants,
     },
@@ -135,7 +173,7 @@ export const updateProduct = asyncHandler(async (req, res) => {
     data.colorVariants = colorVariantsRaw
   }
 
-  const updated = await prisma.product.update({ where: { id: req.params.id }, data })
+  const updated = await prisma.product.update({ where: { id: req.params.id }, data: { ...data, isPublished: data.isPublished ?? true } })
   res.json(withId(updated))
 })
 

@@ -63,7 +63,7 @@ function AdminPage() {
         api.get('/admin/overview').catch(() => ({ data: null })),
         api.get('/content/projects').catch(() => ({ data: [] })),
         api.get('/content/portfolio').catch(() => ({ data: [] })),
-        api.get('/products', { params: { sort: '-createdAt', limit: 100 } }).catch(() => ({ data: { items: [] } })),
+        api.get('/products/admin/all', { params: { sort: '-createdAt', limit: 100 } }).catch(() => ({ data: { items: [] } })),
         api.get('/messages').catch(() => ({ data: [] })),
         api.get('/content/virtual-design').catch(() => ({ data: [] })),
         api.get('/admin/users').catch(() => ({ data: [] })),
@@ -83,14 +83,14 @@ function AdminPage() {
     doFetch()
   }, [])
 
-const fetchAll = () => {
+  const fetchAll = () => {
     // Re-fetch all data
     const doFetch = () => {
       Promise.all([
         api.get('/admin/overview').catch(() => ({ data: null })),
         api.get('/content/projects').catch(() => ({ data: [] })),
         api.get('/content/portfolio').catch(() => ({ data: [] })),
-        api.get('/products', { params: { sort: '-createdAt', limit: 100 } }).catch(() => ({ data: { items: [] } })),
+        api.get('/products/admin/all', { params: { sort: '-createdAt', limit: 100 } }).catch(() => ({ data: { items: [] } })),
         api.get('/messages').catch(() => ({ data: [] })),
         api.get('/content/virtual-design').catch(() => ({ data: [] })),
         api.get('/admin/users').catch(() => ({ data: [] })),

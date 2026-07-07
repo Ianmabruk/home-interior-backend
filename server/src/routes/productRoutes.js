@@ -1,12 +1,13 @@
 import { Router } from 'express'
 import multer from 'multer'
-import { createProduct, deleteProduct, getProduct, listProducts, updateProduct, addColorVariant, removeColorVariant } from '../controllers/productController.js'
+import { createProduct, deleteProduct, getProduct, listProducts, listAllProducts, updateProduct, addColorVariant, removeColorVariant } from '../controllers/productController.js'
 import { auth, authorize } from '../middleware/auth.js'
 
 const router = Router()
 const upload = multer({ storage: multer.memoryStorage() })
 
 router.get('/', listProducts)
+router.get('/admin/all', auth, authorize('admin'), listAllProducts)
 router.get('/:id', getProduct)
 router.post('/', auth, authorize('admin'), upload.array('images', 8), createProduct)
 router.patch('/:id', auth, authorize('admin'), upload.array('images', 8), updateProduct)

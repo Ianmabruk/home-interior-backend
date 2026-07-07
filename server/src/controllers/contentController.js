@@ -76,6 +76,8 @@ export const projectsController = {
       }
     }
 
+    payload.isPublished = payload.isPublished ?? true
+
     const item = await prisma.project.create({ data: payload })
     res.status(201).json(withId(item))
   }),
@@ -136,6 +138,7 @@ export const portfolioController = {
       payload.imageUrl = upload.url
       payload.imagePublicId = upload.publicId
     }
+    payload.isPublished = payload.isPublished ?? true
     const item = await prisma.portfolio.create({ data: payload })
     res.status(201).json(withId(item))
   }),
@@ -186,6 +189,8 @@ export const virtualDesignController = {
       payload.videoUrl = upload.url
       payload.videoPublicId = upload.publicId
     }
+
+    payload.isPublished = payload.isPublished ?? true
 
     const item = await prisma.virtualDesign.create({ data: payload })
     res.status(201).json(withId(item))
