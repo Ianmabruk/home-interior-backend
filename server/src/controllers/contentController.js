@@ -2,6 +2,7 @@ import { asyncHandler } from '../utils/asyncHandler.js'
 import { prisma } from '../config/db.js'
 import { uploadToCloudinary } from '../services/uploadService.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
+import { env } from '../config/env.js'
 
 const withId = (item) => item ? { ...item, _id: item.id } : null
 const withIdArray = (items) => items.map((item) => withId(item))
@@ -249,8 +250,27 @@ export const getAbout = asyncHandler(async (req, res) => {
   res.json(sendSuccess(withId(about)))
 })
 
+// Fields the admin About form may provide. Only these are written, so a stale
+// or extra form field can never trigger a Prisma validation error.
+const ABOUT_FIELDS = new Set([
+  'aboutImageUrl',
+  'aboutImagePublicId',
+  'story',
+  'companyDescription',
+  'mission',
+  'vision',
+  'location',
+  'contactEmail',
+  'socials',
+])
+
 export const upsertAbout = asyncHandler(async (req, res) => {
-  const payload = { ...req.body }
+  // Build payload only from provided fields so an update never wipes data
+  // the form doesn't manage (e.g. companyDescription set elsewhere).
+  const payload = {}
+  for (const key of Object.keys(req.body)) {
+    if (ABOUT_FIELDS.has(key)) payload[key] = req.body[key]
+  }
   const parsedSocials = parseMaybeJson(req.body.socials, null)
   if (parsedSocials) payload.socials = parsedSocials
 
@@ -264,7 +284,20 @@ export const upsertAbout = asyncHandler(async (req, res) => {
 
   const existing = await prisma.about.findFirst()
   if (!existing) {
-    const created = await prisma.about.create({ data: payload })
+    // First-time create: supply defaults for required (non-nullable) columns
+    // the minimal admin form does not send, so Prisma validation never 500s.
+    const created = await prisma.about.create({
+      data: {
+        story: payload.story ?? '',
+        companyDescription: payload.companyDescription ?? '',
+        mission: payload.mission ?? '',
+        vision: payload.vision ?? '',
+        location: payload.location ?? '',
+        contactEmail: payload.contactEmail ?? env.emailFrom ?? '',
+        socials: payload.socials ?? {},
+        ...payload,
+      },
+    })
     return res.status(201).json(sendSuccess(withId(created)))
   }
 
