@@ -19,6 +19,24 @@ No source code in `src/` required changes — see §4.
 
 ---
 
+## 1b. Follow-up Fix — Production 404 (`/auth/login`, `/users/me`)
+
+After deploy, the live frontend called `https://home-interior-backend.onrender.com/auth/login`
+and returned **404**. Root cause: the deployed `VITE_API_URL` was set to the backend
+**root** (`https://home-interior-backend.onrender.com`, no `/api`), so the frontend's
+`/auth/login` request became `/auth/login` instead of `/api/auth/login`. The backend
+only mounted routes under `/api`, hence 404.
+
+**Fixes applied:**
+1. `server/src/app.js` — the API router is now mounted at **both** `/api` and `/`,
+   and `/health` responds at both `/api/health` and `/health`. The backend now
+   resolves `https://<backend>/auth/login` *and* `https://<backend>/api/auth/login`,
+   so it works regardless of whether `VITE_API_URL` ends with `/api`. This fixed the
+   already-deployed frontend with **no frontend rebuild required**.
+2. `netlify.toml` — `VITE_API_URL` now defaults to the real backend with the `/api`
+   suffix: `https://home-interior-backend.onrender.com/api` (the actual Render service
+   name). This keeps future builds correct.
+
 ## 2. URL / Placeholder Replacements
 
 - **Removed:** `https://YOUR-RENDER-SERVICE.onrender.com/api` (the only real placeholder URL committed in source/config, located in `netlify.toml`).
@@ -62,9 +80,10 @@ All match the endpoints the frontend calls.
 
 ## 6. Remaining Deployment Issues (action required by you)
 
-1. **Set `VITE_API_URL` in Netlify (required for production).** Because the placeholder was removed, you must add the real backend URL in the Netlify dashboard:
-   `Site settings → Environment variables → VITE_API_URL = https://<your-render-backend>.onrender.com/api`
-   If unset, the production build silently falls back to a relative `/api` path, which will 404 on Netlify (cross-origin) and break every request.
+1. **`VITE_API_URL` (Netlify).** Now defaults to `https://home-interior-backend.onrender.com/api`
+   in `netlify.toml`. If you also set it in the Netlify dashboard, ensure it ends with `/api`
+   (or rely on the backend's root mount, which handles either form). The backend change above
+   means the currently-deployed frontend already works without a rebuild.
 
 2. **Set `CLIENT_URL` on Render** to `https://homy-comfy.netlify.app` (so CORS + password-reset emails point at the real frontend).
 

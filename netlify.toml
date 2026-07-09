@@ -9,9 +9,8 @@
 
 [build.environment]
   NODE_VERSION = "22"
-  # VITE_API_URL must be set in the Netlify dashboard (Site settings →
-  # Environment variables) to the production Render backend, e.g.
-  #   VITE_API_URL = https://<your-render-backend>.onrender.com/api
-  # It is intentionally NOT hard-coded here so the build never bakes in a
-  # placeholder URL. If left unset the app falls back to a relative "/api"
-  # path, which only works when the backend is served from the same origin.
+  # Production backend API base URL (must end with /api — the frontend calls
+  # paths like /auth/login, /users/me, so the base must include the /api prefix).
+  # Override this in the Netlify dashboard (Site settings → Environment variables)
+  # if your Render service name differs.
+  VITE_API_URL = "https://home-interior-backend.onrender.com/api"

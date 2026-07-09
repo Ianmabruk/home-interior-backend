@@ -60,11 +60,17 @@ app.use(
   }),
 )
 
-app.get('/api/health', (req, res) => {
+app.get(['/api/health', '/health'], (req, res) => {
   res.json({ status: 'ok', service: 'hok-interior-backend' })
 })
 
+// Serve API routes both under /api (canonical, used by local dev proxy and
+// VITE_API_URL values that include /api) and at the root. This keeps the
+// frontend working regardless of whether its base URL ends with "/api",
+// e.g. both https://<backend>.onrender.com/api/auth/login and
+// https://<backend>.onrender.com/auth/login resolve correctly.
 app.use('/api', apiRoutes)
+app.use('/', apiRoutes)
 
 app.use(notFoundHandler)
 app.use(errorHandler)
