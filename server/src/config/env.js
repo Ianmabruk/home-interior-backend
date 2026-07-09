@@ -2,6 +2,24 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
+const isProd = process.env.NODE_ENV === 'production'
+
+const missing = []
+if (isProd && !process.env.DATABASE_URL) missing.push('DATABASE_URL')
+if (isProd && !process.env.JWT_ACCESS_SECRET) missing.push('JWT_ACCESS_SECRET')
+if (isProd && !process.env.JWT_REFRESH_SECRET) missing.push('JWT_REFRESH_SECRET')
+if (isProd && !process.env.CLOUDINARY_CLOUD_NAME) missing.push('CLOUDINARY_CLOUD_NAME')
+if (isProd && !process.env.CLOUDINARY_API_KEY) missing.push('CLOUDINARY_API_KEY')
+if (isProd && !process.env.CLOUDINARY_API_SECRET) missing.push('CLOUDINARY_API_SECRET')
+
+if (missing.length) {
+  console.error('❌ Missing required environment variables:', missing.join(', '))
+  console.error('   Add them in your Render dashboard → Environment tab.')
+  if (isProd) {
+    console.error('   Server cannot start without these variables.')
+  }
+}
+
 export const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT || 5000),
