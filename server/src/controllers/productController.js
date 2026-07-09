@@ -4,6 +4,7 @@ import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { uploadToCloudinary } from '../services/uploadService.js'
 import { sendEmail, buildNewProductEmailTemplate } from '../config/sendgrid.js'
+import { sendSuccess } from '../utils/sendSuccess.js'
 
 const withId = (item) => ({ ...item, _id: item.id })
 const withIdArray = (items) => items.map((item) => withId(item))
@@ -61,7 +62,7 @@ export const listProducts = asyncHandler(async (req, res) => {
     prisma.product.count({ where }),
   ])
 
-  res.json({ items: withIdArray(items), total, page: safePage, pages: Math.ceil(total / safeLimit) })
+  res.json(sendSuccess({ items: withIdArray(items), total, page: safePage, pages: Math.ceil(total / safeLimit) }))
 })
 
 export const listAllProducts = asyncHandler(async (req, res) => {
@@ -98,7 +99,7 @@ export const listAllProducts = asyncHandler(async (req, res) => {
     prisma.product.count({ where }),
   ])
 
-  res.json({ items: withIdArray(items), total, page: safePage, pages: Math.ceil(total / safeLimit) })
+  res.json(sendSuccess({ items: withIdArray(items), total, page: safePage, pages: Math.ceil(total / safeLimit) }))
 })
 
 export const getProduct = asyncHandler(async (req, res) => {
@@ -106,7 +107,7 @@ export const getProduct = asyncHandler(async (req, res) => {
   if (!item) {
     throw new ApiError(404, 'Product not found')
   }
-  res.json(withId(item))
+  res.json(sendSuccess(withId(item)))
 })
 
 export const createProduct = asyncHandler(async (req, res) => {
@@ -122,10 +123,15 @@ export const createProduct = asyncHandler(async (req, res) => {
     : parseMaybeJson(req.body.colorVariants, [])
   const colorVariants = Array.isArray(colorVariantsRaw) ? colorVariantsRaw : []
 
+  const tags = Array.isArray(req.body.tags)
+    ? req.body.tags
+    : parseMaybeJson(req.body.tags, [])
+
   const product = await prisma.product.create({
     data: {
       ...data,
       isPublished: data.isPublished ?? true,
+      tags: Array.isArray(tags) ? tags : [],
       images: uploads.map((item) => ({ url: item.secure_url, publicId: item.public_id })),
       colorVariants,
     },
@@ -148,7 +154,7 @@ export const createProduct = asyncHandler(async (req, res) => {
     console.error('New product notification email failed:', err)
   }
 
-  res.status(201).json(withId(product))
+  res.status(201).json(sendSuccess(withId(product)))
 })
 
 export const updateProduct = asyncHandler(async (req, res) => {
@@ -174,7 +180,7 @@ export const updateProduct = asyncHandler(async (req, res) => {
   }
 
   const updated = await prisma.product.update({ where: { id: req.params.id }, data: { ...data, isPublished: data.isPublished ?? true } })
-  res.json(withId(updated))
+  res.json(sendSuccess(withId(updated)))
 })
 
 export const deleteProduct = asyncHandler(async (req, res) => {
@@ -183,7 +189,7 @@ export const deleteProduct = asyncHandler(async (req, res) => {
     throw new ApiError(404, 'Product not found')
   }
   await prisma.product.delete({ where: { id: req.params.id } })
-  res.json({ message: 'Product deleted' })
+  res.json(sendSuccess({ message: 'Product deleted' }))
 })
 
 export const addColorVariant = asyncHandler(async (req, res) => {
@@ -205,7 +211,7 @@ export const addColorVariant = asyncHandler(async (req, res) => {
     data: { colorVariants: [...filtered, newVariant] },
   })
 
-  res.json(withId(updated))
+  res.json(sendSuccess(withId(updated)))
 })
 
 export const removeColorVariant = asyncHandler(async (req, res) => {
@@ -220,5 +226,5 @@ export const removeColorVariant = asyncHandler(async (req, res) => {
     data: { colorVariants: filtered },
   })
 
-  res.json(withId(updated))
+  res.json(sendSuccess(withId(updated)))
 })

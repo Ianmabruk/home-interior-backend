@@ -6,6 +6,7 @@ import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { sendEmail, buildWelcomeEmailTemplate, buildLoginEmailTemplate } from '../config/sendgrid.js'
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/tokens.js'
+import { sendSuccess } from '../utils/sendSuccess.js'
 
 const withId = (item) => ({ ...item, _id: item.id })
 const withIdArray = (items) => items.map((item) => withId(item))
@@ -58,10 +59,10 @@ export const register = asyncHandler(async (req, res) => {
     console.error('Welcome email failed:', err)
   }
 
-  res.status(201).json({
+  res.status(201).json(sendSuccess({
     user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role },
     ...tokens,
-  })
+  }))
 })
 
 export const login = asyncHandler(async (req, res) => {
@@ -92,10 +93,10 @@ export const login = asyncHandler(async (req, res) => {
     console.error('Login email failed:', err)
   }
 
-  res.json({
+  res.json(sendSuccess({
     user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role },
     ...tokens,
-  })
+  }))
 })
 
 export const refresh = asyncHandler(async (req, res) => {
@@ -116,7 +117,7 @@ export const refresh = asyncHandler(async (req, res) => {
     data: { refreshToken: tokens.refreshToken },
   })
 
-  res.json(tokens)
+  res.json(sendSuccess(tokens))
 })
 
 export const forgotPassword = asyncHandler(async (req, res) => {
@@ -124,7 +125,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
   const user = await prisma.user.findFirst({ where: { email } })
 
   if (!user) {
-    res.json({ message: 'If that account exists, a reset link has been sent.' })
+    res.json(sendSuccess({ message: 'If that account exists, a reset link has been sent.' }))
     return
   }
 
@@ -143,7 +144,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
     html: `<p>Click <a href="${resetUrl}">here</a> to reset your password. This link expires in 30 minutes.</p>`,
   })
 
-  res.json({ message: 'If that account exists, a reset link has been sent.' })
+  res.json(sendSuccess({ message: 'If that account exists, a reset link has been sent.' }))
 })
 
 export const resetPassword = asyncHandler(async (req, res) => {
@@ -172,5 +173,5 @@ export const resetPassword = asyncHandler(async (req, res) => {
     },
   })
 
-  res.json({ message: 'Password reset successful' })
+  res.json(sendSuccess({ message: 'Password reset successful' }))
 })

@@ -1,6 +1,7 @@
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { prisma } from '../config/db.js'
 import { uploadToCloudinary } from '../services/uploadService.js'
+import { sendSuccess } from '../utils/sendSuccess.js'
 
 const withId = (item) => item ? { ...item, _id: item.id } : null
 const withIdArray = (items) => items.map((item) => withId(item))
@@ -58,7 +59,7 @@ const stripUnknown = (obj, allowed) => {
 export const projectsController = {
   list: asyncHandler(async (req, res) => {
     const items = await prisma.project.findMany()
-    res.json(withIdArray(sortByOrderThenDate(items)))
+    res.json(sendSuccess(withIdArray(sortByOrderThenDate(items))))
   }),
 
   create: asyncHandler(async (req, res) => {
@@ -93,7 +94,7 @@ export const projectsController = {
     payload.isPublished = payload.isPublished ?? true
 
     const item = await prisma.project.create({ data: payload })
-    res.status(201).json(withId(item))
+    res.status(201).json(sendSuccess(withId(item)))
   }),
 
   update: asyncHandler(async (req, res) => {
@@ -130,19 +131,19 @@ export const projectsController = {
     }
 
     const item = await prisma.project.update({ where: { id: req.params.id }, data: payload })
-    res.json(withId(item))
+    res.json(sendSuccess(withId(item)))
   }),
 
   remove: asyncHandler(async (req, res) => {
     await prisma.project.delete({ where: { id: req.params.id } })
-    res.json({ message: 'Project deleted' })
+    res.json(sendSuccess({ message: 'Project deleted' }))
   }),
 }
 
 export const portfolioController = {
   list: asyncHandler(async (req, res) => {
     const items = await prisma.portfolio.findMany()
-    res.json(withIdArray(sortByOrderThenDate(items)))
+    res.json(sendSuccess(withIdArray(sortByOrderThenDate(items))))
   }),
 
   create: asyncHandler(async (req, res) => {
@@ -154,7 +155,7 @@ export const portfolioController = {
     }
     payload.isPublished = payload.isPublished ?? true
     const item = await prisma.portfolio.create({ data: payload })
-    res.status(201).json(withId(item))
+    res.status(201).json(sendSuccess(withId(item)))
   }),
 
   update: asyncHandler(async (req, res) => {
@@ -171,19 +172,19 @@ export const portfolioController = {
     }
 
     const item = await prisma.portfolio.update({ where: { id: req.params.id }, data: payload })
-    res.json(withId(item))
+    res.json(sendSuccess(withId(item)))
   }),
 
   remove: asyncHandler(async (req, res) => {
     await prisma.portfolio.delete({ where: { id: req.params.id } })
-    res.json({ message: 'Portfolio deleted' })
+    res.json(sendSuccess({ message: 'Portfolio deleted' }))
   }),
 }
 
 export const virtualDesignController = {
   list: asyncHandler(async (req, res) => {
     const items = await prisma.virtualDesign.findMany()
-    res.json(withIdArray(items))
+    res.json(sendSuccess(withIdArray(items)))
   }),
 
   create: asyncHandler(async (req, res) => {
@@ -207,7 +208,7 @@ export const virtualDesignController = {
     payload.isPublished = payload.isPublished ?? true
 
     const item = await prisma.virtualDesign.create({ data: payload })
-    res.status(201).json(withId(item))
+    res.status(201).json(sendSuccess(withId(item)))
   }),
 
   update: asyncHandler(async (req, res) => {
@@ -234,18 +235,18 @@ export const virtualDesignController = {
     }
 
     const item = await prisma.virtualDesign.update({ where: { id: req.params.id }, data: payload })
-    res.json(withId(item))
+    res.json(sendSuccess(withId(item)))
   }),
 
   remove: asyncHandler(async (req, res) => {
     await prisma.virtualDesign.delete({ where: { id: req.params.id } })
-    res.json({ message: 'VirtualDesign deleted' })
+    res.json(sendSuccess({ message: 'VirtualDesign deleted' }))
   }),
 }
 
 export const getAbout = asyncHandler(async (req, res) => {
   const about = await prisma.about.findFirst({ orderBy: { createdAt: 'desc' } })
-  res.json(withId(about))
+  res.json(sendSuccess(withId(about)))
 })
 
 export const upsertAbout = asyncHandler(async (req, res) => {
@@ -264,11 +265,11 @@ export const upsertAbout = asyncHandler(async (req, res) => {
   const existing = await prisma.about.findFirst()
   if (!existing) {
     const created = await prisma.about.create({ data: payload })
-    return res.status(201).json(withId(created))
+    return res.status(201).json(sendSuccess(withId(created)))
   }
 
   const updated = await prisma.about.update({ where: { id: existing.id }, data: payload })
-  res.json(withId(updated))
+  res.json(sendSuccess(withId(updated)))
 })
 
 export const homepageFeed = asyncHandler(async (req, res) => {
@@ -280,19 +281,21 @@ export const homepageFeed = asyncHandler(async (req, res) => {
 
   const sortedProjects = sortByOrderThenDate(projects).slice(0, 6)
   const sortedPortfolio = sortByOrderThenDate(portfolio).slice(0, 12)
+  const featuredProjects = sortedProjects.slice(0, 3)
 
-  const heroVideo = sortedProjects?.[0]?.videoUrl ? {
-    url: sortedProjects[0].videoUrl,
-    title: sortedProjects[0].title,
-    description: sortedProjects[0].description,
+  const heroProject = sortedProjects?.[0]
+  const heroVideo = heroProject?.videoUrl ? {
+    url: heroProject.videoUrl,
+    title: heroProject.title,
+    description: heroProject.description,
   } : null
 
-  res.json({ heroVideo, portfolio: withIdArray(sortedPortfolio), about: withId(about) })
+  res.json(sendSuccess({ heroVideo, projects: withIdArray(sortedProjects), featuredProjects: withIdArray(featuredProjects), portfolio: withIdArray(sortedPortfolio), about: withId(about) }))
 })
 
 export const getAnalytics = asyncHandler(async (req, res) => {
   const analytics = await prisma.analytics.findMany({ orderBy: { date: 'asc' } })
-  res.json(withIdArray(analytics))
+  res.json(sendSuccess(withIdArray(analytics)))
 })
 
 export const testUpload = asyncHandler(async (req, res) => {
@@ -303,7 +306,7 @@ export const testUpload = asyncHandler(async (req, res) => {
   const file = req.file
   const result = await uploadToCloudinary(file.buffer, 'hok/test-uploads', 'image', file.mimetype)
 
-  res.status(200).json({
+  res.status(200).json(sendSuccess({
     message: 'Upload successful',
     file: {
       originalName: file.originalname,
@@ -312,5 +315,5 @@ export const testUpload = asyncHandler(async (req, res) => {
       url: result.secure_url,
       publicId: result.public_id,
     },
-  })
+  }))
 })

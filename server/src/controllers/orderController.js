@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { prisma } from '../config/db.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { sendEmail, buildReceiptEmailTemplate } from '../config/sendgrid.js'
+import { sendSuccess } from '../utils/sendSuccess.js'
 
 const withId = (item) => ({ ...item, _id: item.id })
 const withIdArray = (items) => items.map((item) => withId(item))
@@ -72,7 +73,7 @@ export const createOrder = asyncHandler(async (req, res) => {
     console.error('Receipt email failed:', err)
   }
 
-  res.status(201).json(withId(order))
+  res.status(201).json(sendSuccess(withId(order)))
 })
 
 export const getMyOrders = asyncHandler(async (req, res) => {
@@ -80,12 +81,12 @@ export const getMyOrders = asyncHandler(async (req, res) => {
     where: { userId: req.user.userId },
     orderBy: { createdAt: 'desc' },
   })
-  res.json(withIdArray(orders))
+  res.json(sendSuccess(withIdArray(orders)))
 })
 
 export const listOrders = asyncHandler(async (req, res) => {
   const orders = await prisma.order.findMany({
     orderBy: { createdAt: 'desc' },
   })
-  res.json(withIdArray(orders))
+  res.json(sendSuccess(withIdArray(orders)))
 })

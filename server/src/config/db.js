@@ -9,9 +9,14 @@ export const ensureAdminUser = async () => {
   const existing = await prisma.user.findFirst({
     where: { email: adminEmail },
   })
-  const passwordHash = await bcrypt.hash(env.seedAdminPassword, 12)
 
+  // Only create the admin on first boot. We intentionally do NOT
+  // re-hash/overwrite the password on every startup: doing so would
+  // clobber a password set via the UI (or by an operator) whenever the
+  // service restarts, especially when SEED_ADMIN_PASSWORD differs
+  // between environments.
   if (!existing) {
+    const passwordHash = await bcrypt.hash(env.seedAdminPassword, 12)
     await prisma.user.create({
       data: {
         fullName: 'HOK Platform Admin',
@@ -21,17 +26,7 @@ export const ensureAdminUser = async () => {
         passwordHash,
       },
     })
-    return
   }
-
-  await prisma.user.update({
-    where: { id: existing.id },
-    data: {
-      passwordHash,
-      role: 'admin',
-      isActive: true,
-    },
-  })
 }
 
 export const connectDB = async () => {

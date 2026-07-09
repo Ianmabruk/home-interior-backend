@@ -1,6 +1,7 @@
 import { prisma } from '../config/db.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
+import { sendSuccess } from '../utils/sendSuccess.js'
 
 const withId = (item) => ({ ...item, _id: item.id })
 const withIdArray = (items) => items.map((item) => withId(item))
@@ -14,7 +15,7 @@ export const me = asyncHandler(async (req, res) => {
   }
 
   const { passwordHash, refreshToken, ...safe } = user
-  res.json(withId(safe))
+  res.json(sendSuccess(withId(safe)))
 })
 
 export const updateMe = asyncHandler(async (req, res) => {
@@ -28,7 +29,7 @@ export const updateMe = asyncHandler(async (req, res) => {
   })
 
   const { passwordHash, refreshToken, ...safe } = user
-  res.json(withId(safe))
+  res.json(sendSuccess(withId(safe)))
 })
 
 export const getWishlist = asyncHandler(async (req, res) => {
@@ -47,7 +48,7 @@ export const getWishlist = asyncHandler(async (req, res) => {
     where: { id: { in: productIds } },
   })
 
-  res.json({ ...withId(wishlist), products: withIdArray(products) })
+  res.json(sendSuccess({ ...withId(wishlist), products: withIdArray(products) }))
 })
 
 export const toggleWishlist = asyncHandler(async (req, res) => {
@@ -82,7 +83,7 @@ export const toggleWishlist = asyncHandler(async (req, res) => {
     where: { id: { in: updatedProducts } },
   })
 
-  res.json({ ...withId(updated), products: withIdArray(products) })
+  res.json(sendSuccess({ ...withId(updated), products: withIdArray(products) }))
 })
 
 export const getCart = asyncHandler(async (req, res) => {
@@ -92,7 +93,7 @@ export const getCart = asyncHandler(async (req, res) => {
 
   const cart = user?.cart || []
   if (!cart.length) {
-    return res.json({ items: [], total: 0 })
+    return res.json(sendSuccess({ items: [], total: 0 }))
   }
 
   const productIds = cart.map((entry) => entry.product)
@@ -116,7 +117,7 @@ export const getCart = asyncHandler(async (req, res) => {
     .filter(Boolean)
 
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  res.json({ items, total })
+  res.json(sendSuccess({ items, total }))
 })
 
 export const addToCart = asyncHandler(async (req, res) => {
@@ -165,7 +166,7 @@ export const addToCart = asyncHandler(async (req, res) => {
     .filter(Boolean)
 
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  res.json({ items, total })
+  res.json(sendSuccess({ items, total }))
 })
 
 export const updateCartItem = asyncHandler(async (req, res) => {
@@ -215,7 +216,7 @@ export const updateCartItem = asyncHandler(async (req, res) => {
     .filter(Boolean)
 
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  res.json({ items, total })
+  res.json(sendSuccess({ items, total }))
 })
 
 export const removeCartItem = asyncHandler(async (req, res) => {
@@ -253,5 +254,5 @@ export const removeCartItem = asyncHandler(async (req, res) => {
     .filter(Boolean)
 
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  res.json({ items, total })
+  res.json(sendSuccess({ items, total }))
 })

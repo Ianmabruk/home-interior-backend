@@ -3,6 +3,7 @@ import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { sendEmail, buildAdminTestEmailTemplate } from '../config/sendgrid.js'
 import { env } from '../config/env.js'
+import { sendSuccess } from '../utils/sendSuccess.js'
 
 const withId = (item) => ({ ...item, _id: item.id })
 const withIdArray = (items) => items.map((item) => withId(item))
@@ -60,7 +61,7 @@ export const dashboardOverview = asyncHandler(async (req, res) => {
     .sort((a, b) => b.units - a.units)
     .slice(0, 5)
 
-  res.json({
+  res.json(sendSuccess({
     totalSales,
     revenue: totalSales,
     monthlySales,
@@ -77,7 +78,7 @@ export const dashboardOverview = asyncHandler(async (req, res) => {
     outOfStockCount,
     lowStockCount,
     topProducts,
-  })
+  }))
 })
 
 export const listUsers = asyncHandler(async (req, res) => {
@@ -85,7 +86,7 @@ export const listUsers = asyncHandler(async (req, res) => {
     select: { id: true, fullName: true, email: true, role: true, isActive: true, createdAt: true },
     orderBy: { createdAt: 'desc' },
   })
-  res.json(withIdArray(users))
+  res.json(sendSuccess(withIdArray(users)))
 })
 
 export const manageUser = asyncHandler(async (req, res) => {
@@ -103,13 +104,13 @@ export const manageUser = asyncHandler(async (req, res) => {
     where: { id: user.id },
     select: { id: true, fullName: true, email: true, role: true, isActive: true, createdAt: true },
   })
-  res.json({ message: `User ${action}d successfully`, user: withId(updated) })
+  res.json(sendSuccess({ message: `User ${action}d successfully`, user: withId(updated) }))
 })
 
 export const listAllOrders = asyncHandler(async (req, res) => {
   const orders = await prisma.order.findMany()
   const sorted = sortOrdersByDate(orders)
-  res.json(withIdArray(sorted))
+  res.json(sendSuccess(withIdArray(sorted)))
 })
 
 export const updateOrderStatus = asyncHandler(async (req, res) => {
@@ -127,12 +128,12 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
     where: { id: req.params.id },
     data: { status },
   })
-  res.json(withId(updated))
+  res.json(sendSuccess(withId(updated)))
 })
 
 export const getSettings = asyncHandler(async (req, res) => {
   const settings = await prisma.settings.findFirst({ orderBy: { createdAt: 'desc' } })
-  res.json(withId(settings))
+  res.json(sendSuccess(withId(settings)))
 })
 
 export const updateSettings = asyncHandler(async (req, res) => {
@@ -141,11 +142,11 @@ export const updateSettings = asyncHandler(async (req, res) => {
 
   if (!existing) {
     const created = await prisma.settings.create({ data: payload })
-    return res.status(201).json(withId(created))
+    return res.status(201).json(sendSuccess(withId(created)))
   }
 
   const updated = await prisma.settings.update({ where: { id: existing.id }, data: payload })
-  res.json(withId(updated))
+  res.json(sendSuccess(withId(updated)))
 })
 
 export const sendAdminTestEmail = asyncHandler(async (req, res) => {
@@ -158,11 +159,11 @@ export const sendAdminTestEmail = asyncHandler(async (req, res) => {
 
   const result = await sendEmail({ to, subject, html })
 
-  res.json({
+  res.json(sendSuccess({
     message: result.sent ? 'Test email sent' : 'Test email not sent',
     configured: Boolean(env.sendGridApiKey),
     sent: result.sent,
     reason: result.reason || null,
     to,
-  })
+  }))
 })

@@ -3,6 +3,7 @@ import { prisma } from '../config/db.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { sendEmail, buildQuoteEmailTemplate } from '../config/sendgrid.js'
+import { sendSuccess } from '../utils/sendSuccess.js'
 
 const withId = (item) => ({ ...item, _id: item.id })
 const withIdArray = (items) => items.map((item) => withId(item))
@@ -25,7 +26,7 @@ const quoteSchema = z.object({
 export const createMessage = asyncHandler(async (req, res) => {
   const payload = messageSchema.parse(req.body)
   const created = await prisma.message.create({ data: payload })
-  res.status(201).json(withId(created))
+  res.status(201).json(sendSuccess(withId(created)))
 })
 
 export const createQuote = asyncHandler(async (req, res) => {
@@ -58,14 +59,14 @@ export const createQuote = asyncHandler(async (req, res) => {
     console.error('Quote notification email failed:', err)
   }
 
-  res.status(201).json(withId(created))
+  res.status(201).json(sendSuccess(withId(created)))
 })
 
 export const listMessages = asyncHandler(async (req, res) => {
   const messages = await prisma.message.findMany({
     orderBy: { createdAt: 'desc' },
   })
-  res.json(withIdArray(messages))
+  res.json(sendSuccess(withIdArray(messages)))
 })
 
 export const replyToMessage = asyncHandler(async (req, res) => {
@@ -80,5 +81,5 @@ export const replyToMessage = asyncHandler(async (req, res) => {
     data: { isRead: true },
   })
 
-  res.json({ message: 'Reply sent', isRead: true })
+  res.json(sendSuccess({ message: 'Reply sent', isRead: true }))
 })
