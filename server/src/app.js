@@ -13,6 +13,9 @@ export const app = express()
 // Build allowed origins list from env + known dev ports
 const allowedOrigins = [
   env.clientUrl,
+  // Production frontend (Netlify)
+  'https://homy-comfy.netlify.app',
+  // Local development origins
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:5175',
