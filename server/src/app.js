@@ -10,6 +10,14 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
 
 export const app = express()
 
+const isProd = env.nodeEnv === 'production'
+
+const CLOUDINARY_DIRECTIVES = [
+  "'self'",
+  'https://res.cloudinary.com',
+  'https://*.cloudinary.com',
+]
+
 // Build allowed origins list from env + known dev ports
 const allowedOrigins = [
   env.clientUrl,
@@ -29,9 +37,44 @@ const allowedOrigins = [
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        baseUri: ["'self'"],
+        fontSrc: ["'self'", 'https:', 'data:'],
+        formAction: ["'self'"],
+        frameAncestors: ["'self'"],
+        objectSrc: ["'none'"],
+        scriptSrc: CLOUDINARY_DIRECTIVES,
+        styleSrc: [...CLOUDINARY_DIRECTIVES, "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'blob:', ...CLOUDINARY_DIRECTIVES],
+        mediaSrc: CLOUDINARY_DIRECTIVES,
+        connectSrc: CLOUDINARY_DIRECTIVES,
+      },
+    },
+    frameguard: { action: 'deny' },
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   }),
 )
+
+// Additional hardened security headers not covered (or only conditionally
+// applied) by helmet's defaults.
+app.use((req, res, next) => {
+  // X-XSS-Protection: legacy browser reflected-XSS mitigation.
+  res.setHeader('X-XSS-Protection', '1; mode=block')
+  // X-Frame-Options: explicit DENY (helmet frameguard already sets this,
+  // but we assert it for redundancy/clarity).
+  res.setHeader('X-Frame-Options', 'DENY')
+  // HSTS: enforce HTTPS transport in production only.
+  if (isProd) {
+    res.setHeader(
+      'Strict-Transport-Security',
+      'max-age=31536000; includeSubDomains; preload',
+    )
+  }
+  next()
+})
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -59,6 +102,19 @@ app.use(
     legacyHeaders: false,
   }),
 )
+
+// Stricter rate limit for authentication endpoints to blunt brute-force /
+// credential-stuffing attempts. Applied both under /api and at the root so
+// it covers whichever base URL the frontend uses.
+const authLimiter = rateLimit({
+  windowMs: 1000 * 60 * 15,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many authentication attempts, please try again later.' },
+})
+app.use('/api/auth', authLimiter)
+app.use('/auth', authLimiter)
 
 app.get(['/api/health', '/health'], (req, res) => {
   res.json({ status: 'ok', service: 'hok-interior-backend' })

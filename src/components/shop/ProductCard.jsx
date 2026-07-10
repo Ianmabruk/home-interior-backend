@@ -20,11 +20,11 @@ export const ProductCard = ({ product, onQuickView }) => {
       transition={{ duration: 0.3 }}
       className="group relative overflow-hidden rounded-2xl bg-white shadow-lg hover:shadow-xl"
     >
-      <div className="relative aspect-[3/4] overflow-hidden bg-linen">
+      <div className="relative aspect-[1/1] overflow-hidden bg-linen">
         <img
           src={primaryImage}
           alt={product.name}
-          className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+          className="h-full w-full object-contain transition duration-700 group-hover:scale-102"
           loading="lazy"
         />
 
@@ -44,7 +44,7 @@ export const ProductCard = ({ product, onQuickView }) => {
         <div className="absolute right-3 top-3 flex flex-col gap-2 translate-x-10 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100">
           <button
             onClick={() => toggleWishlist(product)}
-            className={`flex h-9 w-9 items-center justify-center bg-white rounded-full shadow-md transition hover:bg-linen ${isWishlisted ? 'text-orange' : 'text-ink/50'}`}
+            className={`flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center bg-white rounded-full shadow-md transition hover:bg-linen ${isWishlisted ? 'text-orange' : 'text-ink/50'}`}
             aria-label="Add to wishlist"
           >
             <Heart size={15} strokeWidth={1.5} fill={isWishlisted ? 'currentColor' : 'none'} />
@@ -52,14 +52,14 @@ export const ProductCard = ({ product, onQuickView }) => {
           <button
             onClick={() => addToCart(product, 1)}
             disabled={product.stock === 0}
-            className="flex h-9 w-9 items-center justify-center bg-white rounded-full shadow-md text-ink/50 transition hover:bg-linen disabled:opacity-40"
+            className="flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center bg-white rounded-full shadow-md text-ink/50 transition hover:bg-linen disabled:opacity-40"
             aria-label="Add to cart"
           >
             <ShoppingBag size={15} strokeWidth={1.5} />
           </button>
           <button
             onClick={() => onQuickView?.(product)}
-            className="flex h-9 w-9 items-center justify-center bg-white rounded-full shadow-md text-ink/50 transition hover:bg-linen"
+            className="flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center bg-white rounded-full shadow-md text-ink/50 transition hover:bg-linen"
             aria-label="Quick view"
           >
             <Eye size={15} strokeWidth={1.5} />

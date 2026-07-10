@@ -65,7 +65,14 @@ export const CheckoutPage = () => {
       }
 
       await api.post('/orders', {
-        items: cart.map((item) => ({ productId: item._id, quantity: item.quantity })),
+        items: cart.map((item) => ({
+          productId: item._id,
+          quantity: item.quantity,
+          variant: item.selectedVariant?.colorName ? {
+            colorName: item.selectedVariant.colorName,
+            colorHex: item.selectedVariant.colorHex,
+          } : undefined,
+        })),
         shippingAddress,
       })
 

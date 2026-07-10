@@ -63,8 +63,9 @@ The React + Vite SPA is built statically and served from cPanel.
 
 ## 4. Render (Backend)
 - Root directory: `server`
-- Build command: `npm install`
-- Start command: `npm run start`
+- Build command: `npm install && npx prisma generate`
+- Start command: `npm run start` (the `start` script also runs `prisma generate` at boot, so the client is always regenerated even if Render restores a cached `node_modules`)
+- **If you ever see 500s on DB routes after a deploy, clear the Render build cache** (Service → Settings → Clear build cache) and redeploy — a cached `node_modules` can hold a stale Prisma client.
 - Required environment variables:
   - `NODE_ENV=production`
   - `PORT=5000`

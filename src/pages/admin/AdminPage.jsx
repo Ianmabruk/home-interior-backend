@@ -1,5 +1,5 @@
-import { BarChart3, Boxes, Film, FolderKanban, Info, Mail, Sparkles, LayoutDashboard, ShoppingBag, TrendingUp, Users, FileText, Settings, Search, Filter, Grid, List, Check, Trash2, Edit, Eye, EyeOff, Bell, ChevronLeft, ChevronRight, UploadCloud, X, Plus, Menu, LogOut, Activity, DollarSign, Layers } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { BarChart3, Boxes, Film, FolderKanban, Info, Mail, Sparkles, LayoutDashboard, ShoppingBag, TrendingUp, Users, FileText, Settings, Search, Filter, Grid, List, Check, Trash2, Edit, Eye, EyeOff, Bell, ChevronLeft, ChevronRight, UploadCloud, X, Plus, Menu, LogOut, Activity, DollarSign, Layers, MessageSquare } from 'lucide-react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
@@ -10,12 +10,15 @@ const tabs = [
   { id: 'products', label: 'Products', icon: Boxes },
   { id: 'projects', label: 'Projects', icon: Film },
   { id: 'portfolio', label: 'Portfolio', icon: FolderKanban },
+  { id: 'orders', label: 'Orders', icon: ShoppingBag },
+  { id: 'customers', label: 'Customers', icon: Users },
+  { id: 'testimonials', label: 'Testimonials', icon: MessageSquare },
+  { id: 'blog', label: 'Blog', icon: FileText },
   { id: 'virtual', label: 'Virtual Interior', icon: Sparkles },
-  { id: 'chat', label: 'Chat', icon: Mail },
-  { id: 'user-management', label: 'Users', icon: Users },
-  { id: 'reports', label: 'Reports', icon: FileText },
+  { id: 'chat', label: 'Messages', icon: Mail },
+  { id: 'media', label: 'Media Library', icon: Film },
+  { id: 'about', label: 'About Content', icon: Info },
   { id: 'settings', label: 'Settings', icon: Settings },
-  { id: 'about', label: 'About', icon: Info },
 ]
 
 const PRODUCT_CATEGORIES = [
@@ -65,6 +68,9 @@ function AdminPage() {
   const [editingVirtual, setEditingVirtual] = useState(null)
   const [editingVariants, setEditingVariants] = useState(null)
   const [variantColorName, setVariantColorName] = useState('')
+  const [variantColorHex, setVariantColorHex] = useState('')
+  const [variantStockQuantity, setVariantStockQuantity] = useState(0)
+  const [variantPriceOverride, setVariantPriceOverride] = useState('')
   const [variantImageFile, setVariantImageFile] = useState(null)
   const [variantImagePreview, setVariantImagePreview] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState({ type: null, id: null })
@@ -215,9 +221,13 @@ function AdminPage() {
       setIsUploading(true); setUploadProgress(0)
       const payload = new FormData()
       payload.append('colorName', variantColorName)
+      payload.append('colorHex', variantColorHex || '')
+      payload.append('stockQuantity', String(variantStockQuantity || 0))
+      if (variantPriceOverride !== '') payload.append('priceOverride', String(variantPriceOverride))
       if (variantImageFile) payload.append('image', variantImageFile)
       await api.post(`/products/${productId}/variants`, payload, { onUploadProgress })
-      setVariantColorName(''); setVariantImageFile(null); setVariantImagePreview(null)
+      setVariantColorName(''); setVariantColorHex(''); setVariantStockQuantity(0); setVariantPriceOverride('')
+      setVariantImageFile(null); setVariantImagePreview(null)
       fetchAll(); resetProgress(); setSuccess('Variant added.')
     } catch (error) { resetProgress(); setFailure(error, 'Add variant failed.') }
   }
@@ -350,22 +360,23 @@ function AdminPage() {
     amber: 'bg-amber-50 text-amber-700',
   }[color] || 'bg-linen text-ink')
 
-  const MetricCard = ({ title, value, icon: Icon, color, hint }) => (
+  const MetricCard = ({ title, value, icon: Icon, color, hint, prefix, suffix }) => (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -4 }}
-      className="relative overflow-hidden rounded-3xl border border-sand/60 bg-white/70 backdrop-blur-sm p-5 shadow-card hover:shadow-lift transition-all duration-300"
+      className="relative overflow-hidden rounded-2xl border border-borderBeige bg-white p-5 shadow-sm hover:shadow-md transition-all duration-300"
     >
-      <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br from-orange/10 to-transparent" />
       <div className="flex items-center justify-between">
-        <p className="text-2xs font-semibold uppercase tracking-widest text-ink/45">{title}</p>
-        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${getColorClass(color)}`}>
+        <p className="text-2xs font-semibold uppercase tracking-widest text-inkSecondary/60">{title}</p>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${getColorClass(color)}`}>
           <Icon size={18} />
         </div>
       </div>
-      <p className="mt-3 font-display text-3xl font-semibold text-ink">{value}</p>
-      {hint && <p className="mt-1 text-2xs text-ink/40">{hint}</p>}
+      <p className="mt-3 font-display text-3xl font-semibold text-inkPrimary">
+        <AnimatedCounter value={value} prefix={prefix} suffix={suffix} />
+      </p>
+      {hint && <p className="mt-1 text-2xs text-inkSecondary/40">{hint}</p>}
     </motion.div>
   )
 
@@ -376,29 +387,52 @@ function AdminPage() {
     </span>
   )
 
+  const AnimatedCounter = ({ value, prefix = '', suffix = '' }) => {
+    const [display, setDisplay] = useState(0)
+    const numeric = useMemo(() => {
+      if (typeof value === 'number') return value
+      const parsed = Number(String(value).replace(/[^0-9.-]/g, ''))
+      return Number.isFinite(parsed) ? parsed : 0
+    }, [value])
+    useEffect(() => {
+      if (numeric === 0) { setDisplay(0); return }
+      const duration = 800
+      const startTime = performance.now()
+      const step = (now) => {
+        const elapsed = now - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        const eased = 1 - Math.pow(1 - progress, 3)
+        setDisplay(Math.floor(eased * numeric))
+        if (progress < 1) requestAnimationFrame(step)
+      }
+      requestAnimationFrame(step)
+    }, [numeric])
+    return <>{prefix}{display.toLocaleString()}{suffix}</>
+  }
+
   // ============ RENDER SECTIONS ============
   const renderDashboard = () => (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <MetricCard title="Total Sales" value={`$${(overview?.totalSales || 0).toLocaleString()}`} icon={DollarSign} color="emerald" />
-        <MetricCard title="Revenue" value={`$${(overview?.revenue || 0).toLocaleString()}`} icon={TrendingUp} color="blue" />
-        <MetricCard title="Monthly Sales" value={`$${(overview?.monthlySales || 0).toLocaleString()}`} icon={BarChart3} color="violet" />
+        <MetricCard title="Total Sales" value={overview?.totalSales || 0} icon={DollarSign} color="emerald" prefix="$" />
+        <MetricCard title="Revenue" value={overview?.revenue || 0} icon={TrendingUp} color="blue" prefix="$" />
+        <MetricCard title="Monthly Sales" value={overview?.monthlySales || 0} icon={BarChart3} color="violet" prefix="$" />
         <MetricCard title="Customers" value={overview?.userCount || 0} icon={Users} color="pink" />
         <MetricCard title="Products" value={overview?.productCount || 0} icon={Boxes} color="orange" />
         <MetricCard title="Orders" value={overview?.ordersCount || 0} icon={ShoppingBag} color="cyan" />
         <MetricCard title="Projects" value={overview?.projectCount || 0} icon={Film} color="indigo" />
         <MetricCard title="Portfolio" value={overview?.portfolioCount || 0} icon={FolderKanban} color="amber" />
-        <MetricCard title="Visits" value={(overview?.visits || 0).toLocaleString()} icon={Activity} color="blue" />
+        <MetricCard title="Visits" value={overview?.visits || 0} icon={Activity} color="blue" />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-3xl border border-sand/60 bg-white/70 backdrop-blur-sm p-5 shadow-card">
-          <h3 className="font-display text-lg text-ink mb-1">Revenue Trend</h3>
-          <p className="text-2xs text-ink/40 mb-3">Monthly performance</p>
-          <MiniAreaChart data={analyticsData.map((d) => d.revenue || 0)} />
+        <div className="rounded-2xl border border-borderBeige bg-white p-5 shadow-sm">
+          <h3 className="font-display text-lg text-inkPrimary mb-1">Revenue Trend</h3>
+          <p className="text-2xs text-inkSecondary/40 mb-3">Monthly performance</p>
+          <MiniAreaChart data={analyticsData.map((d) => d.revenue || 0)} color="#8B5E3C" />
         </div>
-        <div className="rounded-3xl border border-sand/60 bg-white/70 backdrop-blur-sm p-5 shadow-card">
-          <h3 className="font-display text-lg text-ink mb-1">Visitors</h3>
-          <p className="text-2xs text-ink/40 mb-3">Monthly visits</p>
+        <div className="rounded-2xl border border-borderBeige bg-white p-5 shadow-sm">
+          <h3 className="font-display text-lg text-inkPrimary mb-1">Visitors</h3>
+          <p className="text-2xs text-inkSecondary/40 mb-3">Monthly visits</p>
           <MiniBarChart data={analyticsData.map((d) => d.visits || 0)} labels={analyticsData.map((_, i) => `M${i + 1}`)} />
         </div>
       </div>
@@ -434,18 +468,18 @@ function AdminPage() {
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard title="Total Visitors" value={analyticsData.reduce((s, d) => s + (d.visits || 0), 0)} icon={Eye} color="blue" />
-        <MetricCard title="Total Revenue" value={`$${analyticsData.reduce((s, d) => s + (d.revenue || 0), 0).toLocaleString()}`} icon={DollarSign} color="emerald" />
+        <MetricCard title="Total Revenue" value={analyticsData.reduce((s, d) => s + (d.revenue || 0), 0)} icon={DollarSign} color="emerald" prefix="$" />
         <MetricCard title="New Users" value={analyticsData.reduce((s, d) => s + (d.newUsers || 0), 0)} icon={Users} color="violet" />
         <MetricCard title="Orders" value={analyticsData.reduce((s, d) => s + (d.orders || 0), 0)} icon={ShoppingBag} color="orange" />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-3xl border border-sand/60 bg-white/70 backdrop-blur-sm p-5 shadow-card">
-          <h3 className="font-display text-lg text-ink mb-3">Visitor Trends</h3>
-          <MiniAreaChart data={analyticsData.map((d) => d.visits || 0)} color="#8B7355" />
+        <div className="rounded-2xl border border-borderBeige bg-white p-5 shadow-sm">
+          <h3 className="font-display text-lg text-inkPrimary mb-3">Visitor Trends</h3>
+          <MiniAreaChart data={analyticsData.map((d) => d.visits || 0)} color="#8B5E3C" />
         </div>
-        <div className="rounded-3xl border border-sand/60 bg-white/70 backdrop-blur-sm p-5 shadow-card">
-          <h3 className="font-display text-lg text-ink mb-3">Revenue</h3>
-          <MiniAreaChart data={analyticsData.map((d) => d.revenue || 0)} color="#D97706" />
+        <div className="rounded-2xl border border-borderBeige bg-white p-5 shadow-sm">
+          <h3 className="font-display text-lg text-inkPrimary mb-3">Revenue</h3>
+          <MiniAreaChart data={analyticsData.map((d) => d.revenue || 0)} color="#F58A3C" />
         </div>
       </div>
     </div>
@@ -463,7 +497,8 @@ function AdminPage() {
           <button className="px-4 py-2.5 text-xs uppercase tracking-widest border border-sand rounded-xl hover:bg-linen transition flex items-center gap-2"><Filter size={14} /> Filter</button>
         </div>
         <div className="rounded-2xl border border-sand/60 bg-white overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm whitespace-nowrap">
             <thead className="bg-linen border-b border-sand">
               <tr>
                 <th className="text-left px-4 py-3 font-medium text-ink/60">Name</th>
@@ -493,7 +528,8 @@ function AdminPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+           </table>
+          </div>
         </div>
       </div>
     )
@@ -680,7 +716,7 @@ function AdminPage() {
         {products.map((item) => (
           <article key={item._id} className="overflow-hidden rounded-2xl border border-sand/60 bg-white shadow-card hover:shadow-lift transition-shadow">
             <div className="relative h-44 bg-linen">
-              <img src={item.images?.[0]?.url} alt={item.name} className="h-full w-full object-cover" />
+              <img src={item.images?.[0]?.url} alt={item.name} className="h-full w-full object-contain" />
             </div>
             <div className="p-4">
               <p className="font-display text-xl text-ink">{item.name}</p>
@@ -704,11 +740,16 @@ function AdminPage() {
                   {editingVariants === item._id && (
                     <div className="mt-3 space-y-2">
                       <input value={variantColorName} onChange={(e) => setVariantColorName(e.target.value)} className="w-full rounded-lg border border-sand bg-white px-3 py-2 text-xs outline-none" placeholder="Color name (e.g. White)" />
+                      <input value={variantColorHex} onChange={(e) => setVariantColorHex(e.target.value)} className="w-full rounded-lg border border-sand bg-white px-3 py-2 text-xs outline-none" placeholder="Color hex (e.g. #FFFFFF)" />
+                      <div className="grid grid-cols-2 gap-2">
+                        <input value={variantStockQuantity} onChange={(e) => setVariantStockQuantity(Number(e.target.value))} type="number" className="w-full rounded-lg border border-sand bg-white px-3 py-2 text-xs outline-none" placeholder="Stock" />
+                        <input value={variantPriceOverride} onChange={(e) => setVariantPriceOverride(e.target.value)} type="number" step="0.01" className="w-full rounded-lg border border-sand bg-white px-3 py-2 text-xs outline-none" placeholder="Price override" />
+                      </div>
                       <input type="file" accept="image/*" onChange={handleVariantImageChange} className="w-full text-xs text-ink/60" />
                       {variantImagePreview && <img src={variantImagePreview} alt="Preview" className="h-12 w-12 rounded-lg object-cover" />}
                       <div className="flex gap-2">
                         <button type="button" onClick={() => addVariant(item._id)} className="flex-1 rounded-lg bg-ink px-3 py-1.5 text-2xs font-medium uppercase tracking-widest text-white hover:bg-charcoal transition">Save Variant</button>
-                        <button type="button" onClick={() => { setEditingVariants(null); setVariantColorName(''); setVariantImageFile(null); setVariantImagePreview(null) }} className="rounded-lg border border-sand px-3 py-1.5 text-2xs text-ink/60 hover:bg-linen transition">Cancel</button>
+                        <button type="button" onClick={() => { setEditingVariants(null); setVariantColorName(''); setVariantColorHex(''); setVariantStockQuantity(0); setVariantPriceOverride(''); setVariantImageFile(null); setVariantImagePreview(null) }} className="rounded-lg border border-sand px-3 py-1.5 text-2xs text-ink/60 hover:bg-linen transition">Cancel</button>
                       </div>
                     </div>
                   )}
@@ -731,6 +772,192 @@ function AdminPage() {
       </div>
     </div>
   )
+
+  const renderOrders = () => {
+    const allOrders = overview?.recentOrders || []
+    return (
+      <div className="space-y-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <MetricCard title="Total Orders" value={overview?.ordersCount || 0} icon={ShoppingBag} color="orange" />
+          <MetricCard title="Pending" value={allOrders.filter((o) => o.status === 'pending').length || 0} icon={Activity} color="amber" />
+          <MetricCard title="Completed" value={allOrders.filter((o) => o.status === 'delivered').length || 0} icon={Check} color="emerald" />
+          <MetricCard title="Revenue" value={`$${(overview?.totalSales || 0).toLocaleString()}`} icon={DollarSign} color="blue" />
+        </div>
+        <div className="rounded-2xl border border-borderBeige bg-white p-5 shadow-sm">
+          <h3 className="font-display text-xl text-inkPrimary mb-4">Recent Orders</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-borderBeige">
+                  <th className="text-left px-4 py-3 font-medium text-inkSecondary">Order</th>
+                  <th className="text-left px-4 py-3 font-medium text-inkSecondary">Date</th>
+                  <th className="text-left px-4 py-3 font-medium text-inkSecondary">Status</th>
+                  <th className="text-left px-4 py-3 font-medium text-inkSecondary">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allOrders.slice(0, 10).map((order) => (
+                  <tr key={order._id} className="border-b border-borderBeige/50 hover:bg-softBeige/30 transition">
+                    <td className="px-4 py-3 font-medium text-inkPrimary">#{order._id.slice(-6).toUpperCase()}</td>
+                    <td className="px-4 py-3 text-inkSecondary">{new Date(order.createdAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-3"><StatusBadge active={order.status === 'delivered'} /></td>
+                    <td className="px-4 py-3 font-medium text-inkPrimary">${order.total?.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const renderCustomers = () => {
+    const filtered = users.filter((u) => u.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) || u.email?.toLowerCase().includes(searchTerm.toLowerCase()))
+    return (
+      <div className="space-y-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <MetricCard title="Total Customers" value={users.length} icon={Users} color="blue" />
+          <MetricCard title="Active" value={users.filter((u) => u.isActive).length} icon={Check} color="emerald" />
+          <MetricCard title="Admins" value={users.filter((u) => u.role === 'admin').length} icon={Users} color="violet" />
+          <MetricCard title="New This Month" value={overview?.newUsers || 0} icon={TrendingUp} color="orange" />
+        </div>
+        <div className="rounded-2xl border border-borderBeige bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="relative flex-1">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-inkSecondary/40" />
+              <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search customers..." className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-borderBeige bg-white focus:ring-2 focus:ring-elegantOrange/30 outline-none" />
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-borderBeige">
+                  <th className="text-left px-4 py-3 font-medium text-inkSecondary">Name</th>
+                  <th className="text-left px-4 py-3 font-medium text-inkSecondary">Email</th>
+                  <th className="text-left px-4 py-3 font-medium text-inkSecondary">Role</th>
+                  <th className="text-left px-4 py-3 font-medium text-inkSecondary">Status</th>
+                  <th className="text-left px-4 py-3 font-medium text-inkSecondary">Joined</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((u) => (
+                  <tr key={u._id} className="border-b border-borderBeige/50 hover:bg-softBeige/30 transition">
+                    <td className="px-4 py-3 font-medium text-inkPrimary">{u.fullName}</td>
+                    <td className="px-4 py-3 text-inkSecondary">{u.email}</td>
+                    <td className="px-4 py-3"><span className={`px-2 py-1 rounded-lg text-2xs ${u.role === 'admin' ? 'bg-elegantOrange/10 text-warmBrown' : 'bg-softBeige text-inkSecondary'}`}>{u.role}</span></td>
+                    <td className="px-4 py-3"><StatusBadge active={u.isActive} /></td>
+                    <td className="px-4 py-3 text-inkSecondary">{new Date(u.createdAt).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const renderTestimonials = () => (
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <MetricCard title="Messages" value={messages.length} icon={Mail} color="blue" />
+        <MetricCard title="Unread" value={messages.filter((m) => !m.isRead).length} icon={Bell} color="orange" />
+        <MetricCard title="Today" value={messages.filter((m) => new Date(m.createdAt).toDateString() === new Date().toDateString()).length} icon={Activity} color="emerald" />
+        <MetricCard title="This Week" value={messages.filter((m) => { const d = new Date(m.createdAt); const now = new Date(); return d >= new Date(now.setDate(now.getDate() - 7)); }).length} icon={TrendingUp} color="violet" />
+      </div>
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {messages.map((msg) => (
+          <div key={msg._id} className="rounded-2xl border border-borderBeige bg-white p-5 shadow-sm hover:shadow-md transition-all">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <p className="font-medium text-inkPrimary">{msg.name}</p>
+                <p className="text-2xs text-inkSecondary">{msg.email}</p>
+              </div>
+              <span className={`px-2 py-1 rounded-lg text-2xs ${!msg.isRead ? 'bg-elegantOrange/10 text-warmBrown' : 'bg-softBeige text-inkSecondary'}`}>{!msg.isRead ? 'New' : 'Read'}</span>
+            </div>
+            <p className="text-xs font-medium uppercase tracking-widest text-inkSecondary/60 mb-1">{msg.subject}</p>
+            <p className="text-sm text-inkSecondary mt-2 line-clamp-3">{msg.content}</p>
+            <p className="text-2xs text-inkSecondary/40 mt-3">{new Date(msg.createdAt).toLocaleDateString()}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
+  const renderBlog = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-display text-xl text-inkPrimary">Blog Posts</h3>
+          <p className="text-sm text-inkSecondary mt-1">Manage your interior design articles and insights.</p>
+        </div>
+        <button className="admin-btn">New Post</button>
+      </div>
+      <div className="rounded-2xl border border-borderBeige border-dashed bg-white p-12 text-center">
+        <FileText size={48} className="mx-auto text-inkSecondary/20 mb-4" />
+        <p className="font-display text-2xl text-inkSecondary/40">Blog management coming soon</p>
+        <p className="text-sm text-inkSecondary/35 mt-2">Create and publish articles to engage your audience.</p>
+      </div>
+    </div>
+  )
+
+  const renderMedia = () => {
+    const imageCount = portfolio.length + (overview?.projectCount || 0) + (overview?.productCount || 0)
+    const videoCount = virtualDesigns.length + projects.filter((p) => p.videoUrl).length
+    return (
+      <div className="space-y-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <MetricCard title="Images" value={imageCount} icon={Film} color="blue" />
+          <MetricCard title="Videos" value={videoCount} icon={Film} color="violet" />
+          <MetricCard title="Portfolio Items" value={portfolio.length} icon={FolderKanban} color="orange" />
+          <MetricCard title="Projects" value={projects.length} icon={LayoutDashboard} color="emerald" />
+        </div>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="rounded-2xl border border-borderBeige bg-white p-5 shadow-sm">
+            <h3 className="font-display text-xl text-inkPrimary mb-4">Recent Uploads</h3>
+            <div className="space-y-3">
+              {[...portfolio.slice(0, 3), ...projects.slice(0, 3)].map((item) => (
+                <div key={item._id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-softBeige/30 transition">
+                  <div className="w-10 h-10 rounded-xl bg-softBeige flex items-center justify-center">
+                    <Film size={16} className="text-inkSecondary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-inkPrimary truncate">{item.title}</p>
+                    <p className="text-2xs text-inkSecondary">{item.category || 'Media'}</p>
+                  </div>
+                  <span className="text-2xs text-inkSecondary/40">{new Date(item.createdAt).toLocaleDateString()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-borderBeige bg-white p-5 shadow-sm">
+            <h3 className="font-display text-xl text-inkPrimary mb-4">Storage Overview</h3>
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between text-sm mb-1">
+                  <span className="text-inkSecondary">Images</span>
+                  <span className="font-medium text-inkPrimary">{imageCount} files</span>
+                </div>
+                <div className="h-2 rounded-full bg-softBeige overflow-hidden">
+                  <div className="h-full bg-elegantOrange rounded-full" style={{ width: `${Math.min(100, imageCount * 5)}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between text-sm mb-1">
+                  <span className="text-inkSecondary">Videos</span>
+                  <span className="font-medium text-inkPrimary">{videoCount} files</span>
+                </div>
+                <div className="h-2 rounded-full bg-softBeige overflow-hidden">
+                  <div className="h-full bg-warmBrown rounded-full" style={{ width: `${Math.min(100, videoCount * 10)}%` }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const renderSettings = () => (
     <div className="space-y-6 max-w-2xl">
@@ -760,12 +987,12 @@ function AdminPage() {
   const renderReports = () => (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <MetricCard title="Conversion Rate" value={`${analyticsData.length > 0 ? ((analyticsData.reduce((s, d) => s + d.orders, 0) / Math.max(analyticsData.reduce((s, d) => s + d.visits, 0), 1)) * 100).toFixed(1) : 0}%`} icon={TrendingUp} color="emerald" />
-        <MetricCard title="Avg Order Value" value={`$${overview?.ordersCount > 0 ? (overview.totalSales / overview.ordersCount).toFixed(2) : '0.00'}`} icon={ShoppingBag} color="blue" />
+        <MetricCard title="Conversion Rate" value={`${analyticsData.length > 0 ? ((analyticsData.reduce((s, d) => s + d.orders, 0) / Math.max(analyticsData.reduce((s, d) => s + d.visits, 0), 1)) * 100).toFixed(1) : 0}`} suffix="%" icon={TrendingUp} color="emerald" />
+        <MetricCard title="Avg Order Value" value={overview?.ordersCount > 0 ? (overview.totalSales / overview.ordersCount).toFixed(2) : '0.00'} icon={ShoppingBag} color="blue" prefix="$" />
         <MetricCard title="Products Sold" value={overview?.soldUnits || 0} icon={Boxes} color="violet" />
       </div>
-      <div className="rounded-3xl border border-sand/60 bg-white/70 backdrop-blur-sm p-6 shadow-card">
-        <h3 className="font-display text-xl text-ink mb-4">Sales Overview</h3>
+      <div className="rounded-2xl border border-borderBeige bg-white p-6 shadow-sm">
+        <h3 className="font-display text-xl text-inkPrimary mb-4">Sales Overview</h3>
         <MiniBarChart data={analyticsData.map((d) => d.revenue || 0)} labels={analyticsData.map((_, i) => `M${i + 1}`)} />
       </div>
     </div>
@@ -784,8 +1011,8 @@ function AdminPage() {
     }
 
     return (
-      <form onSubmit={submitAbout} className="space-y-4 rounded-3xl border border-sand/60 bg-white/70 backdrop-blur-sm p-6 max-w-2xl shadow-card">
-        <h2 className="font-display text-2xl text-ink mb-4">About Content</h2>
+      <form onSubmit={submitAbout} className="space-y-4 rounded-2xl border border-borderBeige bg-white p-6 max-w-2xl shadow-sm">
+        <h2 className="font-display text-2xl text-inkPrimary mb-4">About Content</h2>
         {(aboutImagePreview || aboutImageFile) && (
           <div className="relative inline-block">
             <img src={aboutImagePreview} alt="About preview" className="h-40 w-full max-w-sm object-cover rounded-xl" />
@@ -834,9 +1061,9 @@ function AdminPage() {
   )
 
   const Sidebar = () => (
-    <aside className={`fixed inset-y-0 left-0 z-40 flex flex-col bg-ink text-white transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'} ${mobileSidebar ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+    <aside className={`fixed inset-y-0 left-0 z-40 flex flex-col bg-warmBrown text-white transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'} ${mobileSidebar ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
       <div className="flex items-center gap-3 h-16 px-5 border-b border-white/10">
-        <div className="w-10 h-10 rounded-xl bg-orange flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-elegantOrange flex items-center justify-center flex-shrink-0">
           <LayoutDashboard size={18} className="text-white" />
         </div>
         {sidebarOpen && (
@@ -854,7 +1081,7 @@ function AdminPage() {
             <button
               key={item.id}
               onClick={() => { setActiveTab(item.id); setMobileSidebar(false) }}
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-200 ${isActive ? 'bg-orange text-white shadow-lg' : 'text-white/60 hover:bg-white/10 hover:text-white'}`}
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-200 ${isActive ? 'bg-white/15 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
               title={item.label}
             >
               <Icon size={18} className="flex-shrink-0" />
@@ -864,7 +1091,7 @@ function AdminPage() {
         })}
       </nav>
       <div className="p-3 border-t border-white/10">
-        <button onClick={() => { logout?.(); }} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/60 hover:bg-white/10 hover:text-white transition ${!sidebarOpen ? 'justify-center' : ''}`}>
+        <button onClick={() => { logout?.(); }} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 hover:bg-white/10 hover:text-white transition ${!sidebarOpen ? 'justify-center' : ''}`}>
           <LogOut size={18} className="flex-shrink-0" />
           {sidebarOpen && <span className="font-medium">Logout</span>}
         </button>
@@ -873,20 +1100,20 @@ function AdminPage() {
   )
 
   const Topbar = () => (
-    <header className="sticky top-0 z-30 flex items-center gap-4 bg-white/80 backdrop-blur-md border-b border-sand/60 px-5 h-16">
-      <button onClick={() => setSidebarOpen((s) => !s)} className="hidden lg:flex p-2 rounded-lg hover:bg-linen transition text-ink">
+    <header className="sticky top-0 z-30 flex items-center gap-4 bg-white/90 backdrop-blur-md border-b border-borderBeige px-5 h-16">
+      <button onClick={() => setSidebarOpen((s) => !s)} className="hidden lg:flex p-2 rounded-lg hover:bg-softBeige transition text-inkPrimary">
         {sidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
       </button>
-      <button onClick={() => setMobileSidebar(true)} className="lg:hidden p-2 rounded-lg hover:bg-linen transition text-ink">
+      <button onClick={() => setMobileSidebar(true)} className="lg:hidden p-2 rounded-lg hover:bg-softBeige transition text-inkPrimary">
         <Menu size={18} />
       </button>
       <div className="relative flex-1 max-w-md">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/30" />
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-inkSecondary/50" />
         <input
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Search…"
-          className="w-full pl-10 pr-4 py-2 text-sm rounded-full border border-sand bg-linen/50 focus:ring-2 focus:ring-orange/30 outline-none"
+          className="w-full pl-10 pr-4 py-2 text-sm rounded-full border border-borderBeige bg-white focus:ring-2 focus:ring-elegantOrange/30 outline-none"
         />
       </div>
       <div className="flex items-center gap-2">
@@ -908,14 +1135,14 @@ function AdminPage() {
   )
 
   return (
-    <div className="min-h-screen bg-luxuryBeige">
+    <div className="min-h-screen bg-creamWhite">
       <Sidebar />
       <div className={`transition-all duration-300 ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-20'}`}>
         <Topbar />
         <main className="p-5 md:p-8">
           <div className="mb-6">
-            <h1 className="font-display text-3xl md:text-4xl capitalize text-ink">{activeTab.replace('-', ' ')}</h1>
-            <p className="text-sm text-ink/50 mt-1">Manage your {activeTab.replace('-', ' ')}</p>
+            <h1 className="font-display text-3xl md:text-4xl capitalize text-inkPrimary">{activeTab.replace('-', ' ')}</h1>
+            <p className="text-sm text-inkSecondary mt-1">Manage your {activeTab.replace('-', ' ')}</p>
           </div>
 
           <AnimatePresence>
@@ -943,11 +1170,16 @@ function AdminPage() {
               {activeTab === 'portfolio' && renderPortfolio()}
               {activeTab === 'virtual' && renderVirtual()}
               {activeTab === 'chat' && renderChat()}
-              {activeTab === 'user-management' && renderUserManagement()}
-              {activeTab === 'reports' && renderReports()}
-              {activeTab === 'settings' && renderSettings()}
-              {activeTab === 'about' && renderAboutTab()}
-            </motion.div>
+               {activeTab === 'user-management' && renderUserManagement()}
+               {activeTab === 'reports' && renderReports()}
+               {activeTab === 'settings' && renderSettings()}
+               {activeTab === 'about' && renderAboutTab()}
+               {activeTab === 'orders' && renderOrders()}
+               {activeTab === 'customers' && renderCustomers()}
+               {activeTab === 'testimonials' && renderTestimonials()}
+               {activeTab === 'blog' && renderBlog()}
+               {activeTab === 'media' && renderMedia()}
+             </motion.div>
           </AnimatePresence>
         </main>
       </div>

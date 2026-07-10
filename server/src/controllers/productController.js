@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { prisma } from '../config/db.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
-import { uploadToCloudinary } from '../services/uploadService.js'
+import { uploadImage } from '../services/uploadService.js'
 import { sendEmail, buildNewProductEmailTemplate } from '../config/sendgrid.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 
@@ -115,7 +115,7 @@ export const createProduct = asyncHandler(async (req, res) => {
   const files = req.files || []
 
   const uploads = await Promise.all(
-    files.map((file) => uploadToCloudinary(file.buffer, 'hok/products', 'image', file.mimetype)),
+      files.map((file) => uploadImage(file.buffer, 'hok/products', file.mimetype)),
   )
 
   const colorVariantsRaw = Array.isArray(req.body.colorVariants)
@@ -167,7 +167,7 @@ export const updateProduct = asyncHandler(async (req, res) => {
   const files = req.files || []
   if (files.length > 0) {
     const uploads = await Promise.all(
-      files.map((file) => uploadToCloudinary(file.buffer, 'hok/products', 'image', file.mimetype)),
+    files.map((file) => uploadImage(file.buffer, 'hok/products', file.mimetype)),
     )
     data.images = uploads.map((item) => ({ url: item.secure_url, publicId: item.public_id }))
   }
@@ -196,15 +196,24 @@ export const addColorVariant = asyncHandler(async (req, res) => {
   const product = await prisma.product.findUnique({ where: { id: req.params.id } })
   if (!product) throw new ApiError(404, 'Product not found')
 
-  const { colorName, colorHex = '' } = req.body
+  const { colorName, colorHex = '', stockQuantity = 0, priceOverride } = req.body
   if (!colorName) throw new ApiError(400, 'colorName is required')
   if (!req.file) throw new ApiError(400, 'Image file is required')
 
-  const upload = await uploadToCloudinary(req.file.buffer, 'hok/products/variants', 'image', req.file.mimetype)
+  const upload = await uploadImage(req.file.buffer, 'hok/products/variants', req.file.mimetype)
 
   const currentVariants = Array.isArray(product.colorVariants) ? product.colorVariants : []
   const filtered = currentVariants.filter((v) => v.colorName !== colorName)
-  const newVariant = { colorName, colorHex, imageUrl: upload.secure_url, imagePublicId: upload.public_id }
+  const isDefault = currentVariants.length === 0
+  const newVariant = {
+    colorName,
+    colorHex,
+    imageUrl: upload.secure_url,
+    imagePublicId: upload.public_id,
+    stockQuantity: Number(stockQuantity),
+    priceOverride: priceOverride !== undefined && priceOverride !== '' ? Number(priceOverride) : undefined,
+    isDefault: Boolean(isDefault),
+  }
 
   const updated = await prisma.product.update({
     where: { id: req.params.id },

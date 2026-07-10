@@ -12,6 +12,10 @@ const orderSchema = z.object({
     z.object({
       productId: z.string().min(10),
       quantity: z.coerce.number().int().min(1),
+      variant: z.object({
+        colorName: z.string().optional(),
+        colorHex: z.string().optional(),
+      }).optional(),
     }),
   ),
   shippingAddress: z.object({
@@ -35,12 +39,23 @@ export const createOrder = asyncHandler(async (req, res) => {
 
   const items = data.items.map((item) => {
     const product = byId.get(item.productId)
-    return {
+    const base = {
       product: item.productId,
       name: product.name,
       image: product.images?.[0]?.url || product.images,
-      price: product.discountPrice || product.price,
       quantity: item.quantity,
+    }
+    if (item.variant?.colorName) {
+      const variant = product.colorVariants?.find((v) => v.colorName === item.variant.colorName)
+      return {
+        ...base,
+        variant: item.variant,
+        price: variant?.priceOverride || product.discountPrice || product.price,
+      }
+    }
+    return {
+      ...base,
+      price: product.discountPrice || product.price,
     }
   })
 

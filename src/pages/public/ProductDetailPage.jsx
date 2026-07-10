@@ -60,7 +60,7 @@ export const ProductDetailPage = () => {
   return (
     <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 md:grid-cols-2 md:px-8">
       {/* Image */}
-      <div className="relative overflow-hidden rounded-3xl bg-beige">
+      <div className="relative aspect-[1/1] overflow-hidden rounded-3xl bg-linen md:h-[520px] md:aspect-auto">
         <AnimatePresence mode="wait">
           <motion.img
             key={displayImage || 'placeholder'}
@@ -70,7 +70,7 @@ export const ProductDetailPage = () => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.35 }}
-            className="h-[520px] w-full object-cover"
+            className="h-full w-full object-contain"
           />
         </AnimatePresence>
         {salePercent && (
@@ -87,14 +87,20 @@ export const ProductDetailPage = () => {
         <p className="mt-4 text-sm leading-relaxed text-ink/70">{product.description}</p>
 
         <div className="mt-5 flex items-baseline gap-3">
-          <p className="text-2xl font-semibold">${product.discountPrice || product.price}</p>
-          {product.discountPrice && (
+          <p className="text-2xl font-semibold">
+            ${activeVariant?.priceOverride ?? product.discountPrice ?? product.price}
+          </p>
+          {product.discountPrice && !activeVariant?.priceOverride && (
             <p className="text-sm text-ink/40 line-through">${product.price}</p>
           )}
         </div>
 
-        <p className={`mt-2 text-xs font-semibold ${product.stock > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-          {product.stock > 0 ? `In Stock (${product.stock} available)` : 'Out of Stock'}
+        <p className={`mt-2 text-xs font-semibold ${(activeVariant?.stockQuantity ?? product.stock) > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+          {activeVariant?.stockQuantity !== undefined
+            ? `Variant Stock: ${activeVariant.stockQuantity} available`
+            : product.stock > 0
+              ? `In Stock (${product.stock} available)`
+              : 'Out of Stock'}
         </p>
 
         {/* Color Variants */}
@@ -110,7 +116,7 @@ export const ProductDetailPage = () => {
                   key={variant.colorName}
                   onClick={() => setActiveColor(variant.colorName)}
                   title={variant.colorName}
-                  className={`relative h-10 w-10 overflow-hidden rounded-full border-2 transition-all ${
+                  className={`relative h-10 w-10 min-h-[40px] min-w-[40px] overflow-hidden rounded-full border-2 transition-all ${
                     activeColor === variant.colorName
                       ? 'border-orange shadow-md scale-110'
                       : 'border-black/15 hover:border-black/40'
@@ -154,7 +160,7 @@ export const ProductDetailPage = () => {
 
         <div className="mt-8 flex gap-3">
           <button
-            onClick={() => addToCart(product, 1)}
+            onClick={() => addToCart(product, 1, activeVariant ? { colorName: activeVariant.colorName, colorHex: activeVariant.colorHex, imageUrl: activeVariant.imageUrl } : null)}
             disabled={product.stock === 0}
             className="rounded-full bg-ink px-8 py-3 text-xs uppercase tracking-[0.18em] text-white transition hover:bg-ink/85 disabled:opacity-50"
           >

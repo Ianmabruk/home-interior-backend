@@ -106,22 +106,26 @@ export const getCart = asyncHandler(async (req, res) => {
     .map((entry) => {
       const product = byId.get(entry.product)
       if (!product) return null
-      return {
+      const base = {
         _id: product.id,
         name: product.name,
         image: product.images?.[0]?.url || product.images,
         price: product.discountPrice || product.price,
         quantity: entry.quantity,
       }
+      if (entry.variant) {
+        return { ...base, selectedVariant: entry.variant }
+      }
+      return base
     })
     .filter(Boolean)
 
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const total = items.reduce((sum, item) => sum + (item.selectedVariant?.priceOverride || item.price) * item.quantity, 0)
   res.json(sendSuccess({ items, total }))
 })
 
 export const addToCart = asyncHandler(async (req, res) => {
-  const { productId, quantity = 1 } = req.body
+  const { productId, quantity = 1, variant } = req.body
   const product = await prisma.product.findUnique({ where: { id: productId } })
   if (!product) {
     return res.status(404).json({ message: 'Product not found' })
@@ -131,14 +135,29 @@ export const addToCart = asyncHandler(async (req, res) => {
     where: { id: req.user.userId },
   })
 
-  const existing = (user?.cart || []).find((entry) => entry.product === productId)
+  const existing = (user?.cart || []).find((entry) => {
+    if (variant?.colorName) {
+      return entry.product === productId && entry.variant?.colorName === variant.colorName
+    }
+    return entry.product === productId && !entry.variant
+  })
+
   let newCart
   if (existing) {
-    newCart = user.cart.map((entry) =>
-      entry.product === productId ? { ...entry, quantity: entry.quantity + Number(quantity) } : entry,
-    )
+    newCart = user.cart.map((entry) => {
+      if (variant?.colorName) {
+        return entry.product === productId && entry.variant?.colorName === variant.colorName
+          ? { ...entry, quantity: entry.quantity + Number(quantity) }
+          : entry
+      }
+      return entry.product === productId && !entry.variant
+        ? { ...entry, quantity: entry.quantity + Number(quantity) }
+        : entry
+    })
   } else {
-    newCart = [...(user?.cart || []), { product: productId, quantity: Number(quantity) }]
+    const cartEntry = { product: productId, quantity: Number(quantity) }
+    if (variant?.colorName) cartEntry.variant = variant
+    newCart = [...(user?.cart || []), cartEntry]
   }
 
   const updated = await prisma.user.update({
@@ -155,40 +174,60 @@ export const addToCart = asyncHandler(async (req, res) => {
     .map((entry) => {
       const product = byId.get(entry.product)
       if (!product) return null
-      return {
+      const base = {
         _id: product.id,
         name: product.name,
         image: product.images?.[0]?.url || product.images,
         price: product.discountPrice || product.price,
         quantity: entry.quantity,
       }
+      if (entry.variant) {
+        return { ...base, selectedVariant: entry.variant }
+      }
+      return base
     })
     .filter(Boolean)
 
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const total = items.reduce((sum, item) => sum + (item.selectedVariant?.priceOverride || item.price) * item.quantity, 0)
   res.json(sendSuccess({ items, total }))
 })
 
 export const updateCartItem = asyncHandler(async (req, res) => {
-  const { productId, quantity } = req.body
+  const { productId, quantity, variant } = req.body
   const safeQuantity = Number(quantity)
 
   const user = await prisma.user.findUnique({
     where: { id: req.user.userId },
   })
 
-  const existing = (user?.cart || []).find((entry) => entry.product === productId)
+  let existing
+  if (variant?.colorName) {
+    existing = (user?.cart || []).find((entry) => entry.product === productId && entry.variant?.colorName === variant.colorName)
+  } else {
+    existing = (user?.cart || []).find((entry) => entry.product === productId && !entry.variant)
+  }
   if (!existing) {
     return res.status(404).json({ message: 'Cart item not found' })
   }
 
   let newCart
   if (safeQuantity <= 0) {
-    newCart = user.cart.filter((entry) => entry.product !== productId)
+    if (variant?.colorName) {
+      newCart = user.cart.filter((entry) => !(entry.product === productId && entry.variant?.colorName === variant.colorName))
+    } else {
+      newCart = user.cart.filter((entry) => entry.product !== productId)
+    }
   } else {
-    newCart = user.cart.map((entry) =>
-      entry.product === productId ? { ...entry, quantity: safeQuantity } : entry,
-    )
+    newCart = user.cart.map((entry) => {
+      if (variant?.colorName) {
+        return entry.product === productId && entry.variant?.colorName === variant.colorName
+          ? { ...entry, quantity: safeQuantity }
+          : entry
+      }
+      return entry.product === productId && !entry.variant
+        ? { ...entry, quantity: safeQuantity }
+        : entry
+    })
   }
 
   const updated = await prisma.user.update({
@@ -205,28 +244,38 @@ export const updateCartItem = asyncHandler(async (req, res) => {
     .map((entry) => {
       const product = byId.get(entry.product)
       if (!product) return null
-      return {
+      const base = {
         _id: product.id,
         name: product.name,
         image: product.images?.[0]?.url || product.images,
         price: product.discountPrice || product.price,
         quantity: entry.quantity,
       }
+      if (entry.variant) {
+        return { ...base, selectedVariant: entry.variant }
+      }
+      return base
     })
     .filter(Boolean)
 
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const total = items.reduce((sum, item) => sum + (item.selectedVariant?.priceOverride || item.price) * item.quantity, 0)
   res.json(sendSuccess({ items, total }))
 })
 
 export const removeCartItem = asyncHandler(async (req, res) => {
   const { productId } = req.params
+  const { colorName } = req.query
 
   const user = await prisma.user.findUnique({
     where: { id: req.user.userId },
   })
 
-  const newCart = (user?.cart || []).filter((entry) => entry.product !== productId)
+  let newCart
+  if (colorName) {
+    newCart = (user?.cart || []).filter((entry) => !(entry.product === productId && entry.variant?.colorName === colorName))
+  } else {
+    newCart = (user?.cart || []).filter((entry) => entry.product !== productId)
+  }
 
   const updated = await prisma.user.update({
     where: { id: req.user.userId },
@@ -243,16 +292,20 @@ export const removeCartItem = asyncHandler(async (req, res) => {
     .map((entry) => {
       const product = byId.get(entry.product)
       if (!product) return null
-      return {
+      const base = {
         _id: product.id,
         name: product.name,
         image: product.images?.[0]?.url || product.images,
         price: product.discountPrice || product.price,
         quantity: entry.quantity,
       }
+      if (entry.variant) {
+        return { ...base, selectedVariant: entry.variant }
+      }
+      return base
     })
     .filter(Boolean)
 
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const total = items.reduce((sum, item) => sum + (item.selectedVariant?.priceOverride || item.price) * item.quantity, 0)
   res.json(sendSuccess({ items, total }))
 })

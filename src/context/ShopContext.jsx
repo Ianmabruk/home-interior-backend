@@ -19,8 +19,9 @@ export const ShopProvider = ({ children }) => {
       .then(([wishlistRes, cartRes]) => {
         setWishlist(wishlistRes.data?.products || [])
         const mappedCart = (cartRes.data?.items || []).map((entry) => ({
-          ...(entry.product || {}),
+          ...entry,
           quantity: entry.quantity,
+          selectedVariant: entry.selectedVariant || null,
         }))
         setCart(mappedCart)
       })
@@ -29,50 +30,59 @@ export const ShopProvider = ({ children }) => {
       })
   }, [isAuthenticated])
 
-  const addToCart = useCallback((product, quantity = 1) => {
+  const addToCart = useCallback((product, quantity = 1, variant = null) => {
+    const selectedVariant = variant ? { colorName: variant.colorName, colorHex: variant.colorHex, imageUrl: variant.imageUrl } : null
+
     if (isAuthenticated) {
-      api.post('/users/cart', { productId: product._id, quantity }).then((res) => {
-        const mapped = (res.data?.items || []).map((entry) => ({ ...(entry.product || {}), quantity: entry.quantity }))
+      api.post('/users/cart', { productId: product._id, quantity, variant: selectedVariant }).then((res) => {
+        const mapped = (res.data?.items || []).map((entry) => ({ ...entry, quantity: entry.quantity, selectedVariant: entry.selectedVariant || null }))
         setCart(mapped)
       }).catch(() => {})
     }
 
     setCart((prev) => {
-      const existing = prev.find((item) => item._id === product._id)
+      const existing = prev.find((item) => item._id === product._id && item.selectedVariant?.colorName === selectedVariant?.colorName)
       if (existing) {
         return prev.map((item) =>
-          item._id === product._id ? { ...item, quantity: item.quantity + quantity } : item,
+          item._id === product._id && item.selectedVariant?.colorName === selectedVariant?.colorName
+            ? { ...item, quantity: item.quantity + quantity }
+            : item,
         )
       }
-      return [...prev, { ...product, quantity }]
+      return [...prev, { ...product, quantity, selectedVariant }]
     })
   }, [isAuthenticated])
 
-  const removeFromCart = useCallback((productId) => {
+  const removeFromCart = useCallback((productId, variant = null) => {
+    const selectedVariant = variant ? { colorName: variant.colorName } : null
+
     if (isAuthenticated) {
-      api.delete(`/users/cart/${productId}`).then((res) => {
-        const mapped = (res.data?.items || []).map((entry) => ({ ...(entry.product || {}), quantity: entry.quantity }))
+      const params = selectedVariant?.colorName ? `?colorName=${encodeURIComponent(selectedVariant.colorName)}` : ''
+      api.delete(`/users/cart/${productId}${params}`).then((res) => {
+        const mapped = (res.data?.items || []).map((entry) => ({ ...entry, quantity: entry.quantity, selectedVariant: entry.selectedVariant || null }))
         setCart(mapped)
       }).catch(() => {})
     }
 
-    setCart((prev) => prev.filter((item) => item._id !== productId))
+    setCart((prev) => prev.filter((item) => !(item._id === productId && item.selectedVariant?.colorName === selectedVariant?.colorName)))
   }, [isAuthenticated])
 
-  const setCartQuantity = useCallback((productId, quantity) => {
+  const setCartQuantity = useCallback((productId, quantity, variant = null) => {
     if (quantity <= 0) {
-      removeFromCart(productId)
+      removeFromCart(productId, variant)
       return
     }
 
+    const selectedVariant = variant ? { colorName: variant.colorName } : null
+
     if (isAuthenticated) {
-      api.patch('/users/cart', { productId, quantity }).then((res) => {
-        const mapped = (res.data?.items || []).map((entry) => ({ ...(entry.product || {}), quantity: entry.quantity }))
+      api.patch('/users/cart', { productId, quantity, variant: selectedVariant }).then((res) => {
+        const mapped = (res.data?.items || []).map((entry) => ({ ...entry, quantity: entry.quantity, selectedVariant: entry.selectedVariant || null }))
         setCart(mapped)
       }).catch(() => {})
     }
 
-    setCart((prev) => prev.map((item) => (item._id === productId ? { ...item, quantity } : item)))
+    setCart((prev) => prev.map((item) => (item._id === productId && item.selectedVariant?.colorName === selectedVariant?.colorName ? { ...item, quantity } : item)))
   }, [isAuthenticated, removeFromCart])
 
   const toggleWishlist = useCallback((product) => {
@@ -98,7 +108,10 @@ export const ShopProvider = ({ children }) => {
       setCartQuantity,
       toggleWishlist,
       clearCart,
-      cartTotal: cart.reduce((sum, item) => sum + (item.discountPrice || item.price) * item.quantity, 0),
+      cartTotal: cart.reduce((sum, item) => {
+        const price = item.selectedVariant?.priceOverride || item.price
+        return sum + price * item.quantity
+      }, 0),
     }),
     [cart, wishlist, addToCart, removeFromCart, setCartQuantity, toggleWishlist, clearCart],
   )

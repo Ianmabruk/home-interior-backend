@@ -32,6 +32,16 @@ export const AccountPage = () => {
                 <p>Order #{order._id.slice(-6).toUpperCase()}</p>
                 <p>Status: {order.status}</p>
                 <p>Total: ${order.total}</p>
+                {order.items?.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {order.items.map((item, idx) => (
+                      <div key={idx} className="text-xs text-ink/60">
+                        {item.name} x{item.quantity}
+                        {item.variant?.colorName && <span> - {item.variant.colorName}</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </article>
             ))}
             {!orders.length ? <p className="text-sm text-ink/65">No orders yet.</p> : null}

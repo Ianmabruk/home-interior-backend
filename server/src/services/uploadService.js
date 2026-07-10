@@ -18,6 +18,9 @@ const ALLOWED_VIDEO_TYPES = new Set([
   'video/webm',
 ])
 
+const MAX_ATTEMPTS = 2
+const retryDelay = (attempt) => 500 * attempt
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const classifyCloudinaryError = (error) => {
@@ -73,22 +76,29 @@ const uploadOnce = (fileBuffer, folder, resourceType) =>
     streamifier.createReadStream(fileBuffer).pipe(uploadStream)
   })
 
-export const uploadToCloudinary = async (fileBuffer, folder, resourceType = 'image', mimeType = null) => {
-  if (!fileBuffer) {
+const uploadWithRetry = async (fileBuffer, folder, resourceType, mimeType = null) => {
+  if (!fileBuffer || !Buffer.isBuffer(fileBuffer) || fileBuffer.length === 0) {
     throw new ApiError(400, 'No file buffer provided')
   }
-
-  console.log('[UPLOAD] File received:', { folder, resourceType, bufferSize: fileBuffer.length, mimeType })
 
   const isVideo = resourceType === 'video'
   const allowedTypes = isVideo ? ALLOWED_VIDEO_TYPES : ALLOWED_IMAGE_TYPES
   const maxSize = isVideo ? MAX_VIDEO_SIZE_BYTES : MAX_IMAGE_SIZE_BYTES
+  const resourceLabel = isVideo ? 'Video' : 'Image'
+
+  console.log('[UPLOAD] Validating payload:', {
+    folder,
+    resourceType,
+    bufferSize: fileBuffer.length,
+    mimeType,
+    maxSize,
+  })
 
   if (fileBuffer.length > maxSize) {
     console.log('[UPLOAD] File size exceeds limit:', { size: fileBuffer.length, max: maxSize })
     throw new ApiError(
       413,
-      `${isVideo ? 'Video' : 'Image'} exceeds ${Math.floor(maxSize / 1024 / 1024)}MB limit.`,
+      `${resourceLabel} exceeds ${Math.floor(maxSize / 1024 / 1024)}MB limit.`,
     )
   }
 
@@ -98,19 +108,51 @@ export const uploadToCloudinary = async (fileBuffer, folder, resourceType = 'ima
   }
 
   let lastError
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
+      console.log('[UPLOAD] Cloudinary attempt', attempt, 'of', MAX_ATTEMPTS, { folder, resourceType })
       const result = await uploadOnce(fileBuffer, folder, resourceType)
+      console.log('[UPLOAD] Cloudinary upload succeeded:', {
+        folder,
+        resourceType,
+        publicId: result.public_id,
+      })
       return result
     } catch (error) {
       lastError = error
-      if (attempt < 2) {
-        await sleep(500 * attempt)
+      console.error(`[UPLOAD] Cloudinary attempt ${attempt} failed:`, error?.message || error)
+      if (attempt < MAX_ATTEMPTS) {
+        await sleep(retryDelay(attempt))
       }
     }
   }
 
   const friendlyMessage = classifyCloudinaryError(lastError)
-  console.error('Cloudinary upload error:', lastError)
+  console.error('[UPLOAD] All Cloudinary attempts failed:', lastError)
   throw new ApiError(502, friendlyMessage)
 }
+
+export const uploadImage = async (fileBuffer, folder, mimeType = null) => {
+  try {
+    return await uploadWithRetry(fileBuffer, folder, 'image', mimeType)
+  } catch (error) {
+    if (error instanceof ApiError) throw error
+    console.error('[UPLOAD] uploadImage unexpected error:', error)
+    throw new ApiError(502, 'Image upload failed.')
+  }
+}
+
+export const uploadVideo = async (fileBuffer, folder, mimeType = null) => {
+  try {
+    return await uploadWithRetry(fileBuffer, folder, 'video', mimeType)
+  } catch (error) {
+    if (error instanceof ApiError) throw error
+    console.error('[UPLOAD] uploadVideo unexpected error:', error)
+    throw new ApiError(502, 'Video upload failed.')
+  }
+}
+
+export const uploadToCloudinary = (fileBuffer, folder, resourceType = 'image', mimeType = null) =>
+  resourceType === 'video'
+    ? uploadVideo(fileBuffer, folder, mimeType)
+    : uploadImage(fileBuffer, folder, mimeType)

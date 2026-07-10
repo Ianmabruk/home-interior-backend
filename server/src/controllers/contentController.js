@@ -1,6 +1,7 @@
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { prisma } from '../config/db.js'
-import { uploadToCloudinary } from '../services/uploadService.js'
+import { ApiError } from '../utils/ApiError.js'
+import { uploadImage, uploadVideo } from '../services/uploadService.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { env } from '../config/env.js'
 
@@ -25,7 +26,9 @@ const handleFileUpload = async (req, folder, defaultKind = 'image') => {
   const kind = req.body.resourceType === 'video' ? 'video' : defaultKind
   const mimeType = req.file.mimetype
   console.log('[UPLOAD] File upload request:', { fieldname: req.file.fieldname, kind, mimeType, size: req.file.size })
-  const result = await uploadToCloudinary(req.file.buffer, folder, kind, mimeType)
+  const result = kind === 'video'
+    ? await uploadVideo(req.file.buffer, folder, mimeType)
+    : await uploadImage(req.file.buffer, folder, mimeType)
   return { url: result.secure_url, publicId: result.public_id, kind }
 }
 
@@ -275,11 +278,18 @@ export const upsertAbout = asyncHandler(async (req, res) => {
   if (parsedSocials) payload.socials = parsedSocials
 
   if (req.file) {
-    const mimeType = req.file.mimetype
-    console.log('[UPLOAD] About image upload:', { mimeType, size: req.file.size })
-    const upload = await uploadToCloudinary(req.file.buffer, 'hok/about', 'image', mimeType)
-    payload.aboutImageUrl = upload.secure_url
-    payload.aboutImagePublicId = upload.public_id
+    try {
+      const mimeType = req.file.mimetype
+      console.log('[UPLOAD] About image upload:', { fieldname: req.file.fieldname, mimeType, size: req.file.size })
+      const upload = await uploadImage(req.file.buffer, 'hok/about', mimeType)
+      payload.aboutImageUrl = upload.secure_url
+      payload.aboutImagePublicId = upload.public_id
+    } catch (error) {
+      console.error('[UPLOAD] About image upload failed:', error)
+      throw error instanceof ApiError
+        ? error
+        : new ApiError(502, 'Failed to upload About image')
+    }
   }
 
   const existing = await prisma.about.findFirst()
@@ -337,7 +347,7 @@ export const testUpload = asyncHandler(async (req, res) => {
   }
 
   const file = req.file
-  const result = await uploadToCloudinary(file.buffer, 'hok/test-uploads', 'image', file.mimetype)
+  const result = await uploadImage(file.buffer, 'hok/test-uploads', file.mimetype)
 
   res.status(200).json(sendSuccess({
     message: 'Upload successful',

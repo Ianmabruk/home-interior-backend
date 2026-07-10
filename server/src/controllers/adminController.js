@@ -57,6 +57,7 @@ export const dashboardOverview = asyncHandler(async (req, res) => {
     }
   }
 
+  const recentOrders = sortOrdersByDate(orders).slice(0, 10)
   const topProducts = Array.from(soldByProduct.values())
     .sort((a, b) => b.units - a.units)
     .slice(0, 5)
@@ -78,6 +79,7 @@ export const dashboardOverview = asyncHandler(async (req, res) => {
     outOfStockCount,
     lowStockCount,
     topProducts,
+    recentOrders: withIdArray(recentOrders),
   }))
 })
 
