@@ -1,5 +1,6 @@
 import { app } from './app.js'
 import { connectDB } from './config/db.js'
+import { verifyCloudinaryConfig } from './config/cloudinary.js'
 import { env } from './config/env.js'
 
 const start = async () => {
@@ -19,6 +20,10 @@ const start = async () => {
 
   try {
     await connectDB()
+    // Best-effort credential check at boot; warns (without exposing the
+    // secret) if Cloudinary env vars are wrong so upload failures are caught
+    // on deploy rather than at request time.
+    verifyCloudinaryConfig().catch(() => {})
     app.listen(env.port, () => {
       // eslint-disable-next-line no-console
       console.log(`Server listening on port ${env.port}`)

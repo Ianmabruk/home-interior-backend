@@ -18,4 +18,32 @@ cloudinary.config({
   api_secret: env.cloudinaryApiSecret,
 })
 
+// Validate credentials at boot WITHOUT leaking the secret. Logs a clear
+// warning on misconfiguration so a bad CLOUDINARY_API_SECRET (e.g. after a
+// secret rotation) is caught on deploy instead of failing every upload.
+export const verifyCloudinaryConfig = async () => {
+  const configured = Boolean(
+    env.cloudinaryCloudName && env.cloudinaryApiKey && env.cloudinaryApiSecret,
+  )
+  if (!configured) {
+    console.warn('[CLOUDINARY] Missing config (CLOUDINARY_CLOUD_NAME / API_KEY / API_SECRET). Uploads will fail.')
+    return false
+  }
+  try {
+    const res = await cloudinary.api.ping()
+    if (res?.status === 'ok') {
+      console.log(`[CLOUDINARY] Credentials verified (cloud: ${env.cloudinaryCloudName}).`)
+      return true
+    }
+    console.warn('[CLOUDINARY] Ping returned unexpected status:', res?.status)
+    return false
+  } catch (err) {
+    console.warn(
+      '[CLOUDINARY] Credential check failed — uploads will 401. Verify CLOUDINARY_API_KEY/API_SECRET match the Cloudinary dashboard.',
+      err?.message || err,
+    )
+    return false
+  }
+}
+
 export default cloudinary
