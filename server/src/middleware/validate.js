@@ -13,20 +13,16 @@ export const validateBody = (schema) => (req, res, next) => {
 
 // ---------- Manual input sanitization (no external dependencies) ----------
 
+// Matches any HTML/XML tag. We *remove* tags rather than escape characters:
+// escaping `/` and `&` (the old behaviour) corrupted legitimate data such as
+// URLs stored in `socials`, `contactEmail`, and link fields. The client renders
+// all content through React, which auto-escapes on output, so stripping the
+// tags here is sufficient defense-in-depth against stored XSS.
 const HTML_TAG_RE = /<\/?[^>]+(>|$)/g
 
-// Strip HTML tags and escape characters that could be used for injection.
 const sanitizeString = (value) => {
   if (typeof value !== 'string') return value
-  return value
-    .replace(HTML_TAG_RE, '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-    .replace(/\//g, '&#x2F;')
-    .trim()
+  return value.replace(HTML_TAG_RE, '').trim()
 }
 
 const sanitizeValue = (value) => {

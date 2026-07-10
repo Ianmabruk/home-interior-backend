@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useShop } from '../../context/ShopContext'
 import { useCurrency } from '../../context/CurrencyContext'
+import PositionedImage from '../common/PositionedImage'
 
 export const ProductCard = ({ product, onQuickView }) => {
   const { addToCart, toggleWishlist, wishlist } = useShop()
@@ -21,10 +22,11 @@ export const ProductCard = ({ product, onQuickView }) => {
       className="group relative overflow-hidden rounded-2xl bg-white shadow-lg hover:shadow-xl"
     >
       <div className="relative aspect-[1/1] overflow-hidden bg-linen">
-        <img
+        <PositionedImage
           src={primaryImage}
           alt={product.name}
-          className="h-full w-full object-contain transition duration-700 group-hover:scale-102"
+          settings={product.mediaSettings}
+          className="h-full w-full transition duration-700 group-hover:scale-102"
           loading="lazy"
         />
 

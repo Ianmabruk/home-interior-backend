@@ -32,8 +32,10 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const response = await api.post('/auth/login', { email, password })
+    // Only the short-lived access token is kept in JS storage. The refresh
+    // token is delivered as an httpOnly cookie by the backend and is never
+    // readable from script (XSS-safe).
     localStorage.setItem('hok_access_token', response.data.accessToken)
-    localStorage.setItem('hok_refresh_token', response.data.refreshToken)
     setUser(response.data.user)
     return response
   }
@@ -41,13 +43,16 @@ export const AuthProvider = ({ children }) => {
   const register = async (fullName, email, password) => {
     const response = await api.post('/auth/register', { fullName, email, password })
     localStorage.setItem('hok_access_token', response.data.accessToken)
-    localStorage.setItem('hok_refresh_token', response.data.refreshToken)
     setUser(response.data.user)
   }
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout')
+    } catch {
+      /* ignore network errors on logout */
+    }
     localStorage.removeItem('hok_access_token')
-    localStorage.removeItem('hok_refresh_token')
     setUser(null)
   }
 

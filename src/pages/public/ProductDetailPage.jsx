@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useShop } from '../../context/ShopContext'
 import { api } from '../../services/api'
+import PositionedImage from '../../components/common/PositionedImage'
 
 export const ProductDetailPage = () => {
   const { id } = useParams()
@@ -62,16 +63,16 @@ export const ProductDetailPage = () => {
       {/* Image */}
       <div className="relative aspect-[1/1] overflow-hidden rounded-3xl bg-linen md:h-[520px] md:aspect-auto">
         <AnimatePresence mode="wait">
-          <motion.img
+          <motion.div
             key={displayImage || 'placeholder'}
-            src={displayImage}
-            alt={product.name}
             initial={{ opacity: 0, scale: 1.03 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.35 }}
-            className="h-full w-full object-contain"
-          />
+            className="h-full w-full"
+          >
+            <PositionedImage src={displayImage} alt={product.name} settings={product.mediaSettings} className="h-full w-full" />
+          </motion.div>
         </AnimatePresence>
         {salePercent && (
           <span className="absolute left-4 top-4 rounded-full bg-orange px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-ink">

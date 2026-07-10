@@ -4,6 +4,9 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
+  // Required so the httpOnly refresh cookie is sent on cross-origin requests
+  // to the API (localhost dev port or the deployed API domain).
+  withCredentials: true,
 })
 
 api.interceptors.request.use((config) => {
@@ -36,19 +39,13 @@ api.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    const refreshToken = localStorage.getItem('hok_refresh_token')
-    if (!refreshToken) {
-      return Promise.reject(error)
-    }
-
     originalRequest._retry = true
 
     if (!refreshingPromise) {
       refreshingPromise = api
-        .post('/auth/refresh', { refreshToken })
+        .post('/auth/refresh')
         .then((res) => {
           localStorage.setItem('hok_access_token', res.data.accessToken)
-          localStorage.setItem('hok_refresh_token', res.data.refreshToken)
           return res.data.accessToken
         })
         .finally(() => {

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
+import PositionedImage from '../../components/common/PositionedImage'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -78,12 +79,14 @@ export const AboutPage = () => {
           transition={{ duration: 0.9 }}
           className="mt-12"
         >
-          <img
-            src={about.aboutImageUrl}
-            alt="About HOK Interior Designs"
-            className="h-[55vh] w-full object-cover bg-linen md:h-[70vh]"
-            loading="lazy"
-          />
+          <div className="h-[55vh] w-full overflow-hidden bg-linen md:h-[70vh]">
+            <PositionedImage
+              src={about.aboutImageUrl}
+              alt="About HOK Interior Designs"
+              settings={about.mediaSettings}
+              loading="lazy"
+            />
+          </div>
         </motion.div>
       )}
 

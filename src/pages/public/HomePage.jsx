@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react'
 import { SectionTitle } from '../../components/common/SectionTitle'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
+import PositionedImage from '../../components/common/PositionedImage'
 
 export const HomePage = () => {
   const [feed, setFeed] = useState({
@@ -136,10 +137,11 @@ export const HomePage = () => {
                     i === 0 ? 'col-span-2' : ''
                   }`}
                 >
-                  <img
+                  <PositionedImage
                     src={item.imageUrl}
                     alt={item.title}
-                    className={`w-full object-cover transition duration-700 group-hover:scale-105 ${
+                    settings={item.mediaSettings}
+                    className={`transition duration-700 group-hover:scale-105 ${
                       i === 0 ? 'aspect-[4/3] sm:aspect-[16/10]' : 'aspect-[4/3]'
                     }`}
                     loading="lazy"
@@ -185,7 +187,7 @@ export const HomePage = () => {
                       {firstMedia?.type === 'video' ? (
                         <video src={firstMedia.url} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" autoPlay muted loop playsInline preload="metadata" />
                       ) : firstMedia?.type === 'image' ? (
-                        <img src={firstMedia.url} alt={project.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" loading="lazy" />
+                        <PositionedImage src={firstMedia.url} alt={project.title} settings={project.mediaSettings} className="h-full w-full transition duration-700 group-hover:scale-105" loading="lazy" />
                       ) : (
                         <div className="flex h-full items-center justify-center bg-linen"><p className="text-sm text-ink/30">No media</p></div>
                       )}
@@ -226,12 +228,14 @@ export const HomePage = () => {
                     className="relative"
                   >
                     {feed.about.aboutImageUrl ? (
-                      <img
-                        src={feed.about.aboutImageUrl}
-                        alt="Workspace"
-                        className="w-full rounded-2xl object-cover aspect-[4/3] sm:aspect-[4/5]"
-                        loading="lazy"
-                      />
+                      <div className="w-full overflow-hidden rounded-2xl aspect-[4/3] sm:aspect-[4/5]">
+                        <PositionedImage
+                          src={feed.about.aboutImageUrl}
+                          alt="Workspace"
+                          settings={feed.about.mediaSettings}
+                          loading="lazy"
+                        />
+                      </div>
                     ) : (
                       <div className="w-full rounded-2xl bg-sand flex aspect-[4/3] items-center justify-center sm:aspect-[4/5]">
                         <p className="text-sm text-ink/30">Premium workspace</p>

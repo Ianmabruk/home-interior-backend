@@ -5,7 +5,7 @@ import { prisma } from '../config/db.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { sendEmail, buildWelcomeEmailTemplate, buildLoginEmailTemplate } from '../config/sendgrid.js'
-import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/tokens.js'
+import { signAccessToken, signRefreshToken, verifyRefreshToken, setRefreshCookie, clearRefreshCookie, REFRESH_COOKIE_NAME } from '../utils/tokens.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 
 const withId = (item) => ({ ...item, _id: item.id })
@@ -59,9 +59,11 @@ export const register = asyncHandler(async (req, res) => {
     console.error('Welcome email failed:', err)
   }
 
+  setRefreshCookie(res, tokens.refreshToken)
+
   res.status(201).json(sendSuccess({
     user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role },
-    ...tokens,
+    accessToken: tokens.accessToken,
   }))
 })
 
@@ -93,14 +95,18 @@ export const login = asyncHandler(async (req, res) => {
     console.error('Login email failed:', err)
   }
 
+  setRefreshCookie(res, tokens.refreshToken)
+
   res.json(sendSuccess({
     user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role },
-    ...tokens,
+    accessToken: tokens.accessToken,
   }))
 })
 
 export const refresh = asyncHandler(async (req, res) => {
-  const { refreshToken } = req.body
+  // Prefer the httpOnly cookie; fall back to the request body for any
+  // older clients still sending it in the payload.
+  const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME] || req.body?.refreshToken
   if (!refreshToken) {
     throw new ApiError(400, 'Refresh token required')
   }
@@ -123,7 +129,9 @@ export const refresh = asyncHandler(async (req, res) => {
     data: { refreshToken: tokens.refreshToken },
   })
 
-  res.json(sendSuccess(tokens))
+  setRefreshCookie(res, tokens.refreshToken)
+
+  res.json(sendSuccess({ accessToken: tokens.accessToken }))
 })
 
 export const forgotPassword = asyncHandler(async (req, res) => {
@@ -179,5 +187,25 @@ export const resetPassword = asyncHandler(async (req, res) => {
     },
   })
 
+  clearRefreshCookie(res)
   res.json(sendSuccess({ message: 'Password reset successful' }))
+})
+
+export const logout = asyncHandler(async (req, res) => {
+  // Invalidate the stored refresh token so a stolen cookie can no longer be
+  // exchanged, then drop the httpOnly cookie.
+  const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME]
+  if (refreshToken) {
+    try {
+      const decoded = verifyRefreshToken(refreshToken)
+      await prisma.user.update({
+        where: { id: decoded.userId },
+        data: { refreshToken: null },
+      }).catch(() => {})
+    } catch {
+      /* ignore invalid token */
+    }
+  }
+  clearRefreshCookie(res)
+  res.json(sendSuccess({ message: 'Logged out' }))
 })

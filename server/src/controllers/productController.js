@@ -28,6 +28,25 @@ const parseMaybeJson = (value, fallback) => {
   try { return JSON.parse(value) } catch { return fallback }
 }
 
+const ALLOWED_POSITIONS = new Set([
+  'center', 'top', 'bottom', 'left', 'right',
+  'top-left', 'top-right', 'bottom-left', 'bottom-right',
+])
+const ALLOWED_FITS = new Set(['contain', 'cover', 'fill', 'scale-down'])
+const ALLOWED_ZOOMS = new Set([50, 75, 100, 125, 150])
+
+const parseMediaSettings = (value) => {
+  const parsed = typeof value === 'string'
+    ? parseMaybeJson(value, null)
+    : (value && typeof value === 'object' ? value : null)
+  if (!parsed || typeof parsed !== 'object') return null
+  const position = ALLOWED_POSITIONS.has(parsed.position) ? parsed.position : 'center'
+  const fit = ALLOWED_FITS.has(parsed.fit) ? parsed.fit : 'cover'
+  const zoomNumber = Number(parsed.zoom)
+  const zoom = ALLOWED_ZOOMS.has(zoomNumber) ? zoomNumber : 100
+  return { position, zoom, fit }
+}
+
 export const listProducts = asyncHandler(async (req, res) => {
   const { q, category, sort = '-createdAt', page = 1, limit = 12 } = req.query
   const where = { isPublished: true }
@@ -134,6 +153,7 @@ export const createProduct = asyncHandler(async (req, res) => {
       tags: Array.isArray(tags) ? tags : [],
       images: uploads.map((item) => ({ url: item.secure_url, publicId: item.public_id })),
       colorVariants,
+      mediaSettings: parseMediaSettings(req.body.mediaSettings) || undefined,
     },
   })
 
@@ -178,6 +198,9 @@ export const updateProduct = asyncHandler(async (req, res) => {
   if (Array.isArray(colorVariantsRaw)) {
     data.colorVariants = colorVariantsRaw
   }
+
+  const parsedMediaSettings = parseMediaSettings(req.body.mediaSettings)
+  if (parsedMediaSettings) data.mediaSettings = parsedMediaSettings
 
   const updated = await prisma.product.update({ where: { id: req.params.id }, data: { ...data, isPublished: data.isPublished ?? true } })
   res.json(sendSuccess(withId(updated)))

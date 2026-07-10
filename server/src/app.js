@@ -80,11 +80,10 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, curl, server-to-server)
       if (!origin) return callback(null, true)
+      // Only explicitly configured origins are permitted. The preview-domain
+      // wildcards (.netlify.app / .vercel.app / .onrender.com) were removed —
+      // any attacker-controlled preview app could otherwise call the API.
       if (allowedOrigins.includes(origin)) return callback(null, true)
-      // Allow any Netlify/Vercel/Render preview URL for this project
-      if (/\.netlify\.app$/.test(origin) || /\.vercel\.app$/.test(origin) || /\.onrender\.com$/.test(origin)) {
-        return callback(null, true)
-      }
       callback(new Error(`CORS: origin ${origin} not allowed`))
     },
     credentials: true,

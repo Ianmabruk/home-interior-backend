@@ -156,3 +156,22 @@ export const uploadToCloudinary = (fileBuffer, folder, resourceType = 'image', m
   resourceType === 'video'
     ? uploadVideo(fileBuffer, folder, mimeType)
     : uploadImage(fileBuffer, folder, mimeType)
+
+// Single entry point used by every module that needs to delete media. Keeps
+// the Cloudinary SDK usage in one place (per the centralized media service
+// requirement) so callers never touch the SDK directly.
+export const deleteMedia = async (publicId, resourceType = 'image') => {
+  if (!publicId) return null
+  try {
+    const result = await cloudinary.uploader.destroy(publicId, {
+      resource_type: resourceType,
+    })
+    console.log('[UPLOAD] Cloudinary delete succeeded:', { publicId, resourceType, result: result?.result })
+    return result
+  } catch (error) {
+    console.error('[UPLOAD] Cloudinary delete failed:', { publicId, resourceType, error: error?.message })
+    // Deletion failures should not block the caller (e.g. a DB cleanup); the
+    // orphaned asset is logged for later reconciliation.
+    return null
+  }
+}

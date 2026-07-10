@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { X, ArrowRight, GitCompare } from 'lucide-react'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
+import PositionedImage from '../../components/common/PositionedImage'
 
 const PAGE_SIZE = 12
 
@@ -139,11 +140,11 @@ export const PortfolioPage = () => {
                 className="group mb-4 w-full overflow-hidden bg-linen text-left cursor-pointer"
               >
                 <div className="relative overflow-hidden">
-                  <img
+                  <PositionedImage
                     src={item.imageUrl}
                     alt={item.title}
-                    className="w-full object-cover transition duration-700 group-hover:scale-105"
-                    loading="lazy"
+                    settings={item.mediaSettings}
+                    className="w-full"
                   />
                   <div className="absolute inset-0 bg-ink/0 transition-all duration-500 group-hover:bg-ink/25" />
                   {item.beforeAfterImages?.length > 0 && (
@@ -245,11 +246,15 @@ export const PortfolioPage = () => {
                     </div>
                   </div>
                 ) : (
-                  <img
-                    src={selected.imageUrl}
-                    alt={selected.title}
-                    className="max-h-[60vh] w-full object-contain rounded-lg"
-                  />
+                  <div className="overflow-hidden rounded-lg">
+                    <PositionedImage
+                      src={selected.imageUrl}
+                      alt={selected.title}
+                      settings={selected.mediaSettings}
+                      className="max-h-[60vh] w-full"
+                      loading="eager"
+                    />
+                  </div>
                 )}
 
                 {selected.beforeAfterImages?.length > 2 && (

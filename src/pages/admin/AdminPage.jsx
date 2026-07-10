@@ -3,6 +3,9 @@ import { useEffect, useRef, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
+import { DEFAULT_MEDIA_SETTINGS, normalizeMediaSettings } from '../../utils/mediaSettings'
+import { ImagePositionControls, ImagePositionPreview } from '../../components/common/ImagePositionControls'
+import PositionedImage from '../../components/common/PositionedImage'
 
 const tabs = [
   { id: 'general', label: 'Dashboard', icon: LayoutDashboard },
@@ -53,6 +56,7 @@ function AdminPage() {
   const [aboutForm, setAboutForm] = useState({ story: '', mission: '', vision: '' })
   const [aboutImageFile, setAboutImageFile] = useState(null)
   const [aboutImagePreview, setAboutImagePreview] = useState(null)
+  const [mediaSettings, setMediaSettings] = useState(DEFAULT_MEDIA_SETTINGS)
 
   const [mediaFile, setMediaFile] = useState(null)
   const [mediaPreview, setMediaPreview] = useState(null)
@@ -139,6 +143,7 @@ function AdminPage() {
       payload.append('category', projectForm.category)
       payload.append('order', String(projectForm.order || 0))
       payload.append('resourceType', resourceType)
+      payload.append('mediaSettings', JSON.stringify(normalizeMediaSettings(mediaSettings)))
       if (mediaFile) payload.append('media', mediaFile)
       if (editingProject) {
         await api.patch(`/content/projects/${editingProject._id}`, payload, { onUploadProgress })
@@ -147,7 +152,7 @@ function AdminPage() {
         await api.post('/content/projects', payload, { onUploadProgress })
       }
       setProjectForm({ title: '', description: '', category: 'Residential', order: 0 })
-      setMediaFile(null); setMediaPreview(null)
+      setMediaFile(null); setMediaPreview(null); setMediaSettings(DEFAULT_MEDIA_SETTINGS)
       window.dispatchEvent(new CustomEvent('admin:data-changed', { detail: { type: 'projects-changed' } }))
       fetchAll(); resetProgress(); setSuccess('Project saved successfully.')
     } catch (error) { resetProgress(); setFailure(error, 'Project save failed.') }
@@ -168,6 +173,7 @@ function AdminPage() {
       const payload = new FormData()
       payload.append('title', portfolioForm.title)
       payload.append('category', portfolioForm.category)
+      payload.append('mediaSettings', JSON.stringify(normalizeMediaSettings(mediaSettings)))
       if (mediaFile) payload.append('media', mediaFile)
       if (editingPortfolio) {
         await api.patch(`/content/portfolio/${editingPortfolio._id}`, payload, { onUploadProgress })
@@ -177,6 +183,7 @@ function AdminPage() {
       }
       setPortfolioForm({ title: '', category: '' })
       setMediaFile(null); setMediaPreview(null)
+      setMediaSettings(DEFAULT_MEDIA_SETTINGS)
       window.dispatchEvent(new CustomEvent('admin:data-changed', { detail: { type: 'portfolio-changed' } }))
       fetchAll(); resetProgress(); setSuccess('Portfolio item saved.')
     } catch (error) { resetProgress(); setFailure(error, 'Portfolio save failed.') }
@@ -196,10 +203,11 @@ function AdminPage() {
       setIsUploading(true); setUploadProgress(0)
       const payload = new FormData()
       Object.entries(productForm).forEach(([key, value]) => payload.append(key, value))
+      payload.append('mediaSettings', JSON.stringify(normalizeMediaSettings(mediaSettings)))
       if (productImageFile) payload.append('images', productImageFile)
       await api.post('/products', payload, { onUploadProgress })
       setProductForm({ name: '', description: '', price: '', discountPrice: '', category: '', stock: '', sku: '' })
-      setProductImageFile(null); setProductImagePreview(null)
+      setProductImageFile(null); setProductImagePreview(null); setMediaSettings(DEFAULT_MEDIA_SETTINGS)
       window.dispatchEvent(new CustomEvent('admin:data-changed', { detail: { type: 'products-changed' } }))
       fetchAll(); resetProgress(); setSuccess('Product saved.')
     } catch (error) { resetProgress(); setFailure(error, 'Product save failed.') }
@@ -284,10 +292,11 @@ function AdminPage() {
       payload.append('story', aboutForm.story)
       payload.append('mission', aboutForm.mission)
       payload.append('vision', aboutForm.vision)
+      payload.append('mediaSettings', JSON.stringify(normalizeMediaSettings(mediaSettings)))
       if (aboutImageFile) payload.append('media', aboutImageFile)
       await api.put('/content/about', payload, { onUploadProgress })
       window.dispatchEvent(new CustomEvent('admin:data-changed', { detail: { type: 'about-changed' } }))
-      fetchAll(); resetProgress(); setSuccess('About content saved.')
+      fetchAll(); resetProgress(); setMediaSettings(DEFAULT_MEDIA_SETTINGS); setSuccess('About content saved.')
     } catch (error) { resetProgress(); setFailure(error, 'About save failed.') }
   }
 
@@ -594,6 +603,10 @@ function AdminPage() {
           </select>
         </div>
         <DropZone onFile={handleMediaChange} preview={mediaPreview} onClear={() => { setMediaFile(null); setMediaPreview(null) }} accept="video/*,image/*" kind={resourceType === 'video' ? 'video' : 'image'} />
+        <div className="rounded-2xl border border-sand/60 bg-white p-4 space-y-4">
+          <ImagePositionControls value={mediaSettings} onChange={setMediaSettings} />
+          <ImagePositionPreview src={mediaPreview} settings={mediaSettings} />
+        </div>
         <ProgressBar />
         <button className="w-full rounded-xl bg-ink px-6 py-2.5 text-xs font-medium uppercase tracking-widest text-white hover:bg-charcoal transition disabled:opacity-50" disabled={isUploading}>
           {isUploading ? 'Uploading…' : editingProject ? 'Update' : 'Upload'}
@@ -603,13 +616,13 @@ function AdminPage() {
         {projects.map((item) => (
           <article key={item._id} className={`overflow-hidden rounded-2xl border border-sand/60 bg-white shadow-card ${viewMode === 'list' ? 'flex' : ''}`}>
             <div className={viewMode === 'list' ? 'w-48 flex-shrink-0' : ''}>
-              {item.videoUrl ? <video src={item.videoUrl} className="h-44 w-full object-cover" autoPlay muted /> : <img src={item.coverImageUrl} alt={item.title} className="h-44 w-full object-cover" />}
+              {item.videoUrl ? <video src={item.videoUrl} className="h-44 w-full object-cover" autoPlay muted /> : <PositionedImage src={item.coverImageUrl} alt={item.title} settings={item.mediaSettings} className="h-44 w-full" />}
             </div>
             <div className="p-4 flex-1">
               <h3 className="font-display text-xl text-ink">{item.title}</h3>
               <p className="text-xs text-ink/50 mt-1">{item.category}</p>
               <div className="mt-3 flex gap-2">
-                <button onClick={() => { setEditingProject(item); setProjectForm({ title: item.title, description: item.description, category: item.category || 'Residential', order: item.order || 0 }) }} className="text-xs px-3 py-1.5 rounded-lg border border-sand hover:bg-linen transition flex items-center gap-1"><Edit size={12} /> Edit</button>
+                <button onClick={() => { setEditingProject(item); setProjectForm({ title: item.title, description: item.description, category: item.category || 'Residential', order: item.order || 0 }); setMediaSettings(normalizeMediaSettings(item.mediaSettings)) }} className="text-xs px-3 py-1.5 rounded-lg border border-sand hover:bg-linen transition flex items-center gap-1"><Edit size={12} /> Edit</button>
                 <button onClick={() => setDeleteConfirm({ type: 'project', id: item._id })} className="text-xs px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition flex items-center gap-1"><Trash2 size={12} /> Delete</button>
               </div>
             </div>
@@ -629,6 +642,10 @@ function AdminPage() {
         <input value={portfolioForm.title} onChange={(e) => setPortfolioForm((p) => ({ ...p, title: e.target.value }))} className="w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange/30 outline-none" placeholder="Title" required />
         <input value={portfolioForm.category} onChange={(e) => setPortfolioForm((p) => ({ ...p, category: e.target.value }))} className="w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange/30 outline-none" placeholder="Category" required />
         <DropZone onFile={handleMediaChange} preview={mediaPreview} onClear={() => { setMediaFile(null); setMediaPreview(null) }} accept="image/*" kind="image" />
+        <div className="rounded-2xl border border-sand/60 bg-white p-4 space-y-4">
+          <ImagePositionControls value={mediaSettings} onChange={setMediaSettings} />
+          <ImagePositionPreview src={mediaPreview} settings={mediaSettings} />
+        </div>
         <ProgressBar />
         <button className="w-full rounded-xl bg-ink px-6 py-2.5 text-xs font-medium uppercase tracking-widest text-white hover:bg-charcoal transition disabled:opacity-50" disabled={isUploading}>
           {isUploading ? 'Uploading…' : editingPortfolio ? 'Update' : 'Upload'}
@@ -637,14 +654,14 @@ function AdminPage() {
       <div className="grid gap-5 sm:grid-cols-2">
         {portfolio.map((item) => (
           <article key={item._id} className="overflow-hidden rounded-2xl border border-sand/60 bg-white shadow-card group">
-            <div className="overflow-hidden">
-              <img src={item.imageUrl} alt={item.title} className="h-44 w-full object-cover group-hover:scale-105 transition duration-500" />
-            </div>
+              <div className="overflow-hidden">
+                <PositionedImage src={item.imageUrl} alt={item.title} settings={item.mediaSettings} className="h-44 w-full" />
+              </div>
             <div className="p-4">
               <p className="font-display text-xl text-ink">{item.title}</p>
               <p className="text-xs uppercase tracking-widest text-orange mt-1">{item.category}</p>
               <div className="mt-3 flex gap-2">
-                <button onClick={() => { setEditingPortfolio(item); setPortfolioForm({ title: item.title, category: item.category }) }} className="text-xs px-3 py-1.5 rounded-lg border border-sand hover:bg-linen transition flex items-center gap-1"><Edit size={12} /> Edit</button>
+                <button onClick={() => { setEditingPortfolio(item); setPortfolioForm({ title: item.title, category: item.category }); setMediaSettings(normalizeMediaSettings(item.mediaSettings)) }} className="text-xs px-3 py-1.5 rounded-lg border border-sand hover:bg-linen transition flex items-center gap-1"><Edit size={12} /> Edit</button>
                 <button onClick={() => setDeleteConfirm({ type: 'portfolio', id: item._id })} className="text-xs px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition flex items-center gap-1"><Trash2 size={12} /> Delete</button>
               </div>
             </div>
@@ -706,6 +723,10 @@ function AdminPage() {
         </div>
         <textarea value={productForm.description} onChange={(e) => setProductForm((p) => ({ ...p, description: e.target.value }))} className="mt-3 h-24 w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange/30 outline-none" placeholder="Description" required />
         <DropZone onFile={handleProductImageChange} preview={productImagePreview} onClear={() => { setProductImageFile(null); setProductImagePreview(null) }} accept="image/*" kind="image" />
+        <div className="rounded-2xl border border-sand/60 bg-white p-4 space-y-4">
+          <ImagePositionControls value={mediaSettings} onChange={setMediaSettings} />
+          <ImagePositionPreview src={productImagePreview} settings={mediaSettings} />
+        </div>
         <ProgressBar />
         <button className="w-full rounded-xl bg-ink px-6 py-2.5 text-xs font-medium uppercase tracking-widest text-white hover:bg-charcoal transition disabled:opacity-50" disabled={isUploading}>
           {isUploading ? 'Uploading…' : 'Upload'}
@@ -715,8 +736,8 @@ function AdminPage() {
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {products.map((item) => (
           <article key={item._id} className="overflow-hidden rounded-2xl border border-sand/60 bg-white shadow-card hover:shadow-lift transition-shadow">
-            <div className="relative h-44 bg-linen">
-              <img src={item.images?.[0]?.url} alt={item.name} className="h-full w-full object-contain" />
+            <div className="relative h-44 bg-linen overflow-hidden">
+              <PositionedImage src={item.images?.[0]?.url} alt={item.name} settings={item.mediaSettings} className="h-full w-full" />
             </div>
             <div className="p-4">
               <p className="font-display text-xl text-ink">{item.name}</p>
@@ -1025,6 +1046,10 @@ function AdminPage() {
             <input type="file" accept="image/*" className="hidden" onChange={handleAboutImageChange} />
           </label>
           {aboutImageFile && <span className="text-2xs text-ink/50">Selected: {aboutImageFile.name}</span>}
+        </div>
+        <div className="rounded-2xl border border-sand/60 bg-white p-4 space-y-4">
+          <ImagePositionControls value={mediaSettings} onChange={setMediaSettings} />
+          <ImagePositionPreview src={aboutImagePreview} settings={mediaSettings} />
         </div>
         <textarea value={aboutForm.story || about?.story || ''} onChange={(e) => setAboutForm((a) => ({ ...a, story: e.target.value }))} className="h-32 w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm outline-none" placeholder="Our Story" required />
         <textarea value={aboutForm.mission || about?.mission || ''} onChange={(e) => setAboutForm((a) => ({ ...a, mission: e.target.value }))} className="h-24 w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm outline-none" placeholder="Mission" required />

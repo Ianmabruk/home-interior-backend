@@ -73,6 +73,7 @@ model Product {
   stock         Int
   sku           String   @unique
   tags          Json
+  mediaSettings Json?    @map("media_settings")
   isFeatured    Boolean? @default(false) @map("is_featured")
   isPublished   Boolean? @default(true) @map("is_published")
   createdAt    DateTime @default(now()) @map("created_at")
@@ -92,6 +93,7 @@ model Project {
   videoPublicId    String?   @map("video_public_id")
   coverImageUrl    String?   @map("cover_image_url")
   order            Int?      @default(0)
+  mediaSettings    Json?    @map("media_settings")
   isPublished      Boolean?  @default(true) @map("is_published")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
@@ -106,6 +108,7 @@ model Portfolio {
   imageUrl      String?  @map("image_url")
   imagePublicId String?  @map("image_public_id")
   order         Int?     @default(0)
+  mediaSettings Json?    @map("media_settings")
   isPublished   Boolean? @default(true) @map("is_published")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
@@ -117,6 +120,7 @@ model About {
   id                  String   @id @default(uuid()) @map("_id")
   aboutImageUrl       String?  @map("about_image_url")
   aboutImagePublicId  String?  @map("about_image_public_id")
+  mediaSettings       Json?    @map("media_settings")
   story               String
   companyDescription  String   @map("company_description")
   mission             String
@@ -143,6 +147,7 @@ model VirtualDesign {
   tags             Json
   ctaPrimary       String?   @default("Start Your Project") @map("cta_primary")
   ctaSecondary     String?   @default("Learn More") @map("cta_secondary")
+  mediaSettings    Json?    @map("media_settings")
   isPublished      Boolean?  @default(true) @map("is_published")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")

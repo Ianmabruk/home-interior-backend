@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { X, ArrowRight } from 'lucide-react'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
+import PositionedImage from '../../components/common/PositionedImage'
 
 const getFirstMedia = (project) => {
   if (Array.isArray(project.media) && project.media.length) return project.media[0]
@@ -144,12 +145,7 @@ export const ProjectsPage = () => {
                         autoPlay muted loop playsInline preload="metadata"
                       />
                     ) : firstMedia?.type === 'image' ? (
-                      <img
-                        src={firstMedia.url}
-                        alt={project.title}
-                        className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                        loading="lazy"
-                      />
+                      <PositionedImage src={firstMedia.url} alt={project.title} settings={project.mediaSettings} className="h-full w-full transition duration-700 group-hover:scale-105" loading="lazy" />
                     ) : (
                       <div className="flex h-full items-center justify-center bg-linen">
                         <p className="text-sm text-ink/30">No media</p>

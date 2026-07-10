@@ -1,7 +1,7 @@
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { prisma } from '../config/db.js'
 import { ApiError } from '../utils/ApiError.js'
-import { uploadImage, uploadVideo } from '../services/uploadService.js'
+import { uploadImage, uploadVideo, deleteMedia } from '../services/uploadService.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { env } from '../config/env.js'
 
@@ -19,6 +19,32 @@ const parseServices = (value) => {
   if (parsed) return parsed.split(',').map(s => ({ title: s.trim() })).filter(s => s.title)
   if (typeof value === 'string' && value.trim()) return value.split(',').map(s => ({ title: s.trim() })).filter(s => s.title)
   return []
+}
+
+// Normalize the media positioning payload sent by the admin UI:
+// { position, zoom, fit }. Unknown values fall back to safe defaults so a
+// malformed payload can never corrupt stored media rendering.
+const ALLOWED_POSITIONS = new Set([
+  'center', 'top', 'bottom', 'left', 'right',
+  'top-left', 'top-right', 'bottom-left', 'bottom-right',
+])
+const ALLOWED_FITS = new Set(['contain', 'cover', 'fill', 'scale-down'])
+const ALLOWED_ZOOMS = new Set([50, 75, 100, 125, 150])
+
+const DEFAULT_MEDIA_SETTINGS = { position: 'center', zoom: 100, fit: 'cover' }
+
+const parseMediaSettings = (value) => {
+  const parsed = typeof value === 'string'
+    ? parseMaybeJson(value, null)
+    : (value && typeof value === 'object' ? value : null)
+  if (!parsed || typeof parsed !== 'object') return null
+
+  const position = ALLOWED_POSITIONS.has(parsed.position) ? parsed.position : DEFAULT_MEDIA_SETTINGS.position
+  const fit = ALLOWED_FITS.has(parsed.fit) ? parsed.fit : DEFAULT_MEDIA_SETTINGS.fit
+  const zoomNumber = Number(parsed.zoom)
+  const zoom = ALLOWED_ZOOMS.has(zoomNumber) ? zoomNumber : DEFAULT_MEDIA_SETTINGS.zoom
+
+  return { position, zoom, fit }
 }
 
 const handleFileUpload = async (req, folder, defaultKind = 'image') => {
@@ -51,6 +77,7 @@ const toNumberIfFinite = (value) => {
 const PROJECT_FIELDS = new Set([
   'title', 'description', 'category', 'media', 'beforeAfterImages',
   'videoUrl', 'videoPublicId', 'coverImageUrl', 'order', 'isPublished', 'tags', 'services',
+  'mediaSettings',
 ])
 const stripUnknown = (obj, allowed) => {
   const out = {}
@@ -82,6 +109,9 @@ export const projectsController = {
 
     const parsedTags = parseMaybeJson(req.body.tags, null)
     if (parsedTags) payload.tags = parsedTags
+
+    const parsedMediaSettings = parseMediaSettings(req.body.mediaSettings)
+    if (parsedMediaSettings) payload.mediaSettings = parsedMediaSettings
 
     const upload = await handleFileUpload(req, 'hok/projects')
     if (upload) {
@@ -121,6 +151,9 @@ export const projectsController = {
     const parsedMedia = Array.isArray(req.body.media) ? req.body.media : parseMaybeJson(req.body.media, null)
     if (parsedMedia) payload.media = parsedMedia
 
+    const parsedMediaSettings = parseMediaSettings(req.body.mediaSettings)
+    if (parsedMediaSettings) payload.mediaSettings = parsedMediaSettings
+
     const upload = await handleFileUpload(req, 'hok/projects')
     if (upload) {
       const mediaItem = { type: upload.kind, url: upload.url, publicId: upload.publicId }
@@ -152,6 +185,8 @@ export const portfolioController = {
 
   create: asyncHandler(async (req, res) => {
     const payload = { ...req.body }
+    const parsedMediaSettings = parseMediaSettings(req.body.mediaSettings)
+    if (parsedMediaSettings) payload.mediaSettings = parsedMediaSettings
     const upload = await handleFileUpload(req, 'hok/portfolio')
     if (upload) {
       payload.imageUrl = upload.url
@@ -169,6 +204,8 @@ export const portfolioController = {
     }
 
     const payload = { ...req.body }
+    const parsedMediaSettings = parseMediaSettings(req.body.mediaSettings)
+    if (parsedMediaSettings) payload.mediaSettings = parsedMediaSettings
     const upload = await handleFileUpload(req, 'hok/portfolio')
     if (upload) {
       payload.imageUrl = upload.url
@@ -193,6 +230,9 @@ export const virtualDesignController = {
 
   create: asyncHandler(async (req, res) => {
     const payload = { ...req.body }
+
+    const parsedMediaSettings = parseMediaSettings(req.body.mediaSettings)
+    if (parsedMediaSettings) payload.mediaSettings = parsedMediaSettings
 
     const parsedServices = parseServices(req.body.services)
     payload.services = parsedServices.length ? parsedServices : []
@@ -222,6 +262,9 @@ export const virtualDesignController = {
     }
 
     const payload = { ...req.body }
+
+    const parsedMediaSettings = parseMediaSettings(req.body.mediaSettings)
+    if (parsedMediaSettings) payload.mediaSettings = parsedMediaSettings
 
     const parsedServices = parseServices(req.body.services)
     payload.services = parsedServices.length ? parsedServices : existing.services || []
@@ -265,6 +308,7 @@ const ABOUT_FIELDS = new Set([
   'location',
   'contactEmail',
   'socials',
+  'mediaSettings',
 ])
 
 export const upsertAbout = asyncHandler(async (req, res) => {
@@ -276,6 +320,9 @@ export const upsertAbout = asyncHandler(async (req, res) => {
   }
   const parsedSocials = parseMaybeJson(req.body.socials, null)
   if (parsedSocials) payload.socials = parsedSocials
+
+  const parsedMediaSettings = parseMediaSettings(req.body.mediaSettings)
+  if (parsedMediaSettings) payload.mediaSettings = parsedMediaSettings
 
   if (req.file) {
     try {
@@ -359,4 +406,37 @@ export const testUpload = asyncHandler(async (req, res) => {
       publicId: result.public_id,
     },
   }))
+})
+
+// Centralized media upload. Every module that needs to push a file to
+// Cloudinary can route through this single endpoint instead of bespoke
+// per-feature routes, satisfying the "one media service" requirement.
+export const uploadMediaController = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded' })
+  }
+  const folder = typeof req.body.folder === 'string' && req.body.folder.trim()
+    ? req.body.folder.trim()
+    : 'hok/uploads'
+  const kind = req.body.resourceType === 'video' ? 'video' : 'image'
+  const mimeType = req.file.mimetype
+  const result = kind === 'video'
+    ? await uploadVideo(req.file.buffer, folder, mimeType)
+    : await uploadImage(req.file.buffer, folder, mimeType)
+  res.status(200).json(sendSuccess({
+    url: result.secure_url,
+    publicId: result.public_id,
+    resourceType: kind,
+  }))
+})
+
+// Centralized media deletion. Called by the frontend media service so every
+// module routes deletes through one backend endpoint.
+export const deleteMediaController = asyncHandler(async (req, res) => {
+  const { publicId, resourceType } = req.body
+  if (!publicId) {
+    return res.status(400).json({ message: 'publicId is required' })
+  }
+  const result = await deleteMedia(publicId, resourceType === 'video' ? 'video' : 'image')
+  res.json(sendSuccess({ result: result?.result || 'ok' }))
 })

@@ -1,9 +1,16 @@
 const CLOUDINARY_UPLOAD_SEGMENT = '/image/upload/'
 
+// Build the Cloudinary transformation string. By default we always request
+// `f_auto` (serve WebP/AVIF to capable browsers automatically) and `q_auto`
+// (content-aware compression) so every upload is delivered optimized without
+// the caller opting in. `width` (optionally with `dpr`) enables responsive
+// delivery for the IMAGE ANALYSIS "missing responsive sizes" requirement.
 const buildTransformString = (options = {}) => {
-  const { width, quality = 'auto', format = 'auto' } = options
+  const { width, height, dpr, quality = 'auto', format = 'auto' } = options
   const parts = []
   if (width) parts.push(`w_${width}`)
+  if (height) parts.push(`h_${height}`)
+  if (dpr) parts.push(`dpr_${dpr}`)
   parts.push(`q_${quality}`)
   parts.push(`f_${format}`)
   return parts.join(',')
