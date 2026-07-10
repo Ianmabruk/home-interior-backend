@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
+import { getOptimizedVideoUrl, getVideoPosterUrl } from '../../utils/cloudinaryHelpers'
 
 export const VirtualDesignPage = () => {
   const [items, setItems] = useState([])
@@ -151,7 +152,8 @@ export const VirtualDesignPage = () => {
               >
                 <div className="relative overflow-hidden bg-linen aspect-[4/3] rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
                   <video
-                    src={item.videoUrl}
+                    src={getOptimizedVideoUrl(item.videoUrl, { width: 640 })}
+                    poster={getVideoPosterUrl(item.videoUrl, { width: 640 })}
                     className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
                     autoPlay loop muted playsInline preload="metadata"
                   />
@@ -211,8 +213,9 @@ export const VirtualDesignPage = () => {
             </button>
             <div className="relative max-w-7xl w-full mx-4">
               <video
-                src={fullscreen.videoUrl}
-                controls autoPlay loop playsInline
+                src={getOptimizedVideoUrl(fullscreen.videoUrl, { width: 1280 })}
+                poster={getVideoPosterUrl(fullscreen.videoUrl, { width: 1280 })}
+                controls autoPlay loop playsInline preload="metadata"
                 className="max-h-[70vh] w-full object-contain rounded-lg"
               />
               <div className="mt-6 bg-white/95 backdrop-blur-sm p-6 rounded-2xl">

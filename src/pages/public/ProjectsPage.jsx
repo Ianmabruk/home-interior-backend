@@ -4,6 +4,7 @@ import { X, ArrowRight } from 'lucide-react'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
 import PositionedImage from '../../components/common/PositionedImage'
+import { getOptimizedVideoUrl, getVideoPosterUrl } from '../../utils/cloudinaryHelpers'
 
 const getFirstMedia = (project) => {
   if (Array.isArray(project.media) && project.media.length) return project.media[0]
@@ -140,7 +141,8 @@ export const ProjectsPage = () => {
                   <div className="relative overflow-hidden bg-linen aspect-[16/10]">
                     {firstMedia?.type === 'video' ? (
                       <video
-                        src={firstMedia.url}
+                        src={getOptimizedVideoUrl(firstMedia.url, { width: 640 })}
+                        poster={getVideoPosterUrl(firstMedia.url, { width: 640 })}
                         className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
                         autoPlay muted loop playsInline preload="metadata"
                       />
