@@ -37,13 +37,6 @@ export const HomePage = () => {
   useEffect(() => { loadFeed() }, [loadFeed])
 
   useEffect(() => {
-    console.log("[HOME MOUNT] Hero section rendered")
-    console.log("[HOME MOUNT] Portfolio section rendered")
-    console.log("[HOME MOUNT] About section rendered")
-    console.log("[HOME MOUNT] Footer rendered by Layout")
-  }, [])
-
-  useEffect(() => {
     const handler = (event) => {
       const payload = getAdminDataChangedPayload(event)
       if (payload?.type) loadFeed().catch(() => {})

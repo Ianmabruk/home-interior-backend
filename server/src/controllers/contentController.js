@@ -364,8 +364,10 @@ export const upsertAbout = asyncHandler(async (req, res) => {
 
 export const homepageFeed = asyncHandler(async (req, res) => {
   const [projects, portfolio, about] = await Promise.all([
-    prisma.project.findMany({ where: { isPublished: true } }),
-    prisma.portfolio.findMany({ where: { isPublished: true } }),
+    // Limit the payload at the DB layer: only what the homepage renders
+    // (6 projects, 12 portfolio tiles). Smaller transfer = faster mobile TTI.
+    prisma.project.findMany({ where: { isPublished: true }, orderBy: { order: 'asc' }, take: 8 }),
+    prisma.portfolio.findMany({ where: { isPublished: true }, orderBy: { order: 'asc' }, take: 12 }),
     prisma.about.findFirst({ orderBy: { createdAt: 'desc' } }),
   ])
 

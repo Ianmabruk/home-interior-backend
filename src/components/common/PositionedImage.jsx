@@ -25,6 +25,7 @@ export default function PositionedImage({
       alt={alt}
       loading={loading}
       draggable={draggable}
+      decoding="async"
       className={`${className}`}
       style={{
         width: '100%',

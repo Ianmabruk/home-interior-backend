@@ -115,6 +115,24 @@ const authLimiter = rateLimit({
 app.use('/api/auth', authLimiter)
 app.use('/auth', authLimiter)
 
+// Cache public, read-only content + product listings at the edge/browser.
+// Scoped strictly to anonymous GETs so user-specific or admin data is never
+// cached or leaked. `stale-while-revalidate` keeps the UI instant on repeat
+// visits while the backend revalidates in the background.
+const cachePublic = (req, res, next) => {
+  if (req.method !== 'GET') return next()
+  const norm = req.path.replace(/^\/api/, '')
+  const cacheable =
+    norm.startsWith('/content/') ||
+    (norm.startsWith('/products') && !norm.startsWith('/products/admin'))
+  if (cacheable) {
+    res.set('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600')
+    res.set('Vary', 'Accept-Encoding')
+  }
+  next()
+}
+app.use(cachePublic)
+
 app.get(['/api/health', '/health'], (req, res) => {
   res.json({ status: 'ok', service: 'hok-interior-backend' })
 })
