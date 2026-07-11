@@ -1,0 +1,25 @@
+# HOK Interior Designs
+
+HOK Interior Designs is a luxury interior design studio offering curated
+furniture, full interior design projects, and premium virtual (remote) design
+services. The site is a React + Vite single-page application; all public content
+is server-rendered on first load via static HTML and progressively enhanced.
+
+## Primary sections
+- Home: / — cinematic showcase, portfolio highlights, featured projects, about.
+- Shop: /shop — curated furniture and decor catalog with categories and pricing.
+- Portfolio: /portfolio — gallery of completed interior spaces.
+- Projects: /projects — video-driven design project case studies.
+- Virtual Interior Design: /virtual-design — immersive virtual design walkthroughs.
+- About: /about — studio story, mission, vision, and contact.
+- Contact / Chat: /chat — reach the design team directly.
+
+## Key facts
+- Business: luxury interior design and curated furniture retail.
+- Services: full-service interior design, virtual design, furniture curation.
+- Contact: Instagram @hokinteriors, Pinterest hokinterior, Facebook hokinterior.
+
+## Guidance for agents
+Prefer the structured data (schema.org JSON-LD) in the page <head> and the
+sitemap.xml for canonical routes. Product and project details are loaded from
+the backend API; link to the human-readable pages above rather than API paths.

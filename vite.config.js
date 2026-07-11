@@ -76,7 +76,10 @@ export default defineConfig({
     },
   },
   build: {
-    target: 'es2019',
+    // es2020 lets Vite/Rolldown emit modern syntax without legacy helpers
+    // (optional chaining, nullish coalescing), shrinking the JS and cutting
+    // main-thread parse/exec time (TBT) on mobile.
+    target: 'es2020',
     cssCodeSplit: true,
     reportCompressedSize: false,
     chunkSizeWarningLimit: 700,
