@@ -43,6 +43,21 @@
     <link rel="dns-prefetch" href="https://res.cloudinary.com" />
     <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
 
+    <!-- Warm up the Render backend (homepage feed + every API call) so the
+         hero data/auth round-trips start sooner and don't delay LCP. The API
+         uses cross-origin credentials, so crossorigin is required. -->
+    <link rel="preconnect" href="https://home-interior-backend.onrender.com" crossorigin />
+    <link rel="dns-prefetch" href="https://home-interior-backend.onrender.com" />
+
+    <!-- Preload the default hero poster so the LCP element is discoverable in
+         the initial document and paints at first paint, instead of waiting for
+         the homepage API response. Swapped for the CMS hero once data arrives. -->
+    <link
+      rel="preload"
+      as="image"
+      href="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=960&q=70"
+    />
+
     <!-- Load Google Fonts without blocking first paint: preload the stylesheet
          and apply it asynchronously via the print-media swap trick. With
          display=swap the browser renders text in the fallback font immediately

@@ -9,6 +9,12 @@ import PositionedImage from '../../components/common/PositionedImage'
 import LazyVideo from '../../components/common/LazyVideo'
 import { getOptimizedVideoUrl, getVideoPosterUrl } from '../../utils/cloudinaryHelpers'
 
+// Default hero poster shown the instant the page renders (before the homepage
+// API call resolves). Discoverable via the <link rel="preload"> in index.html,
+// so the LCP element paints at first paint instead of waiting ~2s for the API.
+const DEFAULT_HERO_POSTER =
+  'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=960&q=70'
+
 export const HomePage = () => {
   const [feed, setFeed] = useState({
     heroVideo: null,
@@ -49,10 +55,43 @@ export const HomePage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-linen">
-        <div className="skeleton h-[560px] sm:h-[600px] w-full" />
+      <div className="min-h-screen bg-cream">
+        {/* Hero renders immediately with the default poster so the LCP element
+            paints at JS time rather than after the homepage API call. */}
+        <section className="relative h-screen max-h-[800px] min-h-[560px] overflow-hidden">
+          <video
+            poster={DEFAULT_HERO_POSTER}
+            muted
+            playsInline
+            preload="none"
+            fetchPriority="high"
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="container-wide px-6 text-center sm:px-8 md:px-12 lg:px-20">
+              <p className="eyebrow mb-4 text-cream">Premium Interiors</p>
+              <h1 className="font-display text-4xl font-medium text-white sm:text-5xl md:text-6xl lg:text-7xl">
+                HOK Interior Designs
+              </h1>
+              <p className="mt-3 max-w-xl text-base text-cream/80 sm:text-lg md:max-w-2xl md:text-lg lg:max-w-3xl lg:text-xl">
+                Crafting spaces that inspire — from concept to completion.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <div className="section-pad container-wide">
-          <div className="skeleton h-64 rounded-2xl sm:h-80" />
+          {/* Portfolio skeleton sized to match the real grid (and the hero
+              above) so loading → loaded doesn't shift layout (CLS). */}
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-4">
+            <div className="skeleton col-span-2 aspect-[4/3]" />
+            <div className="skeleton aspect-[4/3]" />
+            <div className="skeleton aspect-[4/3]" />
+            <div className="skeleton aspect-[4/3]" />
+            <div className="skeleton aspect-[4/3]" />
+            <div className="skeleton aspect-[4/3]" />
+          </div>
         </div>
       </div>
     )
