@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import { prisma } from '../config/db.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
@@ -5,6 +6,12 @@ import { sendSuccess } from '../utils/sendSuccess.js'
 
 const withId = (item) => ({ ...item, _id: item.id })
 const withIdArray = (items) => items.map((item) => withId(item))
+
+const updateMeSchema = z.object({
+  fullName: z.string().min(1).optional(),
+  phone: z.string().optional().nullable(),
+  addresses: z.any().optional(),
+}).partial()
 
 export const me = asyncHandler(async (req, res) => {
   const user = await prisma.user.findUnique({
@@ -19,12 +26,13 @@ export const me = asyncHandler(async (req, res) => {
 })
 
 export const updateMe = asyncHandler(async (req, res) => {
+  const data = updateMeSchema.parse(req.body)
   const user = await prisma.user.update({
     where: { id: req.user.userId },
     data: {
-      fullName: req.body.fullName,
-      phone: req.body.phone,
-      addresses: req.body.addresses,
+      fullName: data.fullName,
+      phone: data.phone,
+      addresses: data.addresses,
     },
   })
 
@@ -53,6 +61,9 @@ export const getWishlist = asyncHandler(async (req, res) => {
 
 export const toggleWishlist = asyncHandler(async (req, res) => {
   const { productId } = req.body
+  if (!productId) {
+    throw new ApiError(400, 'productId is required')
+  }
   const product = await prisma.product.findUnique({ where: { id: productId } })
   if (!product) {
     return res.status(404).json({ message: 'Product not found' })
@@ -126,6 +137,13 @@ export const getCart = asyncHandler(async (req, res) => {
 
 export const addToCart = asyncHandler(async (req, res) => {
   const { productId, quantity = 1, variant } = req.body
+  if (!productId) {
+    throw new ApiError(400, 'productId is required')
+  }
+  const qty = Number(quantity)
+  if (!Number.isFinite(qty) || qty < 1) {
+    throw new ApiError(400, 'Quantity must be a positive number')
+  }
   const product = await prisma.product.findUnique({ where: { id: productId } })
   if (!product) {
     return res.status(404).json({ message: 'Product not found' })
@@ -194,7 +212,13 @@ export const addToCart = asyncHandler(async (req, res) => {
 
 export const updateCartItem = asyncHandler(async (req, res) => {
   const { productId, quantity, variant } = req.body
+  if (!productId) {
+    throw new ApiError(400, 'productId is required')
+  }
   const safeQuantity = Number(quantity)
+  if (!Number.isFinite(safeQuantity) || safeQuantity < 0) {
+    throw new ApiError(400, 'Quantity must be a non-negative number')
+  }
 
   const user = await prisma.user.findUnique({
     where: { id: req.user.userId },
@@ -264,6 +288,9 @@ export const updateCartItem = asyncHandler(async (req, res) => {
 
 export const removeCartItem = asyncHandler(async (req, res) => {
   const { productId } = req.params
+  if (!productId) {
+    throw new ApiError(400, 'productId is required')
+  }
   const { colorName } = req.query
 
   const user = await prisma.user.findUnique({

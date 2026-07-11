@@ -23,6 +23,11 @@ const quoteSchema = z.object({
   message: z.string().min(10),
 })
 
+const replySchema = z.object({
+  messageId: z.string().min(10),
+  reply: z.string().min(1),
+})
+
 export const createMessage = asyncHandler(async (req, res) => {
   const payload = messageSchema.parse(req.body)
   const created = await prisma.message.create({ data: payload })
@@ -70,7 +75,7 @@ export const listMessages = asyncHandler(async (req, res) => {
 })
 
 export const replyToMessage = asyncHandler(async (req, res) => {
-  const { messageId, reply } = req.body
+  const { messageId, reply } = replySchema.parse(req.body)
   const message = await prisma.message.findUnique({ where: { id: messageId } })
   if (!message) {
     return res.status(404).json({ message: 'Message not found' })
@@ -80,6 +85,23 @@ export const replyToMessage = asyncHandler(async (req, res) => {
     where: { id: messageId },
     data: { isRead: true },
   })
+
+  try {
+    if (message.email) {
+      await sendEmail({
+        to: message.email,
+        subject: `Re: ${message.subject}`,
+        html: `<div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; color: #333;">
+          <p>Hello ${message.name},</p>
+          <p>${reply.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+          <p style="color: #888; font-size: 12px;">This is a reply from HOK Interior Designs support team.</p>
+        </div>`,
+      })
+    }
+  } catch (err) {
+    console.error('Reply email failed:', err)
+  }
 
   res.json(sendSuccess({ message: 'Reply sent', isRead: true }))
 })

@@ -250,8 +250,13 @@ export const removeColorVariant = asyncHandler(async (req, res) => {
   const product = await prisma.product.findUnique({ where: { id: req.params.id } })
   if (!product) throw new ApiError(404, 'Product not found')
 
+  const { colorName } = req.params
+  if (!colorName) {
+    throw new ApiError(400, 'colorName is required')
+  }
+
   const currentVariants = Array.isArray(product.colorVariants) ? product.colorVariants : []
-  const filtered = currentVariants.filter((v) => v.colorName !== req.params.colorName)
+  const filtered = currentVariants.filter((v) => v.colorName !== colorName)
 
   const updated = await prisma.product.update({
     where: { id: req.params.id },

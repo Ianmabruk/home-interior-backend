@@ -14,7 +14,7 @@ import {
   uploadMediaController,
 } from '../controllers/contentController.js'
 import { auth, authorize } from '../middleware/auth.js'
-import { sanitizeInput } from '../middleware/validate.js'
+import { sanitizeInput, validateFileUpload } from '../middleware/validate.js'
 import { auditLog } from '../middleware/auditLog.js'
 
 const router = Router()
@@ -33,29 +33,31 @@ const writeLimiter = rateLimit({
   message: { success: false, message: 'Too many write requests, please slow down.' },
 })
 
+const validateUpload = validateFileUpload('media', { maxBytes: 50 * 1024 * 1024 })
+
 router.get('/homepage', homepageFeed)
 router.get('/analytics', getAnalytics)
 
 router.get('/projects', projectsController.list)
-router.post('/projects', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), sanitizeInput, projectsController.create)
-router.patch('/projects/:id', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), sanitizeInput, projectsController.update)
+router.post('/projects', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, projectsController.create)
+router.patch('/projects/:id', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, projectsController.update)
 router.delete('/projects/:id', auth, authorize('admin'), writeLimiter, auditLog, projectsController.remove)
 
 router.get('/portfolio', portfolioController.list)
-router.post('/portfolio', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), sanitizeInput, portfolioController.create)
-router.patch('/portfolio/:id', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), sanitizeInput, portfolioController.update)
+router.post('/portfolio', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, portfolioController.create)
+router.patch('/portfolio/:id', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, portfolioController.update)
 router.delete('/portfolio/:id', auth, authorize('admin'), writeLimiter, auditLog, portfolioController.remove)
 
 router.get('/about', getAbout)
-router.put('/about', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), sanitizeInput, upsertAbout)
+router.put('/about', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, upsertAbout)
 
 router.get('/virtual-design', virtualDesignController.list)
-router.post('/virtual-design', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), sanitizeInput, virtualDesignController.create)
-router.patch('/virtual-design/:id', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), sanitizeInput, virtualDesignController.update)
+router.post('/virtual-design', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, virtualDesignController.create)
+router.patch('/virtual-design/:id', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, virtualDesignController.update)
 router.delete('/virtual-design/:id', auth, authorize('admin'), writeLimiter, auditLog, virtualDesignController.remove)
 
-router.post('/test-upload', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), sanitizeInput, testUpload)
-router.post('/media/upload', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), sanitizeInput, uploadMediaController)
+router.post('/test-upload', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, testUpload)
+router.post('/media/upload', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, uploadMediaController)
 router.post('/media/delete', auth, authorize('admin'), writeLimiter, auditLog, sanitizeInput, deleteMediaController)
 
 export default router

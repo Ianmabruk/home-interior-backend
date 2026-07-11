@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { prisma } from '../config/db.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
+import { ApiError } from '../utils/ApiError.js'
 import { sendEmail, buildReceiptEmailTemplate } from '../config/sendgrid.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 
@@ -29,6 +30,11 @@ const orderSchema = z.object({
 })
 
 export const createOrder = asyncHandler(async (req, res) => {
+  const user = await prisma.user.findUnique({ where: { id: req.user.userId } })
+  if (!user || !user.isActive) {
+    throw new ApiError(403, 'Your account is not active. Contact support.')
+  }
+
   const data = orderSchema.parse(req.body)
 
   const productIds = data.items.map((item) => item.productId)
@@ -36,6 +42,18 @@ export const createOrder = asyncHandler(async (req, res) => {
     where: { id: { in: productIds } },
   })
   const byId = new Map(products.map((item) => [item.id, item]))
+
+  for (const item of data.items) {
+    const product = byId.get(item.productId)
+    if (!product) {
+      throw new ApiError(404, `Product not found: ${item.productId}`)
+    }
+    const requestedQty = item.quantity
+    const availableStock = product.stock
+    if (availableStock < requestedQty) {
+      throw new ApiError(400, `Insufficient stock for ${product.name}. Available: ${availableStock}, requested: ${requestedQty}`)
+    }
+  }
 
   const items = data.items.map((item) => {
     const product = byId.get(item.productId)
@@ -62,14 +80,25 @@ export const createOrder = asyncHandler(async (req, res) => {
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const total = subtotal
 
-  const order = await prisma.order.create({
-    data: {
-      userId: req.user.userId,
-      items,
-      subtotal,
-      total,
-      shippingAddress: data.shippingAddress,
-    },
+  const order = await prisma.$transaction(async (tx) => {
+    const created = await tx.order.create({
+      data: {
+        userId: req.user.userId,
+        items,
+        subtotal,
+        total,
+        shippingAddress: data.shippingAddress,
+      },
+    })
+
+    for (const item of data.items) {
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { stock: { decrement: item.quantity } },
+      })
+    }
+
+    return created
   })
 
   try {
@@ -92,6 +121,11 @@ export const createOrder = asyncHandler(async (req, res) => {
 })
 
 export const getMyOrders = asyncHandler(async (req, res) => {
+  const user = await prisma.user.findUnique({ where: { id: req.user.userId } })
+  if (!user) {
+    throw new ApiError(404, 'User not found')
+  }
+
   const orders = await prisma.order.findMany({
     where: { userId: req.user.userId },
     orderBy: { createdAt: 'desc' },

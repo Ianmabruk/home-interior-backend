@@ -79,6 +79,13 @@ const PROJECT_FIELDS = new Set([
   'videoUrl', 'videoPublicId', 'coverImageUrl', 'order', 'isPublished', 'tags', 'services',
   'mediaSettings',
 ])
+const PORTFOLIO_FIELDS = new Set([
+  'title', 'category', 'imageUrl', 'imagePublicId', 'order', 'isPublished', 'mediaSettings',
+])
+const VIRTUAL_DESIGN_FIELDS = new Set([
+  'title', 'description', 'videoUrl', 'videoPublicId', 'thumbnailUrl', 'services',
+  'beforeAfterImages', 'category', 'tags', 'ctaPrimary', 'ctaSecondary', 'isPublished', 'mediaSettings',
+])
 const stripUnknown = (obj, allowed) => {
   const out = {}
   for (const key of Object.keys(obj)) {
@@ -184,9 +191,13 @@ export const portfolioController = {
   }),
 
   create: asyncHandler(async (req, res) => {
-    const payload = { ...req.body }
+    const payload = stripUnknown({ ...req.body }, PORTFOLIO_FIELDS)
+
+    if (payload.order !== undefined) payload.order = orderValue(payload.order)
+
     const parsedMediaSettings = parseMediaSettings(req.body.mediaSettings)
     if (parsedMediaSettings) payload.mediaSettings = parsedMediaSettings
+
     const upload = await handleFileUpload(req, 'hok/portfolio')
     if (upload) {
       payload.imageUrl = upload.url
@@ -203,9 +214,11 @@ export const portfolioController = {
       return res.status(404).json({ message: 'Portfolio not found' })
     }
 
-    const payload = { ...req.body }
+    const payload = stripUnknown({ ...req.body }, PORTFOLIO_FIELDS)
+
     const parsedMediaSettings = parseMediaSettings(req.body.mediaSettings)
     if (parsedMediaSettings) payload.mediaSettings = parsedMediaSettings
+
     const upload = await handleFileUpload(req, 'hok/portfolio')
     if (upload) {
       payload.imageUrl = upload.url
@@ -229,7 +242,7 @@ export const virtualDesignController = {
   }),
 
   create: asyncHandler(async (req, res) => {
-    const payload = { ...req.body }
+    const payload = stripUnknown({ ...req.body }, VIRTUAL_DESIGN_FIELDS)
 
     const parsedMediaSettings = parseMediaSettings(req.body.mediaSettings)
     if (parsedMediaSettings) payload.mediaSettings = parsedMediaSettings
@@ -261,7 +274,7 @@ export const virtualDesignController = {
       return res.status(404).json({ message: 'VirtualDesign not found' })
     }
 
-    const payload = { ...req.body }
+    const payload = stripUnknown({ ...req.body }, VIRTUAL_DESIGN_FIELDS)
 
     const parsedMediaSettings = parseMediaSettings(req.body.mediaSettings)
     if (parsedMediaSettings) payload.mediaSettings = parsedMediaSettings

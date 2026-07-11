@@ -22,13 +22,16 @@ function PositionedImage({
   sizes = '100vw',
   responsive = true,
 }) {
-  if (!src) return null
+  if (!src) {
+    return (
+      <div className={`${className} bg-sand`} style={style} role="img" aria-label={alt || 'Image placeholder'} />
+    )
+  }
 
   const s = normalizeMediaSettings(settings)
   const objectPosition = positionToObjectPosition(s.position)
   const zoom = s.zoom / 100
 
-  // Serve an optimized base src (auto WebP/AVIF + quality) and a width srcset.
   const optimizedSrc = responsive ? getOptimizedUrl(src, { width: 1024, crop: 'limit' }) : src
   const srcSet = responsive ? buildSrcSet(src) : ''
 

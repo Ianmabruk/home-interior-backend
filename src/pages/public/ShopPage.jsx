@@ -61,11 +61,11 @@ export const ShopPage = () => {
       next = next.filter((item) => [item.name, item.description, item.category, item.sku].join(' ').toLowerCase().includes(q))
     }
     if (category) next = next.filter((item) => item.category === category)
-    const rate = CURRENCIES.find(c => c.code === currency)?.symbol === 'KSh' ? 129 : 
-                 CURRENCIES.find(c => c.code === currency)?.symbol === '€' ? 0.92 : 1
+
+    const rate = currency === 'KES' ? 129 : currency === 'EUR' ? 0.92 : 1
     if (minPrice) next = next.filter((item) => (item.discountPrice || item.price) * rate >= Number(minPrice))
     if (maxPrice) next = next.filter((item) => (item.discountPrice || item.price) * rate <= Number(maxPrice))
-    
+
     switch (sortBy) {
       case 'price-low':
         next.sort((a, b) => (a.discountPrice || a.price) - (b.discountPrice || b.price))

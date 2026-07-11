@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useEffect, useMemo, useCallback, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useCallback, useState, useRef } from 'react'
 import { api } from '../services/api'
 import { useAuth } from './AuthContext'
 
@@ -9,25 +9,34 @@ export const ShopProvider = ({ children }) => {
   const { isAuthenticated } = useAuth()
   const [cart, setCart] = useState([])
   const [wishlist, setWishlist] = useState([])
+  const prevAuthRef = useRef(isAuthenticated)
 
   useEffect(() => {
     if (!isAuthenticated) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCart([])
+      setWishlist([])
+      prevAuthRef.current = false
       return
     }
+    if (!prevAuthRef.current && isAuthenticated) {
+      Promise.all([api.get('/users/wishlist'), api.get('/users/cart')])
+        .then(([wishlistRes, cartRes]) => {
+          setWishlist(wishlistRes.data?.products || [])
+          const mappedCart = (cartRes.data?.items || []).map((entry) => ({
+            ...entry,
+            quantity: entry.quantity,
+            selectedVariant: entry.selectedVariant || null,
+          }))
+          setCart(mappedCart)
+        })
+        .catch(() => {
+          setWishlist([])
+          setCart([])
+        })
+    }
 
-    Promise.all([api.get('/users/wishlist'), api.get('/users/cart')])
-      .then(([wishlistRes, cartRes]) => {
-        setWishlist(wishlistRes.data?.products || [])
-        const mappedCart = (cartRes.data?.items || []).map((entry) => ({
-          ...entry,
-          quantity: entry.quantity,
-          selectedVariant: entry.selectedVariant || null,
-        }))
-        setCart(mappedCart)
-      })
-      .catch(() => {
-        setWishlist([])
-      })
+    prevAuthRef.current = true
   }, [isAuthenticated])
 
   const addToCart = useCallback((product, quantity = 1, variant = null) => {

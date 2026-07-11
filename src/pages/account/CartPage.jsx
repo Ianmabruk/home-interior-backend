@@ -43,7 +43,7 @@ export const CartPage = () => {
                     className="flex gap-5 rounded-2xl border border-ink/10 bg-white p-5 shadow-sm hover:shadow-md transition-shadow"
                   >
                     <div className="relative h-32 w-32 flex-shrink-0 overflow-hidden rounded-xl">
-                      <img src={item.selectedVariant?.imageUrl || item.images?.[0]?.url} alt={item.name} className="h-full w-full object-cover" />
+                      <img src={item.selectedVariant?.imageUrl || item.image || item.images?.[0]?.url} alt={item.name} className="h-full w-full object-cover" />
                       {item.stock === 0 && (
                         <div className="absolute inset-0 flex items-center justify-center bg-ink/60">
                           <span className="text-xs font-medium uppercase tracking-widest text-white">Out of Stock</span>

@@ -2,7 +2,7 @@ import { ApiError } from '../utils/ApiError.js'
 import { verifyAccessToken } from '../utils/tokens.js'
 
 export const auth = (req, res, next) => {
-  const header = req.headers.authorization
+  const header = req.headers.authorization || req.headers.Authorization
   if (!header || !header.startsWith('Bearer ')) {
     return next(new ApiError(401, 'Unauthorized'))
   }

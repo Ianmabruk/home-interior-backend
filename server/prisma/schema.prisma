@@ -46,7 +46,7 @@ model Wishlist {
 model Order {
   id              String    @id @default(uuid()) @map("_id")
   userId          String    @map("user_id")
-  user            User      @relation(fields: [userId], references: [id])
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   items           Json
   subtotal        Float
   shippingFee     Float     @default(0) @map("shipping_fee")
@@ -148,7 +148,7 @@ model VirtualDesign {
   ctaPrimary       String?   @default("Start Your Project") @map("cta_primary")
   ctaSecondary     String?   @default("Learn More") @map("cta_secondary")
   mediaSettings    Json?    @map("media_settings")
-  isPublished      Boolean?  @default(true) @map("is_published")
+  isPublished      Boolean? @default(true) @map("is_published")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
@@ -196,7 +196,7 @@ model Analytics {
 model Message {
   id        String   @id @default(uuid()) @map("_id")
   senderId  String?  @map("sender_id")
-  sender    User?    @relation("MessageSender", fields: [senderId], references: [id])
+  sender    User?    @relation("MessageSender", fields: [senderId], references: [id], onDelete: SetNull)
   name      String
   email     String
   subject   String

@@ -1,4 +1,4 @@
-import { BarChart3, Boxes, Film, FolderKanban, Info, Mail, Sparkles, LayoutDashboard, ShoppingBag, TrendingUp, Users, FileText, Settings, Search, Filter, Grid, List, Check, Trash2, Edit, Eye, EyeOff, Bell, ChevronLeft, ChevronRight, UploadCloud, X, Plus, Menu, LogOut, Activity, DollarSign, Layers, MessageSquare } from 'lucide-react'
+import { BarChart3, Boxes, Film, FolderKanban, Info, Mail, Sparkles, LayoutDashboard, ShoppingBag, TrendingUp, Users, FileText, Settings, Search, Grid, List, Check, Trash2, Edit, Eye, Bell, ChevronLeft, ChevronRight, UploadCloud, X, Plus, Menu, LogOut, Activity, DollarSign, Layers, MessageSquare } from 'lucide-react'
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '../../services/api'
@@ -52,7 +52,7 @@ function AdminPage() {
   const [portfolioForm, setPortfolioForm] = useState({ title: '', category: '' })
   const [productForm, setProductForm] = useState({ name: '', description: '', price: '', discountPrice: '', category: '', stock: '', sku: '' })
   const [virtualForm, setVirtualForm] = useState({ title: '', description: '', services: '', videoUrl: '' })
-  const [settingsForm, setSettingsForm] = useState({ siteName: '', supportEmail: '', currency: 'USD' })
+  const [settingsForm, setSettingsForm] = useState({ siteName: '', supportEmail: '', currency: 'USD', maintenanceMode: false, shippingPolicy: '', returnPolicy: '' })
   const [aboutForm, setAboutForm] = useState({ story: '', mission: '', vision: '' })
   const [aboutImageFile, setAboutImageFile] = useState(null)
   const [aboutImagePreview, setAboutImagePreview] = useState(null)
@@ -86,6 +86,14 @@ function AdminPage() {
   const fileInputRef = useRef(null)
 
   useEffect(() => {
+    return () => {
+      [mediaPreview, productImagePreview, virtualVideoPreview, aboutImagePreview, variantImagePreview].forEach((url) => {
+        if (url && typeof url === 'string' && url.startsWith('blob:')) URL.revokeObjectURL(url)
+      })
+    }
+  }, [mediaPreview, productImagePreview, virtualVideoPreview, aboutImagePreview, variantImagePreview])
+
+  useEffect(() => {
     fetchAll()
   }, [])
 
@@ -99,8 +107,9 @@ function AdminPage() {
       api.get('/content/virtual-design').catch(() => ({ data: [] })),
       api.get('/admin/users').catch(() => ({ data: [] })),
       api.get('/content/analytics').catch(() => ({ data: [] })),
+      api.get('/admin/settings').catch(() => ({ data: null })),
     ])
-      .then(([overviewRes, projectsRes, portfolioRes, productsRes, messagesRes, virtualRes, usersRes, analyticsRes]) => {
+      .then(([overviewRes, projectsRes, portfolioRes, productsRes, messagesRes, virtualRes, usersRes, analyticsRes, settingsRes]) => {
         if (overviewRes.data) setOverview(overviewRes.data)
         setProjects(projectsRes.data || [])
         setPortfolio(portfolioRes.data || [])
@@ -109,6 +118,16 @@ function AdminPage() {
         setVirtualDesigns(virtualRes.data || [])
         setUsers(usersRes.data || [])
         setAnalyticsData(analyticsRes.data || [])
+        if (settingsRes.data) {
+          setSettingsForm({
+            siteName: settingsRes.data.siteName || '',
+            supportEmail: settingsRes.data.supportEmail || '',
+            currency: settingsRes.data.currency || 'USD',
+            maintenanceMode: Boolean(settingsRes.data.maintenanceMode),
+            shippingPolicy: settingsRes.data.shippingPolicy || '',
+            returnPolicy: settingsRes.data.returnPolicy || '',
+          })
+        }
       })
   }
 
@@ -300,12 +319,6 @@ function AdminPage() {
     } catch (error) { resetProgress(); setFailure(error, 'About save failed.') }
   }
 
-  const handleUserAction = async (userId, action) => {
-    try {
-      await api.patch(`/admin/users/${userId}/${action}`); fetchAll(); setSuccess(`User ${action} successfully.`)
-    } catch (error) { setFailure(error, `Failed to ${action} user.`) }
-  }
-
   const handleMediaChange = (e) => {
     const f = e.target.files?.[0] || null
     setMediaFile(f); setMediaPreview(setPreview(f, resourceType === 'video' ? 'video' : 'image'))
@@ -493,56 +506,6 @@ function AdminPage() {
       </div>
     </div>
   )
-
-  const renderUserManagement = () => {
-    const filtered = users.filter(u => u.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) || u.email?.toLowerCase().includes(searchTerm.toLowerCase()))
-    return (
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/30" />
-            <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search users..." className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-sand bg-white focus:ring-2 focus:ring-orange/30 outline-none" />
-          </div>
-          <button className="px-4 py-2.5 text-xs uppercase tracking-widest border border-sand rounded-xl hover:bg-linen transition flex items-center gap-2"><Filter size={14} /> Filter</button>
-        </div>
-        <div className="rounded-2xl border border-sand/60 bg-white overflow-hidden">
-          <div className="overflow-x-auto">
-          <table className="w-full text-sm whitespace-nowrap">
-            <thead className="bg-linen border-b border-sand">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium text-ink/60">Name</th>
-                <th className="text-left px-4 py-3 font-medium text-ink/60">Email</th>
-                <th className="text-left px-4 py-3 font-medium text-ink/60">Role</th>
-                <th className="text-left px-4 py-3 font-medium text-ink/60">Status</th>
-                <th className="text-left px-4 py-3 font-medium text-ink/60">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((u) => (
-                <tr key={u._id} className="border-b border-sand last:border-0 hover:bg-linen transition">
-                  <td className="px-4 py-3 font-medium text-ink">{u.fullName}</td>
-                  <td className="px-4 py-3 text-ink/60">{u.email}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded-lg text-2xs ${u.role === 'admin' ? 'bg-orange/10 text-orange' : 'bg-linen text-ink/60'}`}>{u.role}</span>
-                  </td>
-                  <td className="px-4 py-3"><StatusBadge active={u.isActive} /></td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2">
-                      <button className="p-1.5 rounded-lg border border-sand hover:bg-white transition"><Eye size={14} /></button>
-                      <button onClick={() => handleUserAction(u._id, u.isActive ? 'suspend' : 'activate')} className="p-1.5 rounded-lg border border-sand hover:bg-white transition">
-                        {u.isActive ? <EyeOff size={14} /> : <Check size={14} />}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-           </table>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   const DropZone = ({ onFile, preview, onClear, accept, kind }) => (
     <div
@@ -1000,22 +963,20 @@ function AdminPage() {
             <option value="EUR">EUR - Euro</option>
           </select>
         </div>
+        <div className="flex items-center gap-3">
+          <input id="maintenance" type="checkbox" checked={settingsForm.maintenanceMode} onChange={(e) => setSettingsForm((s) => ({ ...s, maintenanceMode: e.target.checked }))} className="h-4 w-4 rounded border-sand accent-orange" />
+          <label htmlFor="maintenance" className="text-sm text-ink">Maintenance Mode</label>
+        </div>
+        <div>
+          <label className="block text-xs font-medium uppercase tracking-widest text-ink/50 mb-1">Shipping Policy</label>
+          <textarea value={settingsForm.shippingPolicy} onChange={(e) => setSettingsForm((s) => ({ ...s, shippingPolicy: e.target.value }))} className="w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm outline-none" rows={3} placeholder="Enter shipping policy..." />
+        </div>
+        <div>
+          <label className="block text-xs font-medium uppercase tracking-widest text-ink/50 mb-1">Return Policy</label>
+          <textarea value={settingsForm.returnPolicy} onChange={(e) => setSettingsForm((s) => ({ ...s, returnPolicy: e.target.value }))} className="w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm outline-none" rows={3} placeholder="Enter return policy..." />
+        </div>
         <button className="w-full rounded-xl bg-ink px-6 py-2.5 text-xs font-medium uppercase tracking-widest text-white hover:bg-charcoal transition">Save Settings</button>
       </form>
-    </div>
-  )
-
-  const renderReports = () => (
-    <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <MetricCard title="Conversion Rate" value={`${analyticsData.length > 0 ? ((analyticsData.reduce((s, d) => s + d.orders, 0) / Math.max(analyticsData.reduce((s, d) => s + d.visits, 0), 1)) * 100).toFixed(1) : 0}`} suffix="%" icon={TrendingUp} color="emerald" />
-        <MetricCard title="Avg Order Value" value={overview?.ordersCount > 0 ? (overview.totalSales / overview.ordersCount).toFixed(2) : '0.00'} icon={ShoppingBag} color="blue" prefix="$" />
-        <MetricCard title="Products Sold" value={overview?.soldUnits || 0} icon={Boxes} color="violet" />
-      </div>
-      <div className="rounded-2xl border border-borderBeige bg-white p-6 shadow-sm">
-        <h3 className="font-display text-xl text-inkPrimary mb-4">Sales Overview</h3>
-        <MiniBarChart data={analyticsData.map((d) => d.revenue || 0)} labels={analyticsData.map((_, i) => `M${i + 1}`)} />
-      </div>
     </div>
   )
 
@@ -1195,15 +1156,13 @@ function AdminPage() {
               {activeTab === 'portfolio' && renderPortfolio()}
               {activeTab === 'virtual' && renderVirtual()}
               {activeTab === 'chat' && renderChat()}
-               {activeTab === 'user-management' && renderUserManagement()}
-               {activeTab === 'reports' && renderReports()}
-               {activeTab === 'settings' && renderSettings()}
-               {activeTab === 'about' && renderAboutTab()}
-               {activeTab === 'orders' && renderOrders()}
-               {activeTab === 'customers' && renderCustomers()}
-               {activeTab === 'testimonials' && renderTestimonials()}
-               {activeTab === 'blog' && renderBlog()}
-               {activeTab === 'media' && renderMedia()}
+              {activeTab === 'orders' && renderOrders()}
+              {activeTab === 'customers' && renderCustomers()}
+              {activeTab === 'testimonials' && renderTestimonials()}
+              {activeTab === 'blog' && renderBlog()}
+              {activeTab === 'media' && renderMedia()}
+              {activeTab === 'about' && renderAboutTab()}
+              {activeTab === 'settings' && renderSettings()}
              </motion.div>
           </AnimatePresence>
         </main>

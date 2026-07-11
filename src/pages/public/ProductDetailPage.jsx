@@ -54,7 +54,7 @@ export const ProductDetailPage = () => {
     product.images?.[0]?.url ||
     null
 
-  const salePercent = product.discountPrice
+  const salePercent = product.price > 0 && product.discountPrice
     ? Math.round(((product.price - product.discountPrice) / product.price) * 100)
     : null
 

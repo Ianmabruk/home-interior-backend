@@ -5,9 +5,11 @@ import helmet from 'helmet'
 import compression from 'compression'
 import cookieParser from 'cookie-parser'
 import rateLimit from 'express-rate-limit'
+import crypto from 'crypto'
 import apiRoutes from './routes/index.js'
 import { env } from './config/env.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
+import { zodErrorHandler } from './middleware/zodErrorHandler.js'
 
 export const app = express()
 
@@ -21,6 +23,20 @@ const CLOUDINARY_DIRECTIVES = [
   "'self'",
   'https://res.cloudinary.com',
   'https://*.cloudinary.com',
+]
+
+const API_DIRECTIVES = [
+  "'self'",
+  env.clientUrl,
+  'https://homy-comfy.netlify.app',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'http://localhost:5176',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+  'http://127.0.0.1:5175',
+  'http://127.0.0.1:5176',
 ]
 
 // Build allowed origins list from env + known dev ports
@@ -39,6 +55,22 @@ const allowedOrigins = [
   'http://127.0.0.1:5176',
 ].filter(Boolean)
 
+// Sanitize origin for CSP connect-src (strip path and port wildcards)
+const sanitizeCspOrigin = (origin) => {
+  if (!origin || origin === "'self'") return origin
+  try {
+    const url = new URL(origin)
+    return `${url.protocol}//${url.hostname}`
+  } catch {
+    return origin
+  }
+}
+
+const cspConnectSrc = [
+  ...new Set(CLOUDINARY_DIRECTIVES.map(sanitizeCspOrigin)),
+  ...new Set(API_DIRECTIVES.map(sanitizeCspOrigin)),
+]
+
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -54,7 +86,7 @@ app.use(
         styleSrc: [...CLOUDINARY_DIRECTIVES, "'unsafe-inline'"],
         imgSrc: ["'self'", 'data:', 'blob:', ...CLOUDINARY_DIRECTIVES],
         mediaSrc: CLOUDINARY_DIRECTIVES,
-        connectSrc: CLOUDINARY_DIRECTIVES,
+        connectSrc: cspConnectSrc,
       },
     },
     frameguard: { action: 'deny' },
@@ -83,18 +115,19 @@ app.use((req, res, next) => {
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, curl, server-to-server)
       if (!origin) return callback(null, true)
-      // Only explicitly configured origins are permitted. The preview-domain
-      // wildcards (.netlify.app / .vercel.app / .onrender.com) were removed —
-      // any attacker-controlled preview app could otherwise call the API.
       if (allowedOrigins.includes(origin)) return callback(null, true)
-      callback(new Error(`CORS: origin ${origin} not allowed`))
+      return callback(new ApiError(403, `CORS: origin ${origin} not allowed`), false)
     },
     credentials: true,
   }),
 )
-app.use(express.json({ limit: '10mb' }))
+
+// Trust proxy so req.ip / rate limiter see the real client IP behind
+// Render/Netlify/Cloudflare.
+app.set('trust proxy', 1)
+
+app.use(express.json({ limit: '1mb' }))
 app.use(cookieParser())
 app.use(morgan('dev'))
 app.use(
@@ -106,6 +139,12 @@ app.use(
     legacyHeaders: false,
   }),
 )
+
+// Attach a unique request ID to every request for log correlation.
+app.use((req, res, next) => {
+  res.setHeader('X-Request-ID', crypto.randomUUID())
+  next()
+})
 
 // Stricter rate limit for authentication endpoints to blunt brute-force /
 // credential-stuffing attempts. Applied both under /api and at the root so
@@ -138,17 +177,20 @@ const cachePublic = (req, res, next) => {
 }
 app.use(cachePublic)
 
-app.get(['/api/health', '/health'], (req, res) => {
-  res.json({ status: 'ok', service: 'hok-interior-backend' })
+app.get(['/api/health', '/health'], async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`
+    res.json({ status: 'ok', service: 'hok-interior-backend', database: 'connected' })
+  } catch {
+    res.status(503).json({ status: 'error', service: 'hok-interior-backend', database: 'disconnected' })
+  }
 })
 
-// Serve API routes both under /api (canonical, used by local dev proxy and
-// VITE_API_URL values that include /api) and at the root. This keeps the
-// frontend working regardless of whether its base URL ends with "/api",
-// e.g. both https://<backend>.onrender.com/api/auth/login and
-// https://<backend>.onrender.com/auth/login resolve correctly.
+// Serve API routes under /api (canonical base URL used by VITE_API_URL).
+// Do NOT mount at root — that leaks admin endpoints at multiple paths and
+// breaks cache keys / rate-limiting assumptions.
 app.use('/api', apiRoutes)
-app.use('/', apiRoutes)
 
 app.use(notFoundHandler)
+app.use(zodErrorHandler)
 app.use(errorHandler)

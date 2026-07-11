@@ -74,6 +74,10 @@ export const login = asyncHandler(async (req, res) => {
     throw new ApiError(401, 'Invalid credentials')
   }
 
+  if (!user.isActive) {
+    throw new ApiError(403, 'Your account has been suspended. Contact support.')
+  }
+
   const matches = await bcrypt.compare(body.password, user.passwordHash)
   if (!matches) {
     throw new ApiError(401, 'Invalid credentials')
@@ -137,8 +141,8 @@ export const refresh = asyncHandler(async (req, res) => {
     throw new ApiError(401, 'Invalid refresh token')
   }
 
-  if (!user || user.refreshToken !== refreshToken) {
-    console.warn('[AUTH][refresh] rejected: user not found or token mismatch (userId=%s)', decoded.userId)
+  if (!user || user.refreshToken !== refreshToken || !user.isActive) {
+    console.warn('[AUTH][refresh] rejected: user not found, token mismatch, or inactive (userId=%s)', decoded.userId)
     throw new ApiError(401, 'Invalid refresh token')
   }
 

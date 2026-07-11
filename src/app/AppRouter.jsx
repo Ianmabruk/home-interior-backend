@@ -47,11 +47,10 @@ export const AppRouter = () => {
 
         <Route element={<ProtectedRoute />}>
           <Route path="/account" element={<AccountPage />} />
+          <Route path="/wishlist" element={<WishlistPage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
         </Route>
-
-        <Route path="/wishlist" element={<WishlistPage />} />
-        <Route path="/cart" element={<CartPage />} />
-        <Route path="/checkout" element={<CheckoutPage />} />
 
         <Route element={<ProtectedRoute adminOnly />}>
           <Route path="/admin" element={<AdminPage />} />

@@ -22,7 +22,7 @@ let refreshingPromise = null
 api.interceptors.response.use(
   (response) => {
     const data = response.data
-    if (data && typeof data === 'object' && 'success' in data) {
+    if (data && typeof data === 'object' && 'success' in data && data.success === true) {
       return { ...response, data: data.data ?? null }
     }
     return response
@@ -31,8 +31,6 @@ api.interceptors.response.use(
     const status = error?.response?.status
     const originalRequest = error.config
 
-    // No 401, the request was already retried, or it IS the refresh call
-    // itself → don't attempt another refresh (prevents infinite loops).
     if (status !== 401 || originalRequest._retry || originalRequest.url?.includes('/auth/refresh')) {
       return Promise.reject(error)
     }
@@ -42,15 +40,13 @@ api.interceptors.response.use(
       refreshingPromise = api
         .post('/auth/refresh')
         .then((res) => {
-          const accessToken = res.data.accessToken
+          const accessToken = res.data?.accessToken
+          if (!accessToken) throw new Error('No access token in refresh response')
           localStorage.setItem('hok_access_token', accessToken)
           console.info('[auth] access token refreshed')
           return accessToken
         })
         .catch((refreshErr) => {
-          // Refresh failed (expired/invalid refresh token, or backend 500):
-          // drop the stale access token so we don't keep retrying a dead
-          // refresh, and surface the original 401 to the caller.
           console.warn('[auth] refresh failed:', refreshErr?.response?.status, refreshErr?.message)
           localStorage.removeItem('hok_access_token')
           return Promise.reject(refreshErr)
@@ -66,7 +62,6 @@ api.interceptors.response.use(
       originalRequest.headers.Authorization = `Bearer ${newToken}`
       return api(originalRequest)
     } catch {
-      // Refresh couldn't produce a token — reject with the original error.
       return Promise.reject(error)
     }
   },

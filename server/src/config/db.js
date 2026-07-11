@@ -86,6 +86,12 @@ export const ensureAdminUser = async () => {
           },
         })
         console.log('✅ Admin user created')
+      } else if (existing.role !== 'admin' || !existing.isActive) {
+        await prisma.user.update({
+          where: { id: existing.id },
+          data: { role: 'admin', isActive: true },
+        })
+        console.log('✅ Admin user promoted to active admin')
       } else {
         console.log('✅ Admin user already exists')
       }
