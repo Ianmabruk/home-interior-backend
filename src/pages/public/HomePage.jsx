@@ -6,6 +6,7 @@ import { SectionTitle } from '../../components/common/SectionTitle'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
 import PositionedImage from '../../components/common/PositionedImage'
+import LazyVideo from '../../components/common/LazyVideo'
 import { getOptimizedVideoUrl, getVideoPosterUrl } from '../../utils/cloudinaryHelpers'
 
 export const HomePage = () => {
@@ -140,6 +141,7 @@ export const HomePage = () => {
                       i === 0 ? 'aspect-[4/3] sm:aspect-[16/10]' : 'aspect-[4/3]'
                     }`}
                     loading="lazy"
+                    sizes={i === 0 ? '(min-width:768px) 66vw, 100vw' : '(min-width:768px) 33vw, 50vw'}
                   />
                   <div className="absolute inset-0 bg-ink/0 transition-all duration-500 group-hover:bg-ink/20" />
                   <div className="absolute inset-0 flex items-end opacity-0 transition-opacity duration-300 group-hover:opacity-100">
@@ -180,9 +182,9 @@ export const HomePage = () => {
                   <Link to={`/projects`} className="block">
                     <div className="relative overflow-hidden bg-linen aspect-[16/10]">
                       {firstMedia?.type === 'video' ? (
-                        <video src={getOptimizedVideoUrl(firstMedia.url, { width: 640 })} poster={getVideoPosterUrl(firstMedia.url, { width: 640 })} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" autoPlay muted loop playsInline preload="metadata" />
+                        <LazyVideo src={getOptimizedVideoUrl(firstMedia.url, { width: 640 })} poster={getVideoPosterUrl(firstMedia.url, { width: 640 })} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
                       ) : firstMedia?.type === 'image' ? (
-                        <PositionedImage src={firstMedia.url} alt={project.title} settings={project.mediaSettings} className="h-full w-full transition duration-700 group-hover:scale-105" loading="lazy" />
+                        <PositionedImage src={firstMedia.url} alt={project.title} settings={project.mediaSettings} className="h-full w-full transition duration-700 group-hover:scale-105" loading="lazy" sizes="(min-width:1024px) 33vw, (min-width:768px) 50vw, 100vw" />
                       ) : (
                         <div className="flex h-full items-center justify-center bg-linen"><p className="text-sm text-ink/30">No media</p></div>
                       )}
@@ -229,6 +231,7 @@ export const HomePage = () => {
                           alt="Workspace"
                           settings={feed.about.mediaSettings}
                           loading="lazy"
+                          sizes="(min-width:768px) 50vw, 100vw"
                         />
                       </div>
                     ) : (

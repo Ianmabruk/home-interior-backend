@@ -28,6 +28,7 @@ export const ProductCard = ({ product, onQuickView }) => {
           settings={product.mediaSettings}
           className="h-full w-full transition duration-700 group-hover:scale-102"
           loading="lazy"
+          sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
         />
 
         <div className="absolute left-3 top-3 flex flex-col gap-1.5">

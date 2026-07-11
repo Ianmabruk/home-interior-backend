@@ -4,6 +4,7 @@ import { X, ArrowRight } from 'lucide-react'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
 import PositionedImage from '../../components/common/PositionedImage'
+import LazyVideo from '../../components/common/LazyVideo'
 import { getOptimizedVideoUrl, getVideoPosterUrl } from '../../utils/cloudinaryHelpers'
 
 const getFirstMedia = (project) => {
@@ -140,14 +141,9 @@ export const ProjectsPage = () => {
                 >
                   <div className="relative overflow-hidden bg-linen aspect-[16/10]">
                     {firstMedia?.type === 'video' ? (
-                      <video
-                        src={getOptimizedVideoUrl(firstMedia.url, { width: 640 })}
-                        poster={getVideoPosterUrl(firstMedia.url, { width: 640 })}
-                        className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                        autoPlay muted loop playsInline preload="metadata"
-                      />
+                      <LazyVideo src={getOptimizedVideoUrl(firstMedia.url, { width: 640 })} poster={getVideoPosterUrl(firstMedia.url, { width: 640 })} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
                     ) : firstMedia?.type === 'image' ? (
-                      <PositionedImage src={firstMedia.url} alt={project.title} settings={project.mediaSettings} className="h-full w-full transition duration-700 group-hover:scale-105" loading="lazy" />
+                      <PositionedImage src={firstMedia.url} alt={project.title} settings={project.mediaSettings} className="h-full w-full transition duration-700 group-hover:scale-105" loading="lazy" sizes="(min-width:768px) 50vw, 100vw" />
                     ) : (
                       <div className="flex h-full items-center justify-center bg-linen">
                         <p className="text-sm text-ink/30">No media</p>

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
 import { getOptimizedVideoUrl, getVideoPosterUrl } from '../../utils/cloudinaryHelpers'
-
+import LazyVideo from '../../components/common/LazyVideo'
 export const VirtualDesignPage = () => {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -151,12 +151,7 @@ export const VirtualDesignPage = () => {
                 className="group"
               >
                 <div className="relative overflow-hidden bg-linen aspect-[4/3] rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
-                  <video
-                    src={getOptimizedVideoUrl(item.videoUrl, { width: 640 })}
-                    poster={getVideoPosterUrl(item.videoUrl, { width: 640 })}
-                    className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                    autoPlay loop muted playsInline preload="metadata"
-                  />
+                  <LazyVideo src={getOptimizedVideoUrl(item.videoUrl, { width: 640 })} poster={getVideoPosterUrl(item.videoUrl, { width: 640 })} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
                   <div className="absolute inset-0 bg-ink/0 transition-all duration-500 group-hover:bg-ink/20" />
                   {item.beforeAfterImages?.length > 0 && (
                     <span className="absolute left-3 top-3 bg-orange/90 px-3 py-1 text-2xs font-medium uppercase tracking-widest text-white rounded-full">

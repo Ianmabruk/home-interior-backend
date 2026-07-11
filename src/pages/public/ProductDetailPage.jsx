@@ -71,7 +71,7 @@ export const ProductDetailPage = () => {
             transition={{ duration: 0.35 }}
             className="h-full w-full"
           >
-            <PositionedImage src={displayImage} alt={product.name} settings={product.mediaSettings} className="h-full w-full" />
+            <PositionedImage src={displayImage} alt={product.name} settings={product.mediaSettings} className="h-full w-full" sizes="(min-width:768px) 50vw, 100vw" loading="eager" />
           </motion.div>
         </AnimatePresence>
         {salePercent && (

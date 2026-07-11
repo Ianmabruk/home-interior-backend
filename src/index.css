@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=DM+Sans:wght@300;400;500;600&display=swap');
+/* Fonts are loaded non-render-blocking from index.html (preload + async
+   stylesheet swap) to avoid delaying first paint. */
 
 @tailwind base;
 @tailwind components;
@@ -113,5 +114,28 @@
 
   .pb-safe {
     padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Respect users who ask for less motion: disable smooth scrolling, transitions
+   and decorative animations (incl. the shimmer skeleton). This also reduces
+   CPU/paint on low-end devices. Framer Motion is additionally gated via
+   <MotionConfig reducedMotion="user"> in main.jsx. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .skeleton {
+    animation: none;
   }
 }

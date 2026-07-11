@@ -3,6 +3,23 @@
   to = "/index.html"
   status = 200
 
+# Long-cache immutable, content-hashed build assets (JS/CSS/images) so repeat
+# visits don't re-download them. HTML and the service worker must stay fresh.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
 [build]
   command = "npm run build"
   publish = "dist"
