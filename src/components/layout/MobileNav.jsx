@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Home, ShoppingBag, Briefcase, Menu, X, FolderKanban, Info, Grid3X3 } from 'lucide-react'
+import { Home, ShoppingBag, Briefcase, Menu, X, Info, Grid3X3 } from 'lucide-react'
 import { SHOP_CATEGORIES } from '../../utils/constants'
 import { AnimatePresence, motion } from 'framer-motion'
 
 const navItems = [
   { to: '/', label: 'Home', icon: Home, exact: true },
   { to: '/shop', label: 'Shop', icon: ShoppingBag },
-  { to: '/projects', label: 'Projects', icon: FolderKanban },
   { to: '/virtual-interior-design', label: 'Virtual', icon: Briefcase },
   { to: '/about', label: 'About', icon: Info },
   { to: '#more', label: 'Menu', icon: Menu },
@@ -127,14 +126,6 @@ export const MobileNav = () => {
                   >
                     <span className="text-orange">📁</span>
                     Portfolio
-                  </Link>
-                  <Link
-                    to="/projects"
-                    onClick={() => setDrawerOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 transition hover:bg-white/10 hover:text-orange rounded-xl"
-                  >
-                    <span className="text-orange">🎬</span>
-                    Projects
                   </Link>
                   <Link
                     to="/virtual-interior-design"

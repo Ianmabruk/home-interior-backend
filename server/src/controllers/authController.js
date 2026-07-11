@@ -108,29 +108,53 @@ export const refresh = asyncHandler(async (req, res) => {
   // older clients still sending it in the payload.
   const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME] || req.body?.refreshToken
   if (!refreshToken) {
+    console.warn('[AUTH][refresh] rejected: no refresh token in cookie or body')
     throw new ApiError(400, 'Refresh token required')
   }
 
-  const decoded = (() => {
-    try {
-      return verifyRefreshToken(refreshToken)
-    } catch {
-      throw new ApiError(401, 'Invalid or expired refresh token')
-    }
-  })()
-  const user = await prisma.user.findUnique({ where: { id: decoded.userId } })
+  // Verify the JWT signature/expiry. Any failure is a clean 401 (never 500),
+  // so a bad/expired token can't crash the endpoint or trigger a retry loop.
+  let decoded
+  try {
+    decoded = verifyRefreshToken(refreshToken)
+  } catch (err) {
+    console.warn('[AUTH][refresh] rejected: invalid/expired token —', err?.message)
+    throw new ApiError(401, 'Invalid or expired refresh token')
+  }
+
+  if (!decoded?.userId) {
+    console.warn('[AUTH][refresh] rejected: token missing userId claim')
+    throw new ApiError(401, 'Invalid refresh token')
+  }
+
+  // DB failures are caught and downgraded to 401: a 500 here would make the
+  // client treat it as a server fault and retry the refresh, looping.
+  let user
+  try {
+    user = await prisma.user.findUnique({ where: { id: decoded.userId } })
+  } catch (err) {
+    console.error('[AUTH][refresh] DB error looking up user:', err)
+    throw new ApiError(401, 'Invalid refresh token')
+  }
+
   if (!user || user.refreshToken !== refreshToken) {
+    console.warn('[AUTH][refresh] rejected: user not found or token mismatch (userId=%s)', decoded.userId)
     throw new ApiError(401, 'Invalid refresh token')
   }
 
   const tokens = makeAuthResponse(user)
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { refreshToken: tokens.refreshToken },
-  })
+  try {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken: tokens.refreshToken },
+    })
+  } catch (err) {
+    console.error('[AUTH][refresh] DB error rotating refresh token:', err)
+    throw new ApiError(401, 'Invalid refresh token')
+  }
 
   setRefreshCookie(res, tokens.refreshToken)
-
+  console.info('[AUTH][refresh] success (userId=%s)', user.id)
   res.json(sendSuccess({ accessToken: tokens.accessToken }))
 })
 

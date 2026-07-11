@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Heart, ShoppingBag, Eye } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -5,7 +6,7 @@ import { useShop } from '../../context/ShopContext'
 import { useCurrency } from '../../context/CurrencyContext'
 import PositionedImage from '../common/PositionedImage'
 
-export const ProductCard = ({ product, onQuickView }) => {
+export const ProductCard = memo(({ product, onQuickView }) => {
   const { addToCart, toggleWishlist, wishlist } = useShop()
   const { formatPrice } = useCurrency()
   const primaryImage = product.images?.[0]?.url || 'https://images.unsplash.com/photo-1586023943478-ae8b06f48d80?auto=format&fit=crop&w=800&q=80'
@@ -97,4 +98,4 @@ export const ProductCard = ({ product, onQuickView }) => {
       </div>
     </motion.article>
   )
-}
+})

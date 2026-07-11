@@ -6,7 +6,7 @@ import { SectionTitle } from '../../components/common/SectionTitle'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
 import PositionedImage from '../../components/common/PositionedImage'
-import LazyVideo from '../../components/common/LazyVideo'
+import ProjectVideoShowcase from '../../components/common/ProjectVideoShowcase'
 import { getOptimizedVideoUrl, getVideoPosterUrl } from '../../utils/cloudinaryHelpers'
 
 // Default hero poster shown the instant the page renders (before the homepage
@@ -209,42 +209,26 @@ export const HomePage = () => {
         </section>
 
       {/* ══════════════════════════════════════════
-          SECTION 3 — FEATURED PROJECTS
+          SECTION 3 — FEATURED PROJECTS (auto-playing video reel)
       ══════════════════════════════════════════ */}
       <section className="section-pad bg-cream">
         <div className="container-wide px-6 md:px-12 lg:px-20">
           <SectionTitle eyebrow="Projects" title="Featured Work" align="left" />
-          <div className="mt-10 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {feed.featuredProjects.map((project, i) => {
-              const firstMedia = project.media?.length ? project.media[0] : (project.videoUrl ? { type: 'video', url: project.videoUrl } : (project.coverImageUrl ? { type: 'image', url: project.coverImageUrl } : null))
-              return (
-                <motion.article key={project._id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.6, delay: i * 0.1 }} className="group cursor-pointer">
-                  <Link to={`/projects`} className="block">
-                    <div className="relative overflow-hidden bg-linen aspect-[16/10]">
-                      {firstMedia?.type === 'video' ? (
-                        <LazyVideo src={getOptimizedVideoUrl(firstMedia.url, { width: 640 })} poster={getVideoPosterUrl(firstMedia.url, { width: 640 })} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
-                      ) : firstMedia?.type === 'image' ? (
-                        <PositionedImage src={firstMedia.url} alt={project.title} settings={project.mediaSettings} className="h-full w-full transition duration-700 group-hover:scale-105" loading="lazy" sizes="(min-width:1024px) 33vw, (min-width:768px) 50vw, 100vw" />
-                      ) : (
-                        <div className="flex h-full items-center justify-center bg-linen"><p className="text-sm text-ink/30">No media</p></div>
-                      )}
-                      <div className="absolute inset-0 bg-ink/0 transition-all duration-500 group-hover:bg-ink/15" />
-                    </div>
-                  </Link>
-                  <div className="mt-4">
-                    <h3 className="font-display text-2xl font-medium text-ink transition-colors group-hover:text-orange">{project.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-ink/50 line-clamp-2">{project.description}</p>
-                    {project.category && <p className="mt-2 text-2xs font-medium uppercase tracking-widest text-orange">{project.category}</p>}
-                  </div>
-                </motion.article>
-              )
-            })}
+          <div className="mt-10">
+            <ProjectVideoShowcase
+              videos={feed.featuredProjects
+                .map((p) => {
+                  const m = p.media?.length
+                    ? p.media[0]
+                    : p.videoUrl
+                      ? { type: 'video', url: p.videoUrl }
+                      : null
+                  return m?.type === 'video' ? { url: m.url } : null
+                })
+                .filter(Boolean)}
+              className="aspect-[16/10] w-full rounded-2xl"
+            />
           </div>
-          {feed.projects.length > 3 && (
-            <div className="mt-10 text-center">
-              <Link to="/projects" className="btn-outline">View All Projects <ArrowRight size={14} strokeWidth={1.5} /></Link>
-            </div>
-          )}
         </div>
       </section>
 

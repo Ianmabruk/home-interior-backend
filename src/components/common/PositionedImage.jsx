@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { normalizeMediaSettings, positionToObjectPosition } from '../../utils/mediaSettings'
 import { getOptimizedUrl, buildSrcSet } from '../../utils/cloudinaryHelpers'
 
@@ -10,7 +11,7 @@ import { getOptimizedUrl, buildSrcSet } from '../../utils/cloudinaryHelpers'
 // width variants) so mobile devices download a small image instead of the
 // full-resolution master. `sizes` defaults to full viewport width; pass a
 // tighter value (e.g. "(min-width:1024px) 33vw, 50vw") for grid tiles.
-export default function PositionedImage({
+function PositionedImage({
   src,
   alt = '',
   settings,
@@ -53,3 +54,5 @@ export default function PositionedImage({
     />
   )
 }
+
+export default memo(PositionedImage)

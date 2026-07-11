@@ -10,7 +10,6 @@ const FULL_NAV_ITEMS = [
   { to: '/', label: 'Home' },
   { to: '/shop', label: 'Shop' },
   { to: '/virtual-interior-design', label: 'Virtual Interior Design' },
-  { to: '/projects', label: 'Projects' },
   { to: '/about', label: 'About' },
 ]
 
