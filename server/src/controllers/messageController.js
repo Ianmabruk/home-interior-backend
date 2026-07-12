@@ -4,9 +4,7 @@ import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { sendEmail, buildQuoteEmailTemplate } from '../config/sendgrid.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
-
-const withId = (item) => ({ ...item, _id: item.id })
-const withIdArray = (items) => items.map((item) => withId(item))
+import { withId, withIdArray } from '../utils/helpers.js'
 
 const messageSchema = z.object({
   name: z.string().min(2),

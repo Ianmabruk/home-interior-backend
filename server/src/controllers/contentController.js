@@ -4,14 +4,7 @@ import { ApiError } from '../utils/ApiError.js'
 import { uploadImage, uploadVideo, deleteMedia } from '../services/uploadService.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { env } from '../config/env.js'
-
-const withId = (item) => item ? { ...item, _id: item.id } : null
-const withIdArray = (items) => items.map((item) => withId(item))
-
-const parseMaybeJson = (value, fallback = null) => {
-  if (typeof value !== 'string') return fallback
-  try { return JSON.parse(value) } catch { return fallback }
-}
+import { withId, withIdArray, parseMaybeJson, parseMediaSettings, DEFAULT_MEDIA_SETTINGS } from '../utils/helpers.js'
 
 const parseServices = (value) => {
   const parsed = parseMaybeJson(value, null)
@@ -19,32 +12,6 @@ const parseServices = (value) => {
   if (parsed) return parsed.split(',').map(s => ({ title: s.trim() })).filter(s => s.title)
   if (typeof value === 'string' && value.trim()) return value.split(',').map(s => ({ title: s.trim() })).filter(s => s.title)
   return []
-}
-
-// Normalize the media positioning payload sent by the admin UI:
-// { position, zoom, fit }. Unknown values fall back to safe defaults so a
-// malformed payload can never corrupt stored media rendering.
-const ALLOWED_POSITIONS = new Set([
-  'center', 'top', 'bottom', 'left', 'right',
-  'top-left', 'top-right', 'bottom-left', 'bottom-right',
-])
-const ALLOWED_FITS = new Set(['contain', 'cover', 'fill', 'scale-down'])
-const ALLOWED_ZOOMS = new Set([50, 75, 100, 125, 150])
-
-const DEFAULT_MEDIA_SETTINGS = { position: 'center', zoom: 100, fit: 'cover' }
-
-const parseMediaSettings = (value) => {
-  const parsed = typeof value === 'string'
-    ? parseMaybeJson(value, null)
-    : (value && typeof value === 'object' ? value : null)
-  if (!parsed || typeof parsed !== 'object') return null
-
-  const position = ALLOWED_POSITIONS.has(parsed.position) ? parsed.position : DEFAULT_MEDIA_SETTINGS.position
-  const fit = ALLOWED_FITS.has(parsed.fit) ? parsed.fit : DEFAULT_MEDIA_SETTINGS.fit
-  const zoomNumber = Number(parsed.zoom)
-  const zoom = ALLOWED_ZOOMS.has(zoomNumber) ? zoomNumber : DEFAULT_MEDIA_SETTINGS.zoom
-
-  return { position, zoom, fit }
 }
 
 const handleFileUpload = async (req, folder, defaultKind = 'image') => {
@@ -452,11 +419,11 @@ export const upsertAbout = asyncHandler(async (req, res) => {
 
   if (req.file) {
     try {
-      const mimeType = req.file.mimetype
-      console.log('[UPLOAD] About image upload:', { fieldname: req.file.fieldname, mimeType, size: req.file.size })
-      const upload = await uploadImage(req.file.buffer, 'hok/about', mimeType)
-      payload.aboutImageUrl = upload.secure_url
-      payload.aboutImagePublicId = upload.public_id
+      const upload = await handleFileUpload(req, 'hok/about', 'image')
+      if (upload) {
+        payload.aboutImageUrl = upload.url
+        payload.aboutImagePublicId = upload.publicId
+      }
     } catch (error) {
       console.error('[UPLOAD] About image upload failed:', error)
       throw error instanceof ApiError

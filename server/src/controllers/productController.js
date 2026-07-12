@@ -2,12 +2,10 @@ import { z } from 'zod'
 import { prisma } from '../config/db.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
-import { uploadImage } from '../services/uploadService.js'
+import { uploadImage, uploadVideo } from '../services/uploadService.js'
 import { sendEmail, buildNewProductEmailTemplate } from '../config/sendgrid.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
-
-const withId = (item) => ({ ...item, _id: item.id })
-const withIdArray = (items) => items.map((item) => withId(item))
+import { withId, withIdArray, parseMaybeJson, parseMediaSettings } from '../utils/helpers.js'
 
 const productSchema = z.object({
   name: z.string().min(2),
@@ -22,30 +20,6 @@ const productSchema = z.object({
   isFeatured: z.coerce.boolean().optional(),
   isPublished: z.coerce.boolean().optional(),
 })
-
-const parseMaybeJson = (value, fallback) => {
-  if (typeof value !== 'string') return fallback
-  try { return JSON.parse(value) } catch { return fallback }
-}
-
-const ALLOWED_POSITIONS = new Set([
-  'center', 'top', 'bottom', 'left', 'right',
-  'top-left', 'top-right', 'bottom-left', 'bottom-right',
-])
-const ALLOWED_FITS = new Set(['contain', 'cover', 'fill', 'scale-down'])
-const ALLOWED_ZOOMS = new Set([50, 75, 100, 125, 150])
-
-const parseMediaSettings = (value) => {
-  const parsed = typeof value === 'string'
-    ? parseMaybeJson(value, null)
-    : (value && typeof value === 'object' ? value : null)
-  if (!parsed || typeof parsed !== 'object') return null
-  const position = ALLOWED_POSITIONS.has(parsed.position) ? parsed.position : 'center'
-  const fit = ALLOWED_FITS.has(parsed.fit) ? parsed.fit : 'cover'
-  const zoomNumber = Number(parsed.zoom)
-  const zoom = ALLOWED_ZOOMS.has(zoomNumber) ? zoomNumber : 100
-  return { position, zoom, fit }
-}
 
 export const listProducts = asyncHandler(async (req, res) => {
   const { q, category, sort = '-createdAt', page = 1, limit = 12 } = req.query

@@ -57,11 +57,11 @@ function AdminPage() {
   const [status, setStatus] = useState('')
 
   const [projectForm, setProjectForm] = useState({ title: '', description: '', category: 'Residential', order: 0 })
-  const [portfolioForm, setPortfolioForm] = useState({ title: '', category: '' })
-  const [productForm, setProductForm] = useState({ name: '', description: '', price: '', discountPrice: '', category: '', stock: '', sku: '' })
-  const [virtualForm, setVirtualForm] = useState({ title: '', description: '', services: '', videoUrl: '' })
+  const [portfolioForm, setPortfolioForm] = useState({ title: '', category: '', description: '', order: 0 })
+  const [productForm, setProductForm] = useState({ name: '', description: '', price: '', discountPrice: '', category: '', stock: '', sku: '', vendor: '', tags: '', isFeatured: false, isPublished: true })
+  const [virtualForm, setVirtualForm] = useState({ title: '', description: '', services: '', category: '', tags: '', ctaPrimary: 'Start Your Project', ctaSecondary: 'Learn More' })
   const [settingsForm, setSettingsForm] = useState({ siteName: '', supportEmail: '', currency: 'USD', maintenanceMode: false, shippingPolicy: '', returnPolicy: '' })
-  const [aboutForm, setAboutForm] = useState({ story: '', mission: '', vision: '' })
+  const [aboutForm, setAboutForm] = useState({ story: '', mission: '', vision: '', companyDescription: '', location: '', contactEmail: '' })
   const [aboutImageFile, setAboutImageFile] = useState(null)
   const [aboutImagePreview, setAboutImagePreview] = useState(null)
   const [mediaSettings, setMediaSettings] = useState(DEFAULT_MEDIA_SETTINGS)
@@ -212,6 +212,8 @@ function AdminPage() {
       const payload = new FormData()
       payload.append('title', portfolioForm.title)
       payload.append('category', portfolioForm.category)
+      if (portfolioForm.description) payload.append('description', portfolioForm.description)
+      payload.append('order', String(portfolioForm.order || 0))
       payload.append('mediaSettings', JSON.stringify(normalizeMediaSettings(mediaSettings)))
       if (mediaFile) payload.append('media', mediaFile)
       if (editingPortfolio) {
@@ -220,7 +222,7 @@ function AdminPage() {
       } else {
         await api.post('/content/portfolio', payload, { onUploadProgress })
       }
-      setPortfolioForm({ title: '', category: '' })
+      setPortfolioForm({ title: '', category: '', description: '', order: 0 })
       setMediaFile(null); setMediaPreview(null)
       setMediaSettings(DEFAULT_MEDIA_SETTINGS)
       window.dispatchEvent(new CustomEvent('admin:data-changed', { detail: { type: 'portfolio-changed' } }))
@@ -241,11 +243,13 @@ function AdminPage() {
     try {
       setIsUploading(true); setUploadProgress(0)
       const payload = new FormData()
-      Object.entries(productForm).forEach(([key, value]) => payload.append(key, value))
+      Object.entries(productForm).forEach(([key, value]) => {
+        if (value !== '' && value !== null && value !== undefined) payload.append(key, value)
+      })
       payload.append('mediaSettings', JSON.stringify(normalizeMediaSettings(mediaSettings)))
       if (productImageFile) payload.append('images', productImageFile)
       await api.post('/products', payload, { onUploadProgress })
-      setProductForm({ name: '', description: '', price: '', discountPrice: '', category: '', stock: '', sku: '' })
+      setProductForm({ name: '', description: '', price: '', discountPrice: '', category: '', stock: '', sku: '', vendor: '', tags: '', isFeatured: false, isPublished: true })
       setProductImageFile(null); setProductImagePreview(null); setMediaSettings(DEFAULT_MEDIA_SETTINGS)
       window.dispatchEvent(new CustomEvent('admin:data-changed', { detail: { type: 'products-changed' } }))
       fetchAll(); resetProgress(); setSuccess('Product saved.')
@@ -295,6 +299,11 @@ function AdminPage() {
       payload.append('title', virtualForm.title)
       payload.append('description', virtualForm.description)
       payload.append('services', virtualForm.services)
+      if (virtualForm.category) payload.append('category', virtualForm.category)
+      if (virtualForm.tags) payload.append('tags', virtualForm.tags)
+      if (virtualForm.ctaPrimary) payload.append('ctaPrimary', virtualForm.ctaPrimary)
+      if (virtualForm.ctaSecondary) payload.append('ctaSecondary', virtualForm.ctaSecondary)
+      payload.append('mediaSettings', JSON.stringify(normalizeMediaSettings(mediaSettings)))
       if (virtualVideoFile) payload.append('media', virtualVideoFile)
       if (editingVirtual) {
         await api.patch(`/content/virtual-design/${editingVirtual._id}`, payload, { onUploadProgress })
@@ -302,7 +311,7 @@ function AdminPage() {
       } else {
         await api.post('/content/virtual-design', payload, { onUploadProgress })
       }
-      setVirtualForm({ title: '', description: '', services: '', videoUrl: '' })
+      setVirtualForm({ title: '', description: '', services: '', category: '', tags: '', ctaPrimary: 'Start Your Project', ctaSecondary: 'Learn More' })
       setVirtualVideoFile(null); setVirtualVideoPreview(null)
       window.dispatchEvent(new CustomEvent('admin:data-changed', { detail: { type: 'virtual-changed' } }))
       fetchAll(); resetProgress(); setSuccess('Virtual design saved.')
@@ -331,6 +340,9 @@ function AdminPage() {
       payload.append('story', aboutForm.story)
       payload.append('mission', aboutForm.mission)
       payload.append('vision', aboutForm.vision)
+      if (aboutForm.companyDescription) payload.append('companyDescription', aboutForm.companyDescription)
+      if (aboutForm.location) payload.append('location', aboutForm.location)
+      if (aboutForm.contactEmail) payload.append('contactEmail', aboutForm.contactEmail)
       payload.append('mediaSettings', JSON.stringify(normalizeMediaSettings(mediaSettings)))
       if (aboutImageFile) payload.append('media', aboutImageFile)
       await api.put('/content/about', payload, { onUploadProgress })
@@ -706,6 +718,8 @@ function AdminPage() {
         </div>
         <input value={portfolioForm.title} onChange={(e) => setPortfolioForm((p) => ({ ...p, title: e.target.value }))} className="input" placeholder="Title" required />
         <input value={portfolioForm.category} onChange={(e) => setPortfolioForm((p) => ({ ...p, category: e.target.value }))} className="input" placeholder="Category" required />
+        <textarea value={portfolioForm.description} onChange={(e) => setPortfolioForm((p) => ({ ...p, description: e.target.value }))} className="textarea" placeholder="Description" />
+        <input value={portfolioForm.order} onChange={(e) => setPortfolioForm((p) => ({ ...p, order: Number(e.target.value) || 0 }))} type="number" className="input" placeholder="Order" />
         <DropZone onFile={handleMediaChange} preview={mediaPreview} onClear={() => { setMediaFile(null); setMediaPreview(null) }} accept="image/*" kind="image" />
         <div className="rounded-2xl border border-border bg-white p-4 space-y-4">
           <ImagePositionControls value={mediaSettings} onChange={setMediaSettings} />
@@ -730,7 +744,7 @@ function AdminPage() {
               <p className="font-display text-xl text-textPrimary">{item.title}</p>
               <p className="text-xs uppercase tracking-widest text-accentOrange mt-1">{item.category}</p>
               <div className="mt-3 flex gap-2">
-                <button onClick={() => { setEditingPortfolio(item); setPortfolioForm({ title: item.title, category: item.category }); setMediaSettings(normalizeMediaSettings(item.mediaSettings)) }} className="btn-secondary text-2xs flex items-center gap-1"><Edit size={12} /> Edit</button>
+                <button onClick={() => { setEditingPortfolio(item); setPortfolioForm({ title: item.title, category: item.category, description: item.description || '', order: item.order || 0 }); setMediaSettings(normalizeMediaSettings(item.mediaSettings)) }} className="btn-secondary text-2xs flex items-center gap-1"><Edit size={12} /> Edit</button>
                 <button onClick={() => setDeleteConfirm({ type: 'portfolio', id: item._id })} className="btn-danger text-2xs flex items-center gap-1"><Trash2 size={12} /> Delete</button>
               </div>
             </div>
@@ -750,6 +764,12 @@ function AdminPage() {
         <input value={virtualForm.title} onChange={(e) => setVirtualForm((v) => ({ ...v, title: e.target.value }))} className="input" placeholder="Title" required />
         <textarea value={virtualForm.description} onChange={(e) => setVirtualForm((v) => ({ ...v, description: e.target.value }))} className="textarea" placeholder="Description" required />
         <input value={virtualForm.services} onChange={(e) => setVirtualForm((v) => ({ ...v, services: e.target.value }))} className="input" placeholder="Services (comma separated)" />
+        <input value={virtualForm.category} onChange={(e) => setVirtualForm((v) => ({ ...v, category: e.target.value }))} className="input" placeholder="Category" />
+        <input value={virtualForm.tags} onChange={(e) => setVirtualForm((v) => ({ ...v, tags: e.target.value }))} className="input" placeholder="Tags (comma separated)" />
+        <div className="grid grid-cols-2 gap-3">
+          <input value={virtualForm.ctaPrimary} onChange={(e) => setVirtualForm((v) => ({ ...v, ctaPrimary: e.target.value }))} className="input" placeholder="Primary CTA" />
+          <input value={virtualForm.ctaSecondary} onChange={(e) => setVirtualForm((v) => ({ ...v, ctaSecondary: e.target.value }))} className="input" placeholder="Secondary CTA" />
+        </div>
         <DropZone onFile={handleVirtualVideoChange} preview={virtualVideoPreview} onClear={() => { setVirtualVideoFile(null); setVirtualVideoPreview(null) }} accept="video/*" kind="video" />
         <ProgressBar />
         <button className="btn-primary w-full" disabled={isUploading}>
@@ -766,7 +786,7 @@ function AdminPage() {
             <div className="p-4">
               <h3 className="font-display text-xl text-textPrimary">{item.title}</h3>
               <div className="mt-3 flex gap-2">
-                <button onClick={() => { setEditingVirtual(item); setVirtualForm({ title: item.title, description: item.description, services: item.services?.join(', ') || '' }) }} className="btn-secondary text-2xs flex items-center gap-1"><Edit size={12} /> Edit</button>
+                <button onClick={() => { setEditingVirtual(item); setVirtualForm({ title: item.title, description: item.description, services: item.services?.join(', ') || '', category: item.category || '', tags: item.tags?.join(', ') || '', ctaPrimary: item.ctaPrimary || 'Start Your Project', ctaSecondary: item.ctaSecondary || 'Learn More' }) }} className="btn-secondary text-2xs flex items-center gap-1"><Edit size={12} /> Edit</button>
                 <button onClick={() => setDeleteConfirm({ type: 'virtual', id: item._id })} className="btn-danger text-2xs flex items-center gap-1"><Trash2 size={12} /> Delete</button>
               </div>
             </div>
@@ -788,11 +808,21 @@ function AdminPage() {
           </select>
           <input value={productForm.sku} onChange={(e) => setProductForm((p) => ({ ...p, sku: e.target.value }))} className="input" placeholder="SKU" required />
           <input value={productForm.stock} onChange={(e) => setProductForm((p) => ({ ...p, stock: e.target.value }))} type="number" className="input" placeholder="Stock" required />
+          <input value={productForm.vendor} onChange={(e) => setProductForm((p) => ({ ...p, vendor: e.target.value }))} className="input" placeholder="Vendor" />
           <div className="grid grid-cols-2 gap-3">
             <input value={productForm.price} onChange={(e) => setProductForm((p) => ({ ...p, price: e.target.value }))} type="number" step="0.01" className="input" placeholder="Price" required />
             <input value={productForm.discountPrice} onChange={(e) => setProductForm((p) => ({ ...p, discountPrice: e.target.value }))} type="number" step="0.01" className="input" placeholder="Discount" />
           </div>
+          <label className="flex items-center gap-2 text-sm text-textSecondary">
+            <input type="checkbox" checked={productForm.isFeatured} onChange={(e) => setProductForm((p) => ({ ...p, isFeatured: e.target.checked }))} className="rounded border-border" />
+            Featured
+          </label>
+          <label className="flex items-center gap-2 text-sm text-textSecondary">
+            <input type="checkbox" checked={productForm.isPublished} onChange={(e) => setProductForm((p) => ({ ...p, isPublished: e.target.checked }))} className="rounded border-border" />
+            Published
+          </label>
         </div>
+        <input value={productForm.tags} onChange={(e) => setProductForm((p) => ({ ...p, tags: e.target.value }))} className="input mt-4" placeholder="Tags (comma separated)" />
         <textarea value={productForm.description} onChange={(e) => setProductForm((p) => ({ ...p, description: e.target.value }))} className="textarea mt-4" placeholder="Description" required />
         <DropZone onFile={handleProductImageChange} preview={productImagePreview} onClear={() => { setProductImageFile(null); setProductImagePreview(null) }} accept="image/*" kind="image" />
         <div className="rounded-2xl border border-border bg-white p-4 space-y-4">
@@ -1157,8 +1187,13 @@ function AdminPage() {
           <ImagePositionPreview src={aboutImagePreview} settings={mediaSettings} />
         </div>
         <textarea value={aboutForm.story || about?.story || ''} onChange={(e) => setAboutForm((a) => ({ ...a, story: e.target.value }))} className="textarea" placeholder="Our Story" required />
+        <textarea value={aboutForm.companyDescription || about?.companyDescription || ''} onChange={(e) => setAboutForm((a) => ({ ...a, companyDescription: e.target.value }))} className="textarea" placeholder="Company Description" />
         <textarea value={aboutForm.mission || about?.mission || ''} onChange={(e) => setAboutForm((a) => ({ ...a, mission: e.target.value }))} className="textarea" placeholder="Mission" required />
         <textarea value={aboutForm.vision || about?.vision || ''} onChange={(e) => setAboutForm((a) => ({ ...a, vision: e.target.value }))} className="textarea" placeholder="Vision" />
+        <div className="grid grid-cols-2 gap-3">
+          <input value={aboutForm.location || about?.location || ''} onChange={(e) => setAboutForm((a) => ({ ...a, location: e.target.value }))} className="input" placeholder="Location" />
+          <input value={aboutForm.contactEmail || about?.contactEmail || ''} onChange={(e) => setAboutForm((a) => ({ ...a, contactEmail: e.target.value }))} className="input" placeholder="Contact Email" type="email" />
+        </div>
         <ProgressBar />
         <button className="btn-primary" disabled={isUploading}>
           {isUploading ? 'Saving…' : 'Save About'}
