@@ -209,6 +209,76 @@ describe('Content Management', () => {
     })
   })
 
+  describe('POST /api/content/portfolio', () => {
+    const admin = { id: 'admin-1', email: 'admin@test.com', role: 'admin', isActive: true }
+    const token = generateToken(admin)
+
+    it('should create portfolio as admin (full payload)', async () => {
+      mockPrisma.portfolio.create.mockResolvedValue({
+        id: 'port-1',
+        title: 'New Portfolio',
+        description: 'Desc',
+        category: 'Residential',
+        imageUrl: 'https://test.cloudinary.com/image.jpg',
+        imagePublicId: 'test-public-id',
+        order: 1,
+        isPublished: true,
+        mediaSettings: { position: 'center' },
+      })
+
+      const response = await request(app)
+        .post('/api/content/portfolio')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          title: 'New Portfolio',
+          description: 'Desc',
+          category: 'Residential',
+          order: 1,
+          isPublished: true,
+          mediaSettings: { position: 'center' },
+        })
+
+      expect(response.status).toBe(201)
+      expect(response.body.success).toBe(true)
+      expect(response.body.data.description).toBe('Desc')
+    })
+
+    it('should still return 201 when the deployed Prisma client rejects `description` (stale schema)', async () => {
+      // Simulate the production error: a stale generated client that does not
+      // know the `description` field. The controller must strip it and retry.
+      const staleError = Object.assign(
+        new Error(
+          "Unknown argument `description`. Available arguments are: `category`, `id`, `imageUrl`, `imagePublicId`, `isPublished`, `order`, `title`, `createdAt`, `updatedAt`.",
+        ),
+        { name: 'PrismaClientValidationError' },
+      )
+      mockPrisma.portfolio.create
+        .mockRejectedValueOnce(staleError)
+        .mockResolvedValueOnce({
+          id: 'port-2',
+          title: 'Recovered Portfolio',
+          category: 'Residential',
+          imageUrl: 'https://test.cloudinary.com/image.jpg',
+          isPublished: true,
+        })
+
+      const response = await request(app)
+        .post('/api/content/portfolio')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          title: 'Recovered Portfolio',
+          description: 'Desc',
+          category: 'Residential',
+          isPublished: true,
+        })
+
+      expect(response.status).toBe(201)
+      expect(response.body.success).toBe(true)
+      // description was dropped by the fallback; the record still saved.
+      expect(mockPrisma.portfolio.create).toHaveBeenCalledTimes(2)
+    })
+  })
+
   describe('PUT /api/content/about', () => {
     it('should update about content as admin', async () => {
       const admin = {

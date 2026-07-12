@@ -62,28 +62,48 @@ const rethrowAsHttpError = (err, label) => {
   throw err
 }
 
-// Retry Prisma create/update without mediaSettings if the column is missing
-// from the database (migrations not yet applied). This provides a graceful
-// degradation path instead of a 500/400 error.
+// Extract the field name Prisma rejects as unknown, e.g.
+// "Unknown argument `description`. Available arguments are: ...".
+const extractUnknownField = (message = '') => {
+  const m = message.match(/Unknown (?:argument|arg)\s+[`']?(\w+)[`']?/i)
+  return m ? m[1] : null
+}
+
+// Retry a Prisma write (create/update) after stripping any field the deployed
+// client reports as unknown. This is the emergency safeguard for a STALE
+// generated client / schema mismatch (e.g. a `description` column that exists
+// in the DB + repo schema but is missing from an older deployed Prisma client):
+// the admin upload returns 200 instead of 500. On a correct client the first
+// attempt succeeds with every field; on a stale one we progressively drop
+// unsupported fields, finally keeping only the minimal safe payload
+// (imageUrl). Also handles P2022 (missing DB column) as a mediaSettings
+// best-effort fallback.
 const withMediaSettingsFallback = async (operation, payload, label) => {
-  try {
-    return await operation(payload)
-  } catch (err) {
-    const isMissingColumn = err?.code === 'P2022' || (err?.name === 'PrismaClientKnownRequestError' && err?.message?.includes('does not exist'))
-    const isValidationError = err?.name === 'PrismaClientValidationError' && err?.message?.includes('mediaSettings')
-    if (isMissingColumn || isValidationError) {
-      console.warn(`[${label}] mediaSettings column missing or invalid — retrying without it. Apply migrations to enable image positioning.`)
-      const fallbackPayload = { ...payload }
-      delete fallbackPayload.mediaSettings
-      try {
-        return await operation(fallbackPayload)
-      } catch (fallbackErr) {
-        console.error(`[${label}] retry without mediaSettings also failed:`, fallbackErr?.message)
-        throw fallbackErr
+  let current = { ...payload }
+  const maxAttempts = Object.keys(current).length + 1
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await operation(current)
+    } catch (err) {
+      const isValidation = err?.name === 'PrismaClientValidationError'
+      const isMissingColumn =
+        err?.code === 'P2022' ||
+        (err?.name === 'PrismaClientKnownRequestError' && err?.message?.includes('does not exist'))
+      if (!isValidation && !isMissingColumn) throw err
+
+      let field = extractUnknownField(err.message)
+      if ((!field || !(field in current)) && isMissingColumn && 'mediaSettings' in current) {
+        field = 'mediaSettings'
       }
+      if (!field || !(field in current)) {
+        console.error(`[${label}] Prisma write failed, unrecoverable by field stripping:`, err?.message)
+        throw err
+      }
+      console.warn(`[${label}] dropping unsupported field "${field}" and retrying (possible stale client).`)
+      delete current[field]
     }
-    throw err
   }
+  throw new ApiError(500, 'Database write failed after schema-mismatch recovery.')
 }
 
 const PROJECT_FIELDS = new Set([
