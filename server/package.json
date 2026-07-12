@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon src/index.js",
-    "start": "npx prisma generate && npx prisma migrate deploy && node src/index.js",
-    "build": "npx prisma generate && npx prisma migrate deploy",
-    "postinstall": "npx prisma generate",
+    "start": "prisma generate && npm run migrate:deploy && node src/index.js",
+    "build": "prisma generate && npm run migrate:deploy",
+    "migrate:deploy": "prisma migrate deploy || (sleep 5 && prisma migrate deploy) || (sleep 15 && prisma migrate deploy)",
+    "postinstall": "prisma generate",
     "lint": "node --check src/index.js",
     "seed": "node src/seeds/seed.js",
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest --config jest.config.js",
