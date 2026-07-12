@@ -32,7 +32,7 @@ export default function ProjectVideoShowcase({ videos, className = '' }) {
     const v = videoRef.current
     if (!v || !current) return
     v.load()
-  }, [current?.url])
+  }, [current])
 
   // Play/pause on visibility change.
   useEffect(() => {
@@ -44,7 +44,7 @@ export default function ProjectVideoShowcase({ videos, className = '' }) {
     } else {
       v.pause()
     }
-  }, [inView, current?.url])
+  }, [inView, current])
 
   if (!current) return null
 
