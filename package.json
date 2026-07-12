@@ -6,7 +6,7 @@
   "packageManager": "yarn@1.22.22",
   "scripts": {
     "dev": "vite",
-    "start": "cd server && npm ci && npm start",
+    "start": "cd server && npm start",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
