@@ -7,8 +7,8 @@ if (!env.cloudinaryApiKey) missingVars.push('CLOUDINARY_API_KEY')
 if (!env.cloudinaryApiSecret) missingVars.push('CLOUDINARY_API_SECRET')
 
 if (missingVars.length > 0) {
-  throw new Error(
-    `Cloudinary is not configured. Missing environment variables: ${missingVars.join(', ')}`,
+  console.warn(
+    `[CLOUDINARY] Missing config (${missingVars.join(', ')}). Uploads will fail until these are set.`,
   )
 }
 

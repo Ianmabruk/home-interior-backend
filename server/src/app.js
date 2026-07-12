@@ -125,7 +125,7 @@ app.use(
 
 // Trust proxy so req.ip / rate limiter see the real client IP behind
 // Render/Netlify/Cloudflare.
-app.set('trust proxy', true)
+app.set('trust proxy', 1)
 
 app.use(express.json({ limit: '1mb' }))
 app.use(cookieParser())
@@ -147,6 +147,14 @@ app.use(
     limit: 120,
     standardHeaders: true,
     legacyHeaders: false,
+    keyGenerator: (req) => {
+      const forwarded = req.headers['x-forwarded-for']
+      if (forwarded) {
+        const ips = Array.isArray(forwarded) ? forwarded : forwarded.split(',')
+        return (ips[0] || '').trim() || req.ip || 'unknown'
+      }
+      return req.ip || 'unknown'
+    },
   }),
 )
 
