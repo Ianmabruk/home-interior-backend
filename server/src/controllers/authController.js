@@ -8,6 +8,7 @@ import { sendEmail, buildWelcomeEmailTemplate, buildLoginEmailTemplate } from '.
 import { signAccessToken, signRefreshToken, verifyRefreshToken, setRefreshCookie, clearRefreshCookie, REFRESH_COOKIE_NAME } from '../utils/tokens.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { parseBody } from '../utils/helpers.js'
+import { prismaSafeWrite } from '../utils/prismaSafeWrite.js'
 
 const withId = (item) => ({ ...item, _id: item.id })
 const withIdArray = (items) => items.map((item) => withId(item))
@@ -33,7 +34,7 @@ const makeAuthResponse = (user) => {
 
 export const register = asyncHandler(async (req, res) => {
   const body = parseBody(registerSchema, req.body)
-  const exists = await prisma.user.findFirst({ where: { email: body.email } })
+  const exists = await prisma.user.findUnique({ where: { email: body.email } })
   if (exists) {
     console.warn(`[AUTH][register] rejected: user already exists ${body.email}`)
     throw new ApiError(409, 'User already exists')
@@ -41,15 +42,23 @@ export const register = asyncHandler(async (req, res) => {
 
   const passwordHash = await bcrypt.hash(body.password, 12)
   const { password: _password, ...userData } = body
-  const user = await prisma.user.create({
-    data: { ...userData, passwordHash },
-  })
+  const user = await prismaSafeWrite(
+    (writeData) => prisma.user.create({
+      data: { ...writeData, passwordHash },
+    }),
+    userData,
+    'AUTH][REGISTER',
+  )
 
   const tokens = makeAuthResponse(user)
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { refreshToken: tokens.refreshToken },
-  })
+  await prismaSafeWrite(
+    (writeData) => prisma.user.update({
+      where: { id: user.id },
+      data: writeData,
+    }),
+    { refreshToken: tokens.refreshToken },
+    'AUTH][REGISTER',
+  )
 
   try {
     await sendEmail({
@@ -72,7 +81,7 @@ export const register = asyncHandler(async (req, res) => {
 
 export const login = asyncHandler(async (req, res) => {
   const body = parseBody(loginSchema, req.body)
-  const user = await prisma.user.findFirst({ where: { email: body.email } })
+  const user = await prisma.user.findUnique({ where: { email: body.email } })
   if (!user) {
     console.warn(`[AUTH][login] rejected: invalid credentials for ${body.email}`)
     throw new ApiError(401, 'Invalid credentials')
@@ -90,10 +99,14 @@ export const login = asyncHandler(async (req, res) => {
   }
 
   const tokens = makeAuthResponse(user)
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { refreshToken: tokens.refreshToken },
-  })
+  await prismaSafeWrite(
+    (writeData) => prisma.user.update({
+      where: { id: user.id },
+      data: writeData,
+    }),
+    { refreshToken: tokens.refreshToken },
+    'AUTH][LOGIN',
+  )
 
   try {
     await sendEmail({
@@ -170,8 +183,7 @@ export const refresh = asyncHandler(async (req, res) => {
 
 export const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = parseBody(z.object({ email: z.string().email() }), req.body)
-  const user = await prisma.user.findFirst({ where: { email } })
-
+  const user = await prisma.user.findUnique({ where: { email } })
   if (!user) {
     res.json(sendSuccess({ message: 'If that account exists, a reset link has been sent.' }))
     return
@@ -180,10 +192,14 @@ export const forgotPassword = asyncHandler(async (req, res) => {
   const token = crypto.randomBytes(32).toString('hex')
   const passwordResetExpires = new Date(Date.now() + 1000 * 60 * 30)
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { passwordResetToken: token, passwordResetExpires },
-  })
+  await prismaSafeWrite(
+    (writeData) => prisma.user.update({
+      where: { id: user.id },
+      data: writeData,
+    }),
+    { passwordResetToken: token, passwordResetExpires },
+    'AUTH][FORGOT',
+  )
 
   const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password/${token}`
   await sendEmail({
@@ -215,15 +231,19 @@ export const resetPassword = asyncHandler(async (req, res) => {
   }
 
   const passwordHash = await bcrypt.hash(password, 12)
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
+  await prismaSafeWrite(
+    (writeData) => prisma.user.update({
+      where: { id: user.id },
+      data: writeData,
+    }),
+    {
       passwordHash,
       passwordResetToken: null,
       passwordResetExpires: null,
       refreshToken: null,
     },
-  })
+    'AUTH][RESET',
+  )
 
   clearRefreshCookie(res)
   res.json(sendSuccess({ message: 'Password reset successful' }))
@@ -234,10 +254,14 @@ export const logout = asyncHandler(async (req, res) => {
   if (refreshToken) {
     try {
       const decoded = verifyRefreshToken(refreshToken)
-      await prisma.user.update({
-        where: { id: decoded.userId },
-        data: { refreshToken: null },
-      }).catch(() => {})
+      await prismaSafeWrite(
+        () => prisma.user.update({
+          where: { id: decoded.userId },
+          data: { refreshToken: null },
+        }),
+        { refreshToken: null },
+        'AUTH][LOGOUT',
+      )
       console.info(`[AUTH][logout] success: userId=${decoded.userId}`)
     } catch {
       console.warn('[AUTH][logout] invalid refresh token in cookie')

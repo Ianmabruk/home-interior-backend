@@ -1,10 +1,11 @@
 import { z } from 'zod'
 import { prisma } from '../config/db.js'
 import { ApiError } from '../utils/ApiError.js'
-import { uploadImage, uploadVideo } from '../services/uploadService.js'
+import { uploadImage, uploadVideo, deleteMedia } from '../services/uploadService.js'
 import { sendEmail, buildNewProductEmailTemplate } from '../config/sendgrid.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { withId, withIdArray, parseMaybeJson, parseMediaSettings, parseBody } from '../utils/helpers.js'
+import { prismaSafeWrite } from '../utils/prismaSafeWrite.js'
 
 // Multipart/form-data sends every field as a string, so `z.coerce.boolean()`
 // is unsafe here: it turns the string 'false' into `true` (any non-empty
@@ -195,8 +196,18 @@ export const createProduct = async (req, res) => {
       ? req.body.tags
       : parseMaybeJson(req.body.tags, [])
 
-    const product = await prisma.product.create({
-      data: {
+    const product = await prismaSafeWrite(
+      (writeData) => prisma.product.create({
+        data: {
+          ...writeData,
+          isPublished: writeData.isPublished ?? true,
+          tags: Array.isArray(writeData.tags) ? writeData.tags : [],
+          images: writeData.images,
+          colorVariants: writeData.colorVariants,
+          mediaSettings: writeData.mediaSettings,
+        },
+      }),
+      {
         ...data,
         isPublished: data.isPublished ?? true,
         tags: Array.isArray(tags) ? tags : [],
@@ -204,7 +215,8 @@ export const createProduct = async (req, res) => {
         colorVariants,
         mediaSettings: parseMediaSettings(req.body.mediaSettings) || undefined,
       },
-    })
+      'PRODUCT][CREATE',
+    )
 
     try {
       const admin = await prisma.user.findFirst({ where: { role: 'admin' } })
@@ -256,10 +268,13 @@ export const updateProduct = async (req, res) => {
 
     const files = req.files || []
     if (files.length > 0) {
+      const oldImages = Array.isArray(product.images) ? product.images : []
+      const oldDeletes = oldImages.map((img) => img.publicId ? deleteMedia(img.publicId, 'image') : Promise.resolve())
       const uploads = await Promise.all(
-      files.map((file) => uploadImage(file.buffer, 'hok/products', file.mimetype)),
+        files.map((file) => uploadImage(file.buffer, 'hok/products', file.mimetype)),
       )
       data.images = uploads.map((item) => ({ url: item.secure_url, publicId: item.public_id }))
+      await Promise.all(oldDeletes)
     }
 
     const colorVariantsRaw = Array.isArray(req.body.colorVariants)
@@ -272,7 +287,11 @@ export const updateProduct = async (req, res) => {
     const parsedMediaSettings = parseMediaSettings(req.body.mediaSettings)
     if (parsedMediaSettings) data.mediaSettings = parsedMediaSettings
 
-    const updated = await prisma.product.update({ where: { id: req.params.id }, data })
+    const updated = await prismaSafeWrite(
+      (writeData) => prisma.product.update({ where: { id: req.params.id }, data: writeData }),
+      data,
+      'PRODUCT][UPDATE',
+    )
     res.json(sendSuccess(withId(updated)))
   } catch (error) {
     console.error("FULL ERROR:", error)
@@ -302,6 +321,11 @@ export const deleteProduct = async (req, res) => {
     if (!product) {
       throw new ApiError(404, 'Product not found')
     }
+
+    const imageDeletes = (product.images || []).map((img) => deleteMedia(img.publicId, 'image'))
+    const variantDeletes = (product.colorVariants || []).map((v) => deleteMedia(v.imagePublicId, 'image'))
+    await Promise.all([...imageDeletes, ...variantDeletes])
+
     await prisma.product.delete({ where: { id: req.params.id } })
     res.json(sendSuccess({ message: 'Product deleted' }))
   } catch (error) {
@@ -389,6 +413,15 @@ export const removeColorVariant = async (req, res) => {
     }
 
     const currentVariants = Array.isArray(product.colorVariants) ? product.colorVariants : []
+    const variant = currentVariants.find((v) => v.colorName === colorName)
+    if (variant?.imagePublicId) {
+      try {
+        await deleteMedia(variant.imagePublicId, 'image')
+      } catch (deleteErr) {
+        console.error('[PRODUCT][VARIANT_DELETE] delete old media failed:', deleteErr?.message)
+      }
+    }
+
     const filtered = currentVariants.filter((v) => v.colorName !== colorName)
 
     const updated = await prisma.product.update({

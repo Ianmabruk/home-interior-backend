@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs'
 import dotenv from 'dotenv'
 import { prisma } from '../config/db.js'
+import { env } from '../config/env.js'
 import { ensureAdminUser } from '../config/db.js'
 import {
   aboutSeed,
@@ -48,8 +49,8 @@ const seed = async () => {
     await prisma.about.create({ data: aboutSeed })
     await prisma.settings.create({ data: settingsSeed })
 
-    const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@hokinterior.com'
-    const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'admin123!'
+    const adminEmail = env.seedAdminEmail.toLowerCase()
+    const adminPassword = env.seedAdminPassword
     const adminPasswordHash = await bcrypt.hash(adminPassword, 12)
 
     await prisma.user.upsert({

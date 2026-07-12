@@ -9,7 +9,7 @@ export const productsSeed = [
     sku: 'HOK-LIV-001',
     tags: ['sofa', 'linen', 'living'],
     colorVariants: [],
-    colorVariants: [],
+    tags: ['sofa', 'linen', 'living'],
     isFeatured: true,
     images: [
       {
@@ -27,7 +27,6 @@ export const productsSeed = [
     stock: 8,
     sku: 'HOK-DIN-002',
     tags: ['dining', 'marble', 'table'],
-    colorVariants: [],
     colorVariants: [],
     isFeatured: true,
     images: [

@@ -4,6 +4,7 @@ import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { parseBody } from '../utils/helpers.js'
+import { prismaSafeWrite } from '../utils/prismaSafeWrite.js'
 
 const withId = (item) => ({ ...item, _id: item.id })
 const withIdArray = (items) => items.map((item) => withId(item))
@@ -28,14 +29,18 @@ export const me = asyncHandler(async (req, res) => {
 
 export const updateMe = asyncHandler(async (req, res) => {
   const data = parseBody(updateMeSchema, req.body)
-  const user = await prisma.user.update({
-    where: { id: req.user.userId },
-    data: {
+  const user = await prismaSafeWrite(
+    (writeData) => prisma.user.update({
+      where: { id: req.user.userId },
+      data: writeData,
+    }),
+    {
       fullName: data.fullName,
       phone: data.phone,
       addresses: data.addresses,
     },
-  })
+    'USER][UPDATE_ME',
+  )
 
   const { passwordHash, refreshToken, ...safe } = user
   res.json(sendSuccess(withId(safe)))
@@ -179,10 +184,14 @@ export const addToCart = asyncHandler(async (req, res) => {
     newCart = [...(user?.cart || []), cartEntry]
   }
 
-  const updated = await prisma.user.update({
-    where: { id: req.user.userId },
-    data: { cart: newCart },
-  })
+  const updated = await prismaSafeWrite(
+    () => prisma.user.update({
+      where: { id: req.user.userId },
+      data: { cart: newCart },
+    }),
+    { cart: newCart },
+    'USER][ADD_CART',
+  )
 
   const products = await prisma.product.findMany({
     where: { id: { in: newCart.map((e) => e.product) } },
@@ -255,10 +264,14 @@ export const updateCartItem = asyncHandler(async (req, res) => {
     })
   }
 
-  const updated = await prisma.user.update({
-    where: { id: req.user.userId },
-    data: { cart: newCart },
-  })
+  const updated = await prismaSafeWrite(
+    () => prisma.user.update({
+      where: { id: req.user.userId },
+      data: { cart: newCart },
+    }),
+    { cart: newCart },
+    'USER][ADD_CART',
+  )
 
   const products = await prisma.product.findMany({
     where: { id: { in: newCart.map((e) => e.product) } },
@@ -305,10 +318,14 @@ export const removeCartItem = asyncHandler(async (req, res) => {
     newCart = (user?.cart || []).filter((entry) => entry.product !== productId)
   }
 
-  const updated = await prisma.user.update({
-    where: { id: req.user.userId },
-    data: { cart: newCart },
-  })
+  const updated = await prismaSafeWrite(
+    () => prisma.user.update({
+      where: { id: req.user.userId },
+      data: { cart: newCart },
+    }),
+    { cart: newCart },
+    'USER][ADD_CART',
+  )
 
   const productIds = newCart.map((e) => e.product)
   const products = await prisma.product.findMany({

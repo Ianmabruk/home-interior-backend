@@ -4,6 +4,8 @@ import { ApiError } from '../utils/ApiError.js'
 import { sendEmail, buildAdminTestEmailTemplate } from '../config/sendgrid.js'
 import { env } from '../config/env.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
+import { invalidateMaintenanceCache } from '../utils/maintenance.js'
+import { prismaSafeWrite } from '../utils/prismaSafeWrite.js'
 
 const withId = (item) => ({ ...item, _id: item.id })
 const withIdArray = (items) => items.map((item) => withId(item))
@@ -84,9 +86,11 @@ export const dashboardOverview = asyncHandler(async (req, res) => {
 })
 
 export const listUsers = asyncHandler(async (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 100, 200)
   const users = await prisma.user.findMany({
     select: { id: true, fullName: true, email: true, role: true, isActive: true, createdAt: true },
     orderBy: { createdAt: 'desc' },
+    take: limit,
   })
   res.json(sendSuccess(withIdArray(users)))
 })
@@ -98,8 +102,16 @@ export const manageUser = asyncHandler(async (req, res) => {
     throw new ApiError(404, 'User not found')
   }
 
-  if (action === 'suspend') await prisma.user.update({ where: { id: user.id }, data: { isActive: false } })
-  else if (action === 'activate') await prisma.user.update({ where: { id: user.id }, data: { isActive: true } })
+  if (action === 'suspend') await prismaSafeWrite(
+    (data) => prisma.user.update({ where: { id: user.id }, data }),
+    { isActive: false },
+    'ADMIN][USER_SUSPEND',
+  )
+  else if (action === 'activate') await prismaSafeWrite(
+    (data) => prisma.user.update({ where: { id: user.id }, data }),
+    { isActive: true },
+    'ADMIN][USER_ACTIVATE',
+  )
   else throw new ApiError(400, 'Invalid action')
 
   const updated = await prisma.user.findUnique({
@@ -110,15 +122,20 @@ export const manageUser = asyncHandler(async (req, res) => {
 })
 
 export const listAllOrders = asyncHandler(async (req, res) => {
-  const orders = await prisma.order.findMany()
+  const limit = Math.min(Number(req.query.limit) || 100, 200)
+  const orders = await prisma.order.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+  })
   const sorted = sortOrdersByDate(orders)
   res.json(sendSuccess(withIdArray(sorted)))
 })
 
 export const updateOrderStatus = asyncHandler(async (req, res) => {
+  const allowedStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled']
   const { status } = req.body
-  if (!status) {
-    throw new ApiError(400, 'Status is required')
+  if (!status || !allowedStatuses.includes(status)) {
+    throw new ApiError(400, `Invalid status. Allowed: ${allowedStatuses.join(', ')}`)
   }
 
   const order = await prisma.order.findUnique({ where: { id: req.params.id } })
@@ -126,11 +143,28 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
     throw new ApiError(404, 'Order not found')
   }
 
-  const updated = await prisma.order.update({
-    where: { id: req.params.id },
-    data: { status },
+  const updated = await prisma.order.$transaction(async (tx) => {
+    const data = { status }
+
+    if (status === 'cancelled' && order.status !== 'cancelled') {
+      const items = Array.isArray(order.items) ? order.items : []
+      for (const item of items) {
+        const productId = item.product
+        const qty = Number(item.quantity) || 0
+        if (productId && qty > 0) {
+          await tx.product.update({
+            where: { id: productId },
+            data: { stock: { increment: qty } },
+          })
+        }
+      }
+      data.paymentStatus = 'refunded'
+    }
+
+    return tx.order.update({ where: { id: order.id }, data })
   })
-  res.json(sendSuccess(withId(updated)))
+
+  res.json(sendSuccess(updated))
 })
 
 export const getSettings = async (req, res) => {
@@ -173,11 +207,20 @@ export const updateSettings = async (req, res) => {
     const existing = await prisma.settings.findFirst()
 
     if (!existing) {
-      const created = await prisma.settings.create({ data: payload })
+      const created = await prismaSafeWrite(
+        (data) => prisma.settings.create({ data }),
+        payload,
+        'ADMIN][SETTINGS_CREATE',
+      )
       return res.status(201).json(sendSuccess(withId(created)))
     }
 
-    const updated = await prisma.settings.update({ where: { id: existing.id }, data: payload })
+    const updated = await prismaSafeWrite(
+      (data) => prisma.settings.update({ where: { id: existing.id }, data }),
+      payload,
+      'ADMIN][SETTINGS_UPDATE',
+    )
+    invalidateMaintenanceCache()
     res.json(sendSuccess(withId(updated)))
   } catch (error) {
     console.error("FULL ERROR:", error)

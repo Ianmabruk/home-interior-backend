@@ -244,23 +244,15 @@ describe('Content Management', () => {
     })
 
     it('should still return 201 when the deployed Prisma client rejects `description` (stale schema)', async () => {
-      // Simulate the production error: a stale generated client that does not
-      // know the `description` field. The controller must strip it and retry.
-      const staleError = Object.assign(
-        new Error(
-          "Unknown argument `description`. Available arguments are: `category`, `id`, `imageUrl`, `imagePublicId`, `isPublished`, `order`, `title`, `createdAt`, `updatedAt`.",
-        ),
-        { name: 'PrismaClientValidationError' },
-      )
-      mockPrisma.portfolio.create
-        .mockRejectedValueOnce(staleError)
-        .mockResolvedValueOnce({
-          id: 'port-2',
-          title: 'Recovered Portfolio',
-          category: 'Residential',
-          imageUrl: 'https://test.cloudinary.com/image.jpg',
-          isPublished: true,
-        })
+      // The controller now strips `description` before calling Prisma, so a
+      // stale client that does not know the field is never sent it.
+      mockPrisma.portfolio.create.mockResolvedValue({
+        id: 'port-2',
+        title: 'Recovered Portfolio',
+        category: 'Residential',
+        imageUrl: 'https://test.cloudinary.com/image.jpg',
+        isPublished: true,
+      })
 
       const response = await request(app)
         .post('/api/content/portfolio')
@@ -274,8 +266,12 @@ describe('Content Management', () => {
 
       expect(response.status).toBe(201)
       expect(response.body.success).toBe(true)
-      // description was dropped by the fallback; the record still saved.
-      expect(mockPrisma.portfolio.create).toHaveBeenCalledTimes(2)
+      expect(mockPrisma.portfolio.create).toHaveBeenCalledTimes(1)
+      expect(mockPrisma.portfolio.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.not.objectContaining({ description: expect.anything() }),
+        }),
+      )
     })
   })
 

@@ -253,6 +253,7 @@ describe('Admin Management', () => {
         id: 'order-1',
         status: 'shipped',
       })
+      mockPrisma.order.$transaction = jest.fn().mockImplementation((fn) => Promise.resolve(fn({ order: mockPrisma.order, product: mockPrisma.product })))
 
       const response = await request(app)
         .patch('/api/admin/orders/order-1/status')
@@ -263,7 +264,7 @@ describe('Admin Management', () => {
       expect(response.body.data.status).toBe('shipped')
     })
 
-    it('should update order status with any string as admin', async () => {
+    it('should reject invalid status values', async () => {
       const admin = {
         id: 'admin-1',
         email: 'admin@test.com',
@@ -276,17 +277,13 @@ describe('Admin Management', () => {
         id: 'order-1',
         status: 'pending',
       })
-      mockPrisma.order.update.mockResolvedValue({
-        id: 'order-1',
-        status: 'invalid-status',
-      })
 
       const response = await request(app)
         .patch('/api/admin/orders/order-1/status')
         .set('Authorization', `Bearer ${token}`)
         .send({ status: 'invalid-status' })
 
-      expect(response.status).toBe(200)
+      expect(response.status).toBe(400)
     })
   })
 })

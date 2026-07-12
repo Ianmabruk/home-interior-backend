@@ -5,6 +5,7 @@ import { ApiError } from '../utils/ApiError.js'
 import { sendEmail, buildQuoteEmailTemplate } from '../config/sendgrid.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { withId, withIdArray, parseBody } from '../utils/helpers.js'
+import { prismaSafeWrite } from '../utils/prismaSafeWrite.js'
 
 const messageSchema = z.object({
   name: z.string().min(2),
@@ -28,20 +29,28 @@ const replySchema = z.object({
 
 export const createMessage = asyncHandler(async (req, res) => {
   const payload = parseBody(messageSchema, req.body)
-  const created = await prisma.message.create({ data: payload })
+  const created = await prismaSafeWrite(
+    (data) => prisma.message.create({ data }),
+    payload,
+    'MESSAGE][CREATE',
+  )
   res.status(201).json(sendSuccess(withId(created)))
 })
 
 export const createQuote = asyncHandler(async (req, res) => {
   const payload = parseBody(quoteSchema, req.body)
-  const created = await prisma.message.create({
-    data: {
-      ...payload,
-      subject: `Quote Request: ${payload.projectType}`,
-      content: payload.message,
-      isRead: false,
-    },
-  })
+  const created = await prismaSafeWrite(
+    (data) => prisma.message.create({
+      data: {
+        ...data,
+        subject: `Quote Request: ${data.projectType}`,
+        content: data.message,
+        isRead: false,
+      },
+    }),
+    payload,
+    'MESSAGE][QUOTE',
+  )
 
   try {
     const admin = await prisma.user.findFirst({ where: { role: 'admin' } })
@@ -66,8 +75,10 @@ export const createQuote = asyncHandler(async (req, res) => {
 })
 
 export const listMessages = asyncHandler(async (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 100, 200)
   const messages = await prisma.message.findMany({
     orderBy: { createdAt: 'desc' },
+    take: limit,
   })
   res.json(sendSuccess(withIdArray(messages)))
 })
@@ -79,10 +90,14 @@ export const replyToMessage = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: 'Message not found' })
   }
 
-  await prisma.message.update({
-    where: { id: messageId },
-    data: { isRead: true },
-  })
+  await prismaSafeWrite(
+    () => prisma.message.update({
+      where: { id: messageId },
+      data: { isRead: true },
+    }),
+    { isRead: true },
+    'MESSAGE][REPLY',
+  )
 
   try {
     if (message.email) {

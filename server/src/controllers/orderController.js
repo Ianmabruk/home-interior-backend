@@ -103,15 +103,15 @@ export const createOrder = asyncHandler(async (req, res) => {
   })
 
   try {
-    const user = req.user
+    const orderUser = await prisma.user.findUnique({ where: { id: req.user.userId } })
     await sendEmail({
-      to: user.email,
+      to: orderUser?.email || req.user.email,
       subject: `HOK Interior - Order Confirmation #${order.id.slice(-8)}`,
       html: buildReceiptEmailTemplate({
         orderId: order.id.slice(-8),
         items,
         total,
-        customerName: user.fullName || user.email,
+        customerName: orderUser?.fullName || req.user.email,
       }),
     })
   } catch (err) {
@@ -135,8 +135,10 @@ export const getMyOrders = asyncHandler(async (req, res) => {
 })
 
 export const listOrders = asyncHandler(async (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 100, 200)
   const orders = await prisma.order.findMany({
     orderBy: { createdAt: 'desc' },
+    take: limit,
   })
   res.json(sendSuccess(withIdArray(orders)))
 })

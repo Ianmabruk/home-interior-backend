@@ -5,6 +5,7 @@ import { uploadImage, uploadVideo, deleteMedia } from '../services/uploadService
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { env } from '../config/env.js'
 import { withId, withIdArray, parseMaybeJson, parseMediaSettings, DEFAULT_MEDIA_SETTINGS } from '../utils/helpers.js'
+import { prismaSafeWrite } from '../utils/prismaSafeWrite.js'
 
 const parseServices = (value) => {
   const parsed = parseMaybeJson(value, null)
@@ -62,50 +63,6 @@ const rethrowAsHttpError = (err, label) => {
   throw err
 }
 
-// Extract the field name Prisma rejects as unknown, e.g.
-// "Unknown argument `description`. Available arguments are: ...".
-const extractUnknownField = (message = '') => {
-  const m = message.match(/Unknown (?:argument|arg)\s+[`']?(\w+)[`']?/i)
-  return m ? m[1] : null
-}
-
-// Retry a Prisma write (create/update) after stripping any field the deployed
-// client reports as unknown. This is the emergency safeguard for a STALE
-// generated client / schema mismatch (e.g. a `description` column that exists
-// in the DB + repo schema but is missing from an older deployed Prisma client):
-// the admin upload returns 200 instead of 500. On a correct client the first
-// attempt succeeds with every field; on a stale one we progressively drop
-// unsupported fields, finally keeping only the minimal safe payload
-// (imageUrl). Also handles P2022 (missing DB column) as a mediaSettings
-// best-effort fallback.
-const withMediaSettingsFallback = async (operation, payload, label) => {
-  let current = { ...payload }
-  const maxAttempts = Object.keys(current).length + 1
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    try {
-      return await operation(current)
-    } catch (err) {
-      const isValidation = err?.name === 'PrismaClientValidationError'
-      const isMissingColumn =
-        err?.code === 'P2022' ||
-        (err?.name === 'PrismaClientKnownRequestError' && err?.message?.includes('does not exist'))
-      if (!isValidation && !isMissingColumn) throw err
-
-      let field = extractUnknownField(err.message)
-      if ((!field || !(field in current)) && isMissingColumn && 'mediaSettings' in current) {
-        field = 'mediaSettings'
-      }
-      if (!field || !(field in current)) {
-        console.error(`[${label}] Prisma write failed, unrecoverable by field stripping:`, err?.message)
-        throw err
-      }
-      console.warn(`[${label}] dropping unsupported field "${field}" and retrying (possible stale client).`)
-      delete current[field]
-    }
-  }
-  throw new ApiError(500, 'Database write failed after schema-mismatch recovery.')
-}
-
 const PROJECT_FIELDS = new Set([
   'title', 'description', 'category', 'media', 'beforeAfterImages',
   'videoUrl', 'videoPublicId', 'coverImageUrl', 'order', 'isPublished', 'tags', 'services',
@@ -128,7 +85,7 @@ const stripUnknown = (obj, allowed) => {
 
 export const projectsController = {
   list: asyncHandler(async (req, res) => {
-    const items = await prisma.project.findMany()
+    const items = await prisma.project.findMany({ where: { isPublished: true } })
     res.json(sendSuccess(withIdArray(sortByOrderThenDate(items))))
   }),
 
@@ -166,7 +123,7 @@ export const projectsController = {
 
     payload.isPublished = payload.isPublished ?? true
 
-    const item = await withMediaSettingsFallback(
+    const item = await prismaSafeWrite(
       (data) => prisma.project.create({ data }),
       payload,
       'PROJECT][CREATE',
@@ -201,9 +158,13 @@ export const projectsController = {
 
     const upload = await handleFileUpload(req, 'hok/projects')
     if (upload) {
+      const mediaDeletes = (existing.media || []).map((m) => m.publicId ? deleteMedia(m.publicId, m.type === 'video' ? 'video' : 'image') : Promise.resolve())
+      if (existing.videoPublicId && existing.videoPublicId !== upload.publicId) {
+        mediaDeletes.push(deleteMedia(existing.videoPublicId, 'video'))
+      }
+      await Promise.all(mediaDeletes)
       const mediaItem = { type: upload.kind, url: upload.url, publicId: upload.publicId }
-      const currentMedia = Array.isArray(existing.media) ? existing.media : []
-      payload.media = [...currentMedia, mediaItem]
+      payload.media = [mediaItem]
       if (upload.kind === 'video') {
         payload.videoUrl = upload.url
         payload.videoPublicId = upload.publicId
@@ -212,7 +173,7 @@ export const projectsController = {
       }
     }
 
-    const item = await withMediaSettingsFallback(
+    const item = await prismaSafeWrite(
       (data) => prisma.project.update({ where: { id: req.params.id }, data }),
       payload,
       'PROJECT][UPDATE',
@@ -221,6 +182,14 @@ export const projectsController = {
   }),
 
   remove: asyncHandler(async (req, res) => {
+    const existing = await prisma.project.findUnique({ where: { id: req.params.id } })
+    if (existing) {
+      const mediaDeletes = (existing.media || []).map((m) => m.publicId ? deleteMedia(m.publicId, m.type === 'video' ? 'video' : 'image') : Promise.resolve())
+      if (existing.videoPublicId) {
+        mediaDeletes.push(deleteMedia(existing.videoPublicId, 'video'))
+      }
+      await Promise.all(mediaDeletes)
+    }
     await prisma.project.delete({ where: { id: req.params.id } })
     res.json(sendSuccess({ message: 'Project deleted' }))
   }),
@@ -229,8 +198,8 @@ export const projectsController = {
 export const portfolioController = {
   list: async (req, res) => {
     try {
-      const items = await prisma.portfolio.findMany()
-      res.json(sendSuccess(withIdArray(sortByOrderThenDate(items))))
+    const items = await prisma.portfolio.findMany({ where: { isPublished: true } })
+    res.json(sendSuccess(withIdArray(sortByOrderThenDate(items))))
     } catch (error) {
       console.error("FULL ERROR:", error)
       console.error("MESSAGE:", error.message)
@@ -261,6 +230,10 @@ export const portfolioController = {
       if (payload.order !== undefined) payload.order = orderValue(payload.order)
       payload.isPublished = toBoolean(req.body.isPublished, true)
 
+      // Temporarily omit description until the deployed Prisma schema
+      // and generated client are updated to support it.
+      delete payload.description
+
       const parsedMediaSettings = parseMediaSettings(req.body.mediaSettings)
       if (parsedMediaSettings) payload.mediaSettings = parsedMediaSettings
 
@@ -270,7 +243,7 @@ export const portfolioController = {
         payload.imagePublicId = upload.publicId
       }
 
-      const item = await withMediaSettingsFallback(
+      const item = await prismaSafeWrite(
         (data) => prisma.portfolio.create({ data }),
         payload,
         'PORTFOLIO][CREATE',
@@ -330,7 +303,7 @@ export const portfolioController = {
         payload.imagePublicId = upload.publicId
       }
 
-      const item = await withMediaSettingsFallback(
+      const item = await prismaSafeWrite(
         (data) => prisma.portfolio.update({ where: { id: req.params.id }, data }),
         payload,
         'PORTFOLIO][UPDATE',
@@ -365,9 +338,14 @@ export const portfolioController = {
       if (!existing) {
         return res.status(404).json({ message: 'Portfolio not found' })
       }
-      console.log('[PORTFOLIO][DELETE] id=', req.params.id, 'title=', existing.title)
+      if (existing.imagePublicId) {
+        try {
+          await deleteMedia(existing.imagePublicId, 'image')
+        } catch (deleteErr) {
+          console.error('[PORTFOLIO][DELETE] delete old media failed:', deleteErr?.message)
+        }
+      }
       await prisma.portfolio.delete({ where: { id: req.params.id } })
-      console.log('[PORTFOLIO][DELETE] success id=', req.params.id)
       res.json(sendSuccess({ message: 'Portfolio deleted' }))
     } catch (error) {
       console.error("FULL ERROR:", error)
@@ -442,7 +420,7 @@ export const portfolioController = {
 
 export const virtualDesignController = {
   list: asyncHandler(async (req, res) => {
-    const items = await prisma.virtualDesign.findMany()
+    const items = await prisma.virtualDesign.findMany({ where: { isPublished: true } })
     res.json(sendSuccess(withIdArray(items)))
   }),
 
@@ -469,7 +447,7 @@ export const virtualDesignController = {
 
     payload.isPublished = payload.isPublished ?? true
 
-    const item = await withMediaSettingsFallback(
+    const item = await prismaSafeWrite(
       (data) => prisma.virtualDesign.create({ data }),
       payload,
       'VIRTUAL][CREATE',
@@ -499,11 +477,18 @@ export const virtualDesignController = {
 
     const upload = await handleFileUpload(req, 'hok/virtual-design')
     if (upload) {
+      if (existing.videoPublicId && existing.videoPublicId !== upload.publicId) {
+        try {
+          await deleteMedia(existing.videoPublicId, 'video')
+        } catch (deleteErr) {
+          console.error('[VIRTUAL][UPDATE] delete old media failed:', deleteErr?.message)
+        }
+      }
       payload.videoUrl = upload.url
       payload.videoPublicId = upload.publicId
     }
 
-    const item = await withMediaSettingsFallback(
+    const item = await prismaSafeWrite(
       (data) => prisma.virtualDesign.update({ where: { id: req.params.id }, data }),
       payload,
       'VIRTUAL][UPDATE',
@@ -512,6 +497,15 @@ export const virtualDesignController = {
   }),
 
   remove: asyncHandler(async (req, res) => {
+    const existing = await prisma.virtualDesign.findUnique({ where: { id: req.params.id } })
+    if (existing) {
+      const mediaDeletes = []
+      if (existing.videoPublicId) mediaDeletes.push(deleteMedia(existing.videoPublicId, 'video'))
+      if (existing.thumbnailUrl) {
+        // thumbnailUrl has no stored publicId, cannot delete programmatically
+      }
+      await Promise.all(mediaDeletes)
+    }
     await prisma.virtualDesign.delete({ where: { id: req.params.id } })
     res.json(sendSuccess({ message: 'VirtualDesign deleted' }))
   }),
@@ -597,7 +591,7 @@ export const upsertAbout = async (req, res) => {
         socials: payload.socials ?? {},
         ...payload,
       }
-      const created = await withMediaSettingsFallback(
+      const created = await prismaSafeWrite(
         (data) => prisma.about.create({ data }),
         createPayload,
         'ABOUT][CREATE',
@@ -605,7 +599,15 @@ export const upsertAbout = async (req, res) => {
       return res.status(201).json(sendSuccess(withId(created)))
     }
 
-    const updated = await withMediaSettingsFallback(
+    if (payload.aboutImagePublicId && existing.aboutImagePublicId && payload.aboutImagePublicId !== existing.aboutImagePublicId) {
+      try {
+        await deleteMedia(existing.aboutImagePublicId, 'image')
+      } catch (deleteErr) {
+        console.error('[ABOUT][UPDATE] delete old media failed:', deleteErr?.message)
+      }
+    }
+
+    const updated = await prismaSafeWrite(
       (data) => prisma.about.update({ where: { id: existing.id }, data }),
       payload,
       'ABOUT][UPDATE',

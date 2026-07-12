@@ -12,6 +12,7 @@ import { prisma } from './config/db.js'
 import { ApiError } from './utils/ApiError.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
 import { zodErrorHandler } from './middleware/zodErrorHandler.js'
+import { isMaintenanceMode, invalidateMaintenanceCache } from './utils/maintenance.js'
 
 export const app = express()
 
@@ -152,11 +153,10 @@ app.use(
     limit: 120,
     standardHeaders: true,
     legacyHeaders: false,
-    // `trust proxy` is set to 1 (above) so req.ip resolves the real client
-    // from X-Forwarded-For. We also disable the XFF validation guard so this
-    // limiter never throws ERR_ERL_UNEXPECTED_X_FORWARDED_FOR even if a deploy
-    // runs before trust proxy is applied (e.g. a stale build behind Render).
-    validate: { xForwardedForHeader: false },
+    // trust proxy is set to 1 (above) so req.ip resolves the real client
+    // from X-Forwarded-For. Keep validate true so the limiter enforces
+    // per-client limits behind Render/Netlify/Cloudflare proxies.
+    validate: { xForwardedForHeader: true },
   }),
 )
 
@@ -197,6 +197,20 @@ const cachePublic = (req, res, next) => {
   next()
 }
 app.use(cachePublic)
+
+app.use(async (req, res, next) => {
+  if (req.path === '/health') return next()
+  if (req.method === 'OPTIONS') return next()
+  try {
+    const maintenance = await isMaintenanceMode(prisma)
+    if (maintenance) {
+      return res.status(503).json({ success: false, message: 'Site is under maintenance. Please check back later.' })
+    }
+  } catch {
+    // ignore maintenance check errors to avoid taking down the site
+  }
+  next()
+})
 
 app.get(['/api/health', '/health'], async (req, res) => {
   try {

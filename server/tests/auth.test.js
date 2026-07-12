@@ -142,7 +142,7 @@ describe('Authentication', () => {
 
   describe('POST /api/auth/register', () => {
     it('should register a new user with valid data', async () => {
-      mockPrisma.user.findFirst.mockResolvedValue(null)
+      mockPrisma.user.findUnique.mockResolvedValue(null)
       mockPrisma.user.create.mockResolvedValue({
         id: 'user-123',
         email: 'test@test.com',
@@ -194,7 +194,7 @@ describe('Authentication', () => {
   describe('POST /api/auth/login', () => {
     it('should login with valid credentials', async () => {
       const hashedPassword = await bcrypt.hash('password123', 12)
-      mockPrisma.user.findFirst.mockResolvedValue({
+      mockPrisma.user.findUnique.mockResolvedValue({
         id: 'user-123',
         email: 'test@test.com',
         passwordHash: hashedPassword,
@@ -222,7 +222,7 @@ describe('Authentication', () => {
     })
 
     it('should reject login with invalid email', async () => {
-      mockPrisma.user.findFirst.mockResolvedValue(null)
+      mockPrisma.user.findUnique.mockResolvedValue(null)
 
       const response = await request(app)
         .post('/api/auth/login')
@@ -236,7 +236,7 @@ describe('Authentication', () => {
 
     it('should reject login with wrong password', async () => {
       const hashedPassword = await bcrypt.hash('password123', 12)
-      mockPrisma.user.findFirst.mockResolvedValue({
+      mockPrisma.user.findUnique.mockResolvedValue({
         id: 'user-123',
         email: 'test@test.com',
         passwordHash: hashedPassword,
@@ -255,7 +255,7 @@ describe('Authentication', () => {
 
     it('should reject login for inactive user', async () => {
       const hashedPassword = await bcrypt.hash('password123', 12)
-      mockPrisma.user.findFirst.mockResolvedValue({
+      mockPrisma.user.findUnique.mockResolvedValue({
         id: 'user-123',
         email: 'test@test.com',
         passwordHash: hashedPassword,

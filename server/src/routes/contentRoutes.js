@@ -35,6 +35,16 @@ const writeLimiter = rateLimit({
   message: { success: false, message: 'Too many write requests, please slow down.' },
 })
 
+// Light limiter for public subscribe to prevent collection abuse.
+const subscribeLimiter = rateLimit({
+  windowMs: 1000 * 60,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
+  message: { success: false, message: 'Too many subscription attempts, please try again later.' },
+})
+
 const validateUpload = validateFileUpload('media', { maxBytes: 50 * 1024 * 1024 })
 
 const portfolioSchema = z.object({
@@ -45,7 +55,7 @@ const portfolioSchema = z.object({
 const validatePortfolioBody = validateBody(portfolioSchema)
 
 router.get('/homepage', homepageFeed)
-router.get('/analytics', getAnalytics)
+router.get('/analytics', auth, getAnalytics)
 
 router.get('/projects', projectsController.list)
 router.post('/projects', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, projectsController.create)
