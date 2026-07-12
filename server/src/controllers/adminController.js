@@ -161,7 +161,15 @@ export const getSettings = async (req, res) => {
 
 export const updateSettings = async (req, res) => {
   try {
-    const payload = { ...req.body }
+    const allowed = new Set([
+      'siteName', 'supportEmail', 'maintenanceMode', 'currency',
+      'shippingPolicy', 'returnPolicy',
+    ])
+    const payload = {}
+    for (const key of Object.keys(req.body)) {
+      if (allowed.has(key)) payload[key] = req.body[key]
+    }
+
     const existing = await prisma.settings.findFirst()
 
     if (!existing) {

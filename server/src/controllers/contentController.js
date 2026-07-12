@@ -92,7 +92,7 @@ const PROJECT_FIELDS = new Set([
   'mediaSettings',
 ])
 const PORTFOLIO_FIELDS = new Set([
-  'title', 'category', 'imageUrl', 'imagePublicId', 'order', 'isPublished', 'mediaSettings',
+  'title', 'description', 'category', 'imageUrl', 'imagePublicId', 'order', 'isPublished', 'mediaSettings',
 ])
 const VIRTUAL_DESIGN_FIELDS = new Set([
   'title', 'description', 'videoUrl', 'videoPublicId', 'thumbnailUrl', 'services',
@@ -161,6 +161,8 @@ export const projectsController = {
     }
 
     const payload = stripUnknown({ ...req.body }, PROJECT_FIELDS)
+
+    if (payload.order !== undefined) payload.order = orderValue(payload.order)
 
     const parsedServices = parseServices(req.body.services)
     if (parsedServices.length) payload.services = parsedServices
