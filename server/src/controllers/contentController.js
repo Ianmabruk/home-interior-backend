@@ -637,7 +637,17 @@ export const homepageFeed = asyncHandler(async (req, res) => {
       where: { isPublished: true },
       orderBy: { order: 'asc' },
       take: 12,
-      select: { id: true, title: true, category: true, imageUrl: true, mediaSettings: true },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        category: true,
+        imageUrl: true,
+        order: true,
+        mediaSettings: true,
+        isPublished: true,
+        createdAt: true,
+      },
     }),
     prisma.about.findFirst({
       orderBy: { createdAt: 'desc' },
