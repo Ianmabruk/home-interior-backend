@@ -34,6 +34,7 @@ export const register = asyncHandler(async (req, res) => {
   const body = registerSchema.parse(req.body)
   const exists = await prisma.user.findFirst({ where: { email: body.email } })
   if (exists) {
+    console.warn(`[AUTH][register] rejected: user already exists ${body.email}`)
     throw new ApiError(409, 'User already exists')
   }
 
@@ -56,10 +57,11 @@ export const register = asyncHandler(async (req, res) => {
       html: buildWelcomeEmailTemplate({ fullName: body.fullName, email: body.email }),
     })
   } catch (err) {
-    console.error('Welcome email failed:', err)
+    console.error('[AUTH][register] welcome email failed:', err)
   }
 
   setRefreshCookie(res, tokens.refreshToken)
+  console.info(`[AUTH][register] success: userId=${user.id} email=${user.email}`)
 
   res.status(201).json(sendSuccess({
     user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role },
@@ -71,15 +73,18 @@ export const login = asyncHandler(async (req, res) => {
   const body = loginSchema.parse(req.body)
   const user = await prisma.user.findFirst({ where: { email: body.email } })
   if (!user) {
+    console.warn(`[AUTH][login] rejected: invalid credentials for ${body.email}`)
     throw new ApiError(401, 'Invalid credentials')
   }
 
   if (!user.isActive) {
+    console.warn(`[AUTH][login] rejected: inactive account for ${body.email}`)
     throw new ApiError(403, 'Your account has been suspended. Contact support.')
   }
 
   const matches = await bcrypt.compare(body.password, user.passwordHash)
   if (!matches) {
+    console.warn(`[AUTH][login] rejected: invalid credentials for ${body.email}`)
     throw new ApiError(401, 'Invalid credentials')
   }
 
@@ -96,10 +101,11 @@ export const login = asyncHandler(async (req, res) => {
       html: buildLoginEmailTemplate({ fullName: user.fullName, email: user.email, timestamp: new Date().toISOString() }),
     })
   } catch (err) {
-    console.error('Login email failed:', err)
+    console.error('[AUTH][login] notification email failed:', err)
   }
 
   setRefreshCookie(res, tokens.refreshToken)
+  console.info(`[AUTH][login] success: userId=${user.id} email=${user.email} role=${user.role}`)
 
   res.json(sendSuccess({
     user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role },
@@ -219,8 +225,6 @@ export const resetPassword = asyncHandler(async (req, res) => {
 })
 
 export const logout = asyncHandler(async (req, res) => {
-  // Invalidate the stored refresh token so a stolen cookie can no longer be
-  // exchanged, then drop the httpOnly cookie.
   const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME]
   if (refreshToken) {
     try {
@@ -229,8 +233,9 @@ export const logout = asyncHandler(async (req, res) => {
         where: { id: decoded.userId },
         data: { refreshToken: null },
       }).catch(() => {})
+      console.info(`[AUTH][logout] success: userId=${decoded.userId}`)
     } catch {
-      /* ignore invalid token */
+      console.warn('[AUTH][logout] invalid refresh token in cookie')
     }
   }
   clearRefreshCookie(res)

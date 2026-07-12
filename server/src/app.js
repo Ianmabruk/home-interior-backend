@@ -129,6 +129,16 @@ app.set('trust proxy', true)
 
 app.use(express.json({ limit: '1mb' }))
 app.use(cookieParser())
+
+// Ensure req.body is always an object. Prevents TypeError crashes on
+// endpoints that receive empty POSTs (e.g. /auth/refresh with no payload).
+app.use((req, res, next) => {
+  if (req.body === undefined || req.body === null) {
+    req.body = {}
+  }
+  next()
+})
+
 app.use(morgan('dev'))
 app.use(
   '/api',

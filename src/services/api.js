@@ -18,6 +18,7 @@ api.interceptors.request.use((config) => {
 })
 
 let refreshingPromise = null
+let refreshFailed = false
 
 api.interceptors.response.use(
   (response) => {
@@ -35,6 +36,12 @@ api.interceptors.response.use(
       return Promise.reject(error)
     }
 
+    // If a previous refresh attempt failed, stop retrying to avoid hitting
+    // rate limits and causing infinite loops. The user must log in again.
+    if (refreshFailed) {
+      return Promise.reject(error)
+    }
+
     if (!refreshingPromise) {
       console.info('[auth] access token expired — attempting refresh')
       refreshingPromise = api
@@ -49,6 +56,7 @@ api.interceptors.response.use(
         .catch((refreshErr) => {
           console.warn('[auth] refresh failed:', refreshErr?.response?.status, refreshErr?.message)
           localStorage.removeItem('hok_access_token')
+          refreshFailed = true
           return Promise.reject(refreshErr)
         })
         .finally(() => {

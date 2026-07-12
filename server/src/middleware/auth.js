@@ -4,6 +4,7 @@ import { verifyAccessToken } from '../utils/tokens.js'
 export const auth = (req, res, next) => {
   const header = req.headers.authorization || req.headers.Authorization
   if (!header || !header.startsWith('Bearer ')) {
+    console.warn(`[AUTH][${res.getHeader('X-Request-ID')}] rejected: missing authorization header`)
     return next(new ApiError(401, 'Unauthorized'))
   }
 
@@ -11,8 +12,10 @@ export const auth = (req, res, next) => {
     const token = header.split(' ')[1]
     const decoded = verifyAccessToken(token)
     req.user = decoded
+    console.info(`[AUTH][${res.getHeader('X-Request-ID')}] granted: userId=${decoded.userId} role=${decoded.role}`)
     next()
-  } catch {
+  } catch (err) {
+    console.warn(`[AUTH][${res.getHeader('X-Request-ID')}] rejected: invalid token — ${err?.message}`)
     next(new ApiError(401, 'Invalid token'))
   }
 }

@@ -8,17 +8,30 @@ export const prisma = new PrismaClient()
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 export const runMigrations = async () => {
-  const hasMigrationsTable = await prisma.$queryRaw`
-    SELECT 1 FROM _prisma_migrations LIMIT 1
-  `.catch(() => null)
-
-  if (hasMigrationsTable) {
-    console.log('✅ Prisma migrations already applied')
-    return
-  }
-
-  console.log('⚠️  _prisma_migrations table not found — attempting to run migrations...')
   try {
+    const applied = await prisma.$queryRaw`
+      SELECT "migration_name" FROM "_prisma_migrations" ORDER BY "migration_name"
+    `
+    const appliedNames = new Set((applied || []).map((m) => m.migration_name))
+
+    const fs = await import('fs')
+    const path = await import('path')
+    const migrationsDir = path.join(process.cwd(), 'prisma', 'migrations')
+    const entries = await fs.promises.readdir(migrationsDir, { withFileTypes: true })
+    const migrationFolders = entries
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name)
+      .sort()
+
+    const pending = migrationFolders.filter((name) => !appliedNames.has(name))
+
+    if (pending.length === 0) {
+      console.log('✅ Prisma migrations already applied')
+      return
+    }
+
+    console.warn(`⚠️  ${pending.length} pending migration(s): ${pending.join(', ')}`)
+    console.log('🚀 Running prisma migrate deploy...')
     execSync('npx prisma migrate deploy', {
       cwd: process.cwd(),
       stdio: 'inherit',
@@ -26,8 +39,8 @@ export const runMigrations = async () => {
     })
     console.log('✅ Prisma migrations deployed successfully')
   } catch (err) {
-    console.error('❌ Prisma migrate deploy failed. Ensure your Render build command includes:')
-    console.error('   cd server && npm install && npx prisma generate && npx prisma migrate deploy')
+    console.error('❌ Prisma migrate deploy failed:', err.message)
+    console.error('   Ensure your Render build command includes: cd server && npx prisma generate && npx prisma migrate deploy')
     throw err
   }
 }
