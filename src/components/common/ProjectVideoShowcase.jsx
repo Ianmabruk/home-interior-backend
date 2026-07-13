@@ -63,14 +63,18 @@ export default function ProjectVideoShowcase({ videos, className = '' }) {
     }
     const attempt = playRetryRef.current
     playRetryRef.current += 1
-    const p = v.play()
-    if (p && typeof p.catch === 'function') {
-      p.catch(() => {
-        if (attempt < MAX_PLAY_RETRIES - 1) {
-          playTimerRef.current = setTimeout(() => attemptPlay(v), PLAY_RETRY_DELAYS[attempt] || 1000)
-        }
-      })
-    }
+    const timer = setTimeout(() => {
+      const p = v.play()
+      if (p && typeof p.catch === 'function') {
+        p.catch((err) => {
+          console.warn('[showcase] play attempt failed:', attempt, err?.message, currentUrlRef.current)
+          if (attempt < MAX_PLAY_RETRIES - 1) {
+            playTimerRef.current = setTimeout(() => attemptPlay(v), PLAY_RETRY_DELAYS[attempt] || 1000)
+          }
+        })
+      }
+    }, 0)
+    playTimerRef.current = timer
   }
 
   const goNext = () => {
@@ -155,6 +159,7 @@ export default function ProjectVideoShowcase({ videos, className = '' }) {
             playsInline
             preload="auto"
             fetchPriority="high"
+            crossOrigin="anonymous"
             onEnded={() => {
               console.log('[showcase] video ended:', current.url)
               clearPlayTimers()
