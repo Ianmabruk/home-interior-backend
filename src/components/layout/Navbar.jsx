@@ -17,10 +17,6 @@ export const Navbar = () => {
   const location = useLocation()
 
   useEffect(() => {
-    setProfileOpen(false)
-  }, [location.pathname])
-
-  useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 50)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
@@ -73,7 +69,7 @@ export const Navbar = () => {
           <Link to="/shop" className="btn-accent text-2xs">
             Shop With Us
           </Link>
-          <div className="relative ml-1" data-profile-menu>
+          <div key={location.pathname} className="relative ml-1" data-profile-menu>
             <button
               className="flex items-center gap-1 p-2.5 text-textPrimaryDark/55 transition-colors hover:text-textPrimaryDark"
               onClick={() => setProfileOpen((p) => !p)}
@@ -125,7 +121,7 @@ export const Navbar = () => {
           <Link to="/shop" className="btn-accent text-2xs py-2 px-4">
             Shop With Us
           </Link>
-          <div className="relative" data-profile-menu>
+          <div key={location.pathname} className="relative" data-profile-menu>
             <button
               className="p-2 text-textPrimaryDark"
               onClick={() => setProfileOpen((p) => !p)}

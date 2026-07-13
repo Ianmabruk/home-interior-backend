@@ -1,5 +1,5 @@
 import { BarChart3, Boxes, Film, FolderKanban, Info, Mail, Sparkles, LayoutDashboard, ShoppingBag, TrendingUp, Users, FileText, Settings, Search, Grid, List, Check, Trash2, Edit, Bell, ChevronLeft, ChevronRight, UploadCloud, X, Plus, Menu, LogOut, Activity, DollarSign, Layers, MessageSquare, Send, Image as ImageIcon, Video } from 'lucide-react'
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
@@ -94,14 +94,10 @@ function AdminPage() {
   // (so we don't spam on load), subsequent polls surface genuinely new ones
   // as a toast + bell badge. Seen ids persist in localStorage so notifications
   // still work correctly after a page refresh or redeploy.
-  const [orderNotifications, setOrderNotifications] = useState([])
+  const [orderNotifications] = useState([])
   const [unreadOrders, setUnreadOrders] = useState(0)
   const [showNotif, setShowNotif] = useState(false)
   const [notifToast, setNotifToast] = useState(null)
-  const seenOrderIdsRef = useRef(
-    new Set(JSON.parse(localStorage.getItem('hok_seen_order_ids') || '[]')),
-  )
-  const firstPollRef = useRef(true)
 
   const [searchTerm, setSearchTerm] = useState('')
   const [viewMode, setViewMode] = useState('grid')
@@ -112,11 +108,51 @@ function AdminPage() {
   const [selectedMedia, setSelectedMedia] = useState([])
   const fileInputRef = useRef(null)
 
+  const fetchAll = useCallback(() => {
+    Promise.all([
+      api.get('/admin/overview').catch(() => ({ data: null })),
+      api.get('/content/projects').catch(() => ({ data: [] })),
+      api.get('/content/portfolio').catch(() => ({ data: [] })),
+      api.get('/products/admin/all', { params: { sort: '-createdAt', limit: 100 } }).catch(() => ({ data: { items: [] } })),
+      api.get('/messages').catch(() => ({ data: [] })),
+      api.get('/content/virtual-design').catch(() => ({ data: [] })),
+      api.get('/admin/users').catch(() => ({ data: [] })),
+      api.get('/content/analytics').catch(() => ({ data: [] })),
+      api.get('/admin/orders').catch(() => ({ data: [] })),
+      api.get('/admin/testimonials').catch(() => ({ data: [] })),
+      api.get('/admin/settings').catch(() => ({ data: null })),
+      api.get('/content/about').catch(() => ({ data: null })),
+    ])
+      .then(([overviewRes, projectsRes, portfolioRes, productsRes, messagesRes, virtualRes, usersRes, analyticsRes, ordersRes, testimonialsRes, settingsRes, aboutRes]) => {
+        if (overviewRes.data) setOverview(overviewRes.data)
+        setProjects(projectsRes.data || [])
+        setPortfolio(portfolioRes.data || [])
+        setProducts(productsRes.data?.items || [])
+        setMessages(messagesRes.data || [])
+        setVirtualDesigns(virtualRes.data || [])
+        setUsers(usersRes.data || [])
+        setAnalyticsData(analyticsRes.data || [])
+        setOrders(ordersRes.data || [])
+        setTestimonials(testimonialsRes.data || [])
+        if (aboutRes.data) setAbout(aboutRes.data)
+        if (settingsRes.data) {
+          setSettingsForm({
+            siteName: settingsRes.data.siteName || '',
+            supportEmail: settingsRes.data.supportEmail || '',
+            currency: settingsRes.data.currency || 'USD',
+            maintenanceMode: Boolean(settingsRes.data.maintenanceMode),
+            shippingPolicy: settingsRes.data.shippingPolicy || '',
+            returnPolicy: settingsRes.data.returnPolicy || '',
+          })
+        }
+      })
+  }, [])
+
   // Load data once on mount, and refresh when admin changes content.
   // No background polling — avoids unnecessary API calls and render loops.
   useEffect(() => {
     fetchAll()
-  }, [])
+  }, [fetchAll])
 
   useEffect(() => {
     const handler = () => {
@@ -189,46 +225,6 @@ function AdminPage() {
       setMediaSettings(normalizeMediaSettings(about.mediaSettings))
     }
   }, [activeTab, about])
-
-  const fetchAll = () => {
-    Promise.all([
-      api.get('/admin/overview').catch(() => ({ data: null })),
-      api.get('/content/projects').catch(() => ({ data: [] })),
-      api.get('/content/portfolio').catch(() => ({ data: [] })),
-      api.get('/products/admin/all', { params: { sort: '-createdAt', limit: 100 } }).catch(() => ({ data: { items: [] } })),
-      api.get('/messages').catch(() => ({ data: [] })),
-      api.get('/content/virtual-design').catch(() => ({ data: [] })),
-      api.get('/admin/users').catch(() => ({ data: [] })),
-      api.get('/content/analytics').catch(() => ({ data: [] })),
-      api.get('/admin/orders').catch(() => ({ data: [] })),
-      api.get('/admin/testimonials').catch(() => ({ data: [] })),
-      api.get('/admin/settings').catch(() => ({ data: null })),
-      api.get('/content/about').catch(() => ({ data: null })),
-    ])
-      .then(([overviewRes, projectsRes, portfolioRes, productsRes, messagesRes, virtualRes, usersRes, analyticsRes, ordersRes, testimonialsRes, settingsRes, aboutRes]) => {
-        if (overviewRes.data) setOverview(overviewRes.data)
-        setProjects(projectsRes.data || [])
-        setPortfolio(portfolioRes.data || [])
-        setProducts(productsRes.data?.items || [])
-        setMessages(messagesRes.data || [])
-        setVirtualDesigns(virtualRes.data || [])
-        setUsers(usersRes.data || [])
-        setAnalyticsData(analyticsRes.data || [])
-        setOrders(ordersRes.data || [])
-        setTestimonials(testimonialsRes.data || [])
-        if (aboutRes.data) setAbout(aboutRes.data)
-        if (settingsRes.data) {
-          setSettingsForm({
-            siteName: settingsRes.data.siteName || '',
-            supportEmail: settingsRes.data.supportEmail || '',
-            currency: settingsRes.data.currency || 'USD',
-            maintenanceMode: Boolean(settingsRes.data.maintenanceMode),
-            shippingPolicy: settingsRes.data.shippingPolicy || '',
-            returnPolicy: settingsRes.data.returnPolicy || '',
-          })
-        }
-      })
-  }
 
   const showToast = (message, type = 'success') => {
     setStatus(`${type === 'error' ? 'ERROR' : 'SUCCESS'}: ${message}`)

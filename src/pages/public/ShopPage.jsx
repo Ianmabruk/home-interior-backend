@@ -1,4 +1,4 @@
-import { BedDouble, BriefcaseBusiness, Building2, Lamp, Sparkles, Sofa, TreePalm, UtensilsCrossed, SlidersHorizontal, X, ChevronDown } from 'lucide-react'
+import { BedDouble, BriefcaseBusiness, Building2, Lamp, Sparkles, Sofa, TreePalm, UtensilsCrossed, SlidersHorizontal, X, ChevronDown, Menu } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
 import { ProductCard } from '../../components/shop/ProductCard'
@@ -29,7 +29,8 @@ export const ShopPage = () => {
   const [sortBy, setSortBy] = useState('newest')
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [currencyOpen, setCurrencyOpen] = useState(false)
-  
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
   const [currency, setCurrency] = useState('USD')
   const changeCurrency = (newCurrency) => {
     setCurrency(newCurrency)
@@ -87,49 +88,34 @@ export const ShopPage = () => {
 
   return (
     <div>
-      <div className="section-pad bg-linen pb-12">
-        <div className="container-wide px-6 md:px-12 lg:px-20">
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <p className="eyebrow mb-4">Curated Collection</p>
-            <h1 className="font-display text-6xl font-medium leading-tight text-ink md:text-7xl">Shop</h1>
-          </motion.div>
-        </div>
-      </div>
-
-      <div className="border-b border-sand bg-white">
-        <div className="container-wide overflow-x-auto px-6 md:px-12 lg:px-20">
-          <div className="flex items-center gap-2 py-4 min-w-max">
+      {/* Compact sticky header — single bar on mobile */}
+      <div className="sticky top-0 z-30 border-b border-sand bg-white md:top-[88px]">
+        <div className="px-4 py-3 md:px-12 md:py-4">
+          {/* Mobile: search + menu button in one row */}
+          <div className="flex items-center gap-2 md:hidden">
+            <div className="relative flex-1">
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search products..."
+                className="w-full rounded-full border border-sand bg-gray-50 pl-9 pr-3 py-2 text-sm outline-none placeholder:text-ink/35 focus:border-orange focus:ring-2 focus:ring-orange/30 transition"
+              />
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
             <button
-              onClick={() => setCategory('')}
-              className={`px-5 py-2 text-2xs font-medium uppercase tracking-widest transition rounded-full ${
-                !category ? 'bg-ink text-white' : 'text-ink/50 hover:text-ink bg-cream border border-sand'
-              }`}
+              onClick={() => setMobileMenuOpen((p) => !p)}
+              className="flex items-center gap-1 rounded-full border border-sand bg-white px-3 py-2 text-2xs font-medium uppercase tracking-widest text-ink/70"
             >
-              All
+              <Menu size={14} strokeWidth={1.5} />
+              {hasFilters ? 'Filters' : 'Menu'}
             </button>
-            {SHOP_CATEGORIES.map((cat) => {
-              const Icon = categoryIcons[cat] || Sparkles
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setCategory(cat === category ? '' : cat)}
-                  className={`flex items-center gap-1.5 px-5 py-2 text-2xs font-medium uppercase tracking-widest transition rounded-full ${
-                    category === cat ? 'bg-ink text-white' : 'text-ink/50 hover:text-ink bg-cream border border-sand'
-                  }`}
-                >
-                  <Icon size={12} strokeWidth={1.5} />
-                  {cat}
-                </button>
-              )
-            })}
           </div>
-        </div>
-      </div>
 
-      <div className="sticky top-[88px] z-30 border-b border-sand bg-cream/95 backdrop-blur-sm md:top-[108px]">
-        <div className="container-wide px-6 py-4 md:px-12 lg:px-20">
-          <div className="flex flex-col lg:flex-row items-center gap-4">
-            <div className="relative flex-1 max-w-md w-full">
+          {/* Desktop: full search + controls */}
+          <div className="hidden md:flex items-center gap-4">
+            <div className="relative flex-1 max-w-md">
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -140,7 +126,7 @@ export const ShopPage = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            
+
             <div className="flex items-center gap-3 ml-auto">
               <div className="relative">
                 <button
@@ -183,7 +169,7 @@ export const ShopPage = () => {
                 <option value="price-high">Price: High to Low</option>
                 <option value="name">Name A-Z</option>
               </select>
-              
+
               <button
                 onClick={() => setFiltersOpen((p) => !p)}
                 className="flex items-center gap-2 rounded-full border border-sand bg-white px-4 py-2 text-2xs font-medium uppercase tracking-widest text-ink/50 transition hover:border-orange hover:text-orange"
@@ -191,7 +177,7 @@ export const ShopPage = () => {
                 <SlidersHorizontal size={13} strokeWidth={1.5} />
                 Filters
               </button>
-              
+
               {hasFilters && (
                 <button
                   onClick={clearFilters}
@@ -200,18 +186,176 @@ export const ShopPage = () => {
                   <X size={12} strokeWidth={1.5} /> Clear
                 </button>
               )}
-              
+
               <span className="text-2xs text-ink/50">{products.length} items</span>
             </div>
           </div>
 
+          {/* Desktop category bar */}
+          <div className="hidden md:block overflow-x-auto mt-4">
+            <div className="flex items-center gap-2 min-w-max">
+              <button
+                onClick={() => setCategory('')}
+                className={`px-5 py-2 text-2xs font-medium uppercase tracking-widest transition rounded-full ${
+                  !category ? 'bg-ink text-white' : 'text-ink/50 hover:text-ink bg-cream border border-sand'
+                }`}
+              >
+                All
+              </button>
+              {SHOP_CATEGORIES.map((cat) => {
+                const Icon = categoryIcons[cat] || Sparkles
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setCategory(cat === category ? '' : cat)}
+                    className={`flex items-center gap-1.5 px-5 py-2 text-2xs font-medium uppercase tracking-widest transition rounded-full ${
+                      category === cat ? 'bg-ink text-white' : 'text-ink/50 hover:text-ink bg-cream border border-sand'
+                    }`}
+                  >
+                    <Icon size={12} strokeWidth={1.5} />
+                    {cat}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile filters modal */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 bg-black/40 md:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 z-50 max-h-[80vh] overflow-y-auto rounded-t-3xl bg-white shadow-2xl md:hidden"
+            >
+              <div className="flex items-center justify-between border-b border-sand p-4">
+                <p className="font-display text-lg text-ink">Filters & Categories</p>
+                <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-ink/50 hover:text-ink">
+                  <X size={20} strokeWidth={1.5} />
+                </button>
+              </div>
+
+              <div className="p-4 space-y-6">
+                {/* Categories */}
+                <div>
+                  <p className="text-2xs font-semibold uppercase tracking-widest text-ink/50 mb-3">Categories</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => { setCategory(''); setMobileMenuOpen(false) }}
+                      className={`px-4 py-2 text-2xs font-medium uppercase tracking-widest transition rounded-full ${
+                        !category ? 'bg-ink text-white' : 'text-ink/50 hover:text-ink bg-cream border border-sand'
+                      }`}
+                    >
+                      All
+                    </button>
+                    {SHOP_CATEGORIES.map((cat) => {
+                      const Icon = categoryIcons[cat] || Sparkles
+                      return (
+                        <button
+                          key={cat}
+                          onClick={() => { setCategory(cat === category ? '' : cat); setMobileMenuOpen(false) }}
+                          className={`flex items-center gap-1.5 px-4 py-2 text-2xs font-medium uppercase tracking-widest transition rounded-full ${
+                            category === cat ? 'bg-ink text-white' : 'text-ink/50 hover:text-ink bg-cream border border-sand'
+                          }`}
+                        >
+                          <Icon size={12} strokeWidth={1.5} />
+                          {cat}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Currency */}
+                <div>
+                  <p className="text-2xs font-semibold uppercase tracking-widest text-ink/50 mb-3">Currency</p>
+                  <div className="flex flex-wrap gap-2">
+                    {CURRENCIES.map((c) => (
+                      <button
+                        key={c.code}
+                        onClick={() => { changeCurrency(c.code); setCurrencyOpen(false) }}
+                        className={`px-4 py-2 text-2xs font-medium uppercase tracking-widest transition rounded-full ${
+                          currency === c.code ? 'bg-ink text-white' : 'text-ink/50 hover:text-ink bg-cream border border-sand'
+                        }`}
+                      >
+                        {c.code} ({c.symbol})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sort */}
+                <div>
+                  <p className="text-2xs font-semibold uppercase tracking-widest text-ink/50 mb-3">Sort By</p>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="w-full rounded-full border border-sand bg-white px-4 py-3 text-sm outline-none focus:border-orange focus:ring-2 focus:ring-orange/30 transition"
+                  >
+                    <option value="newest">Newest</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                    <option value="name">Name A-Z</option>
+                  </select>
+                </div>
+
+                {/* Price filters */}
+                <div>
+                  <p className="text-2xs font-semibold uppercase tracking-widest text-ink/50 mb-3">Price Range</p>
+                  <div className="flex gap-3">
+                    <input
+                      value={minPrice}
+                      onChange={(e) => setMinPrice(e.target.value)}
+                      placeholder="Min"
+                      type="number"
+                      className="flex-1 rounded-full border border-sand bg-white px-4 py-3 text-sm outline-none placeholder:text-ink/35 focus:border-orange focus:ring-2 focus:ring-orange/30 transition"
+                    />
+                    <input
+                      value={maxPrice}
+                      onChange={(e) => setMaxPrice(e.target.value)}
+                      placeholder="Max"
+                      type="number"
+                      className="flex-1 rounded-full border border-sand bg-white px-4 py-3 text-sm outline-none placeholder:text-ink/35 focus:border-orange focus:ring-2 focus:ring-orange/30 transition"
+                    />
+                  </div>
+                </div>
+
+                {hasFilters && (
+                  <button
+                    onClick={() => { clearFilters(); setMobileMenuOpen(false) }}
+                    className="w-full rounded-full border border-sand bg-white py-3 text-2xs font-medium uppercase tracking-widest text-ink/50 hover:text-orange transition"
+                  >
+                    Clear All Filters
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Desktop filters expandable section */}
+      <div className="hidden md:block border-b border-sand bg-white">
+        <div className="container-wide px-6 md:px-12 lg:px-20">
           <AnimatePresence>
             {filtersOpen && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="flex flex-col lg:flex-row gap-4 pt-4 overflow-hidden"
+                className="flex flex-col lg:flex-row gap-4 py-4 overflow-hidden"
               >
                 <div className="flex-1">
                   <label className="label">Min Price ({currency})</label>
@@ -239,10 +383,11 @@ export const ShopPage = () => {
         </div>
       </div>
 
-      <div className="section-pad bg-cream pt-12">
-        <div className="container-wide px-6 md:px-12 lg:px-20">
+      {/* Product grid */}
+      <div className="section-pad bg-cream pt-6 md:pt-12">
+        <div className="container-wide px-4 md:px-12 lg:px-20">
           {loading && (
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                 <div key={i}>
                   <div className="skeleton aspect-[3/4] w-full rounded-2xl" />
@@ -266,7 +411,7 @@ export const ShopPage = () => {
             </div>
           )}
 
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {products.map((product, i) => (
               <motion.div
                 key={product._id}

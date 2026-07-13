@@ -22,6 +22,7 @@ vi.mock('lucide-react', () => ({
   UtensilsCrossed: () => <span data-testid="utensils">Utensils</span>,
   SlidersHorizontal: () => <span data-testid="sliders">Sliders</span>,
   X: () => <span data-testid="x">X</span>,
+  Menu: () => <span data-testid="menu">Menu</span>,
 }))
 
 vi.mock('react-router-dom', async () => {
@@ -56,7 +57,8 @@ describe('ShopPage', () => {
 
   it('renders shop page search input', () => {
     renderWithProviders(<ShopPage />)
-    expect(screen.getByPlaceholderText('Search products...')).toBeDefined()
+    const inputs = screen.getAllByPlaceholderText('Search products...')
+    expect(inputs.length).toBeGreaterThan(0)
   })
 
   it('renders filters section', () => {
