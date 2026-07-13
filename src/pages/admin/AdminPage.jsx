@@ -29,10 +29,6 @@ const PRODUCT_CATEGORIES = [
   'Commercial', 'Decor', 'Lighting', 'Office', 'Custom Designs',
 ]
 
-const PROJECT_CATEGORIES = [
-  'Residential', 'Commercial', 'Renovation', 'New Build', 'Interior',
-]
-
 const CLOUDINARY_HINT = 'Images upload to Cloudinary. If uploads fail, verify CLOUDINARY_API_KEY / API_SECRET have upload permission in your Cloudinary dashboard.'
 
 const MEDIA_TABS = [
@@ -60,7 +56,7 @@ function AdminPage() {
   const [activeTab, setActiveTab] = useState('general')
   const [status, setStatus] = useState('')
 
-  const [projectForm, setProjectForm] = useState({ title: '', description: '', category: 'Residential', order: 0 })
+  const [projectForm, setProjectForm] = useState({ order: 0 })
   const [portfolioForm, setPortfolioForm] = useState({ title: '', category: '', description: '', order: 0 })
   const [productForm, setProductForm] = useState({ name: '', description: '', price: '', discountPrice: '', category: '', stock: '', sku: '', vendor: '', tags: '', isFeatured: false, isPublished: true })
   const [virtualForm, setVirtualForm] = useState({ title: '', description: '', services: '', category: '', tags: '', ctaPrimary: 'Start Your Project', ctaSecondary: 'Learn More' })
@@ -348,9 +344,6 @@ function AdminPage() {
     try {
       setIsUploading(true); setUploadProgress(0)
       const payload = new FormData()
-      payload.append('title', projectForm.title)
-      payload.append('description', projectForm.description)
-      payload.append('category', projectForm.category)
       payload.append('order', String(projectForm.order || 0))
       payload.append('resourceType', resourceType)
       payload.append('mediaSettings', JSON.stringify(normalizeMediaSettings(mediaSettings)))
@@ -361,7 +354,7 @@ function AdminPage() {
       } else {
         await api.post('/content/projects', payload, { onUploadProgress })
       }
-      setProjectForm({ title: '', description: '', category: 'Residential', order: 0 })
+      setProjectForm({ order: 0 })
       setMediaFile(null); setMediaPreview(null); setMediaSettings(DEFAULT_MEDIA_SETTINGS)
       window.dispatchEvent(new CustomEvent('admin:data-changed', { detail: { type: 'projects-changed' } }))
       fetchAll(); resetProgress(); setSuccess('Project saved successfully.')
@@ -895,16 +888,12 @@ function AdminPage() {
           <h2 className="font-display text-xl text-textPrimary">{editingProject ? 'Edit' : 'Add'} Project</h2>
           {editingProject && <button type="button" onClick={() => setEditingProject(null)} className="text-xs text-textSecondary hover:text-accentOrange">Cancel</button>}
         </div>
-        <input value={projectForm.title} onChange={(e) => setProjectForm((p) => ({ ...p, title: e.target.value }))} className="input" placeholder="Title" required />
-        <textarea value={projectForm.description} onChange={(e) => setProjectForm((p) => ({ ...p, description: e.target.value }))} className="textarea" placeholder="Description" required />
         <div className="grid sm:grid-cols-2 gap-3">
-          <select value={projectForm.category} onChange={(e) => setProjectForm((p) => ({ ...p, category: e.target.value }))} className="select">
-            {PROJECT_CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
-          </select>
           <select value={resourceType} onChange={(e) => { setResourceType(e.target.value); setMediaPreview(setPreview(mediaFile, e.target.value === 'video' ? 'video' : 'image')) }} className="select">
             <option value="video">Video</option>
             <option value="image">Image</option>
           </select>
+          <input value={projectForm.order} onChange={(e) => setProjectForm((p) => ({ ...p, order: Number(e.target.value) || 0 }))} type="number" className="input" placeholder="Order (optional)" />
         </div>
         <DropZone onFile={handleMediaChange} preview={mediaPreview} onClear={() => { setMediaFile(null); setMediaPreview(null) }} accept="video/*,image/*" kind={resourceType === 'video' ? 'video' : 'image'} />
         <div className="rounded-2xl border border-border bg-white p-4 space-y-4">
@@ -926,7 +915,7 @@ function AdminPage() {
               <h3 className="font-display text-xl text-textPrimary">{item.title}</h3>
               <p className="text-xs text-textSecondary/70 mt-1">{item.category}</p>
               <div className="mt-3 flex gap-2">
-                <button onClick={() => { setEditingProject(item); setProjectForm({ title: item.title, description: item.description, category: item.category || 'Residential', order: item.order || 0 }); setMediaSettings(normalizeMediaSettings(item.mediaSettings)) }} className="btn-secondary text-2xs flex items-center gap-1"><Edit size={12} /> Edit</button>
+                <button onClick={() => { setEditingProject(item); setProjectForm({ order: item.order || 0 }); setMediaSettings(normalizeMediaSettings(item.mediaSettings)) }} className="btn-secondary text-2xs flex items-center gap-1"><Edit size={12} /> Edit</button>
                 <button onClick={() => setDeleteConfirm({ type: 'project', id: item._id })} className="btn-danger text-2xs flex items-center gap-1"><Trash2 size={12} /> Delete</button>
               </div>
             </div>

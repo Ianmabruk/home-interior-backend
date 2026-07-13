@@ -104,13 +104,12 @@ export const Footer = () => {
         <div>
           <p className="text-2xs font-medium uppercase tracking-widest text-white/40 mb-5">Explore</p>
           <ul className="space-y-3 text-sm text-white/70">
-            {[
-              { to: '/shop', label: 'Shop' },
-              { to: '/portfolio', label: 'Portfolio' },
-              { to: '/projects', label: 'Projects' },
-              { to: '/virtual-interior-design', label: 'Virtual Interior Design' },
-              { to: '/about', label: 'About Us' },
-            ].map((link) => (
+             {[
+               { to: '/shop', label: 'Shop' },
+               { to: '/portfolio', label: 'Portfolio' },
+               { to: '/virtual-interior-design', label: 'Virtual Interior Design' },
+               { to: '/about', label: 'About Us' },
+             ].map((link) => (
               <li key={link.to}>
                 <Link to={link.to} className="transition-colors hover:text-orange">
                   {link.label}

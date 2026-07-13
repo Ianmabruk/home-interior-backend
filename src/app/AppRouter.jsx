@@ -19,7 +19,6 @@ const AdminChatPage = lazy(() => import('../pages/admin/AdminChatPage').then((m)
 const HomePage = lazy(() => import('../pages/public/HomePage').then((m) => ({ default: m.HomePage })))
 const ProductDetailPage = lazy(() => import('../pages/public/ProductDetailPage').then((m) => ({ default: m.ProductDetailPage })))
 const PortfolioPage = lazy(() => import('../pages/public/PortfolioPage').then((m) => ({ default: m.PortfolioPage })))
-const ProjectsPage = lazy(() => import('../pages/public/ProjectsPage').then((m) => ({ default: m.ProjectsPage })))
 const ShopPage = lazy(() => import('../pages/public/ShopPage').then((m) => ({ default: m.ShopPage })))
 const VirtualDesignPage = lazy(() => import('../pages/public/VirtualDesignPage').then((m) => ({ default: m.VirtualDesignPage })))
 const NotFoundPage = lazy(() => import('../pages/public/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
@@ -39,7 +38,6 @@ export const AppRouter = () => {
         <Route path="/shop" element={<ShopPage />} />
         <Route path="/shop/:id" element={<ProductDetailPage />} />
         <Route path="/portfolio" element={<PortfolioPage />} />
-        <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/virtual-design" element={<VirtualDesignPage />} />
         <Route path="/virtual-interior-design" element={<VirtualDesignPage />} />

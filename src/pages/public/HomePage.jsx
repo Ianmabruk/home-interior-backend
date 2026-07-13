@@ -6,20 +6,8 @@ import { SectionTitle } from '../../components/common/SectionTitle'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
 import PositionedImage from '../../components/common/PositionedImage'
-import CinematicProjects from '../../components/common/CinematicProjects'
-import { getOptimizedVideoUrl, getVideoPosterUrl } from '../../utils/cloudinaryHelpers'
+import ProjectVideoShowcase from '../../components/common/ProjectVideoShowcase'
 
-// Default hero poster shown the instant the page renders (before the homepage
-// API call resolves). Discoverable via the <link rel="preload"> in index.html,
-// so the LCP element paints at first paint instead of waiting ~2s for the API.
-const DEFAULT_HERO_POSTER =
-  'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=960&q=70'
-
-// Each homepage section now loads from its OWN endpoint, the exact same
-// endpoints the public section pages (Projects / Portfolio / About) and the
-// admin dashboard use. A failure in one section (network error, 500, empty
-// result) can therefore NEVER break the others — the homepage degrades
-// gracefully section-by-section instead of going blank.
 const sortByOrderThenDate = (items) =>
   [...(items || [])].sort((a, b) => {
     const orderDiff = (a.order || 0) - (b.order || 0)
@@ -27,18 +15,27 @@ const sortByOrderThenDate = (items) =>
     return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
   })
 
+const toShowcaseItem = (project) => {
+  if (!project) return null
+  const mediaArr = Array.isArray(project.media) ? project.media : []
+  const firstMedia = mediaArr.find((m) => m?.type === 'video' && m.url) || mediaArr.find((m) => m?.url)
+  if (firstMedia) {
+    return { type: firstMedia.type || 'video', url: firstMedia.url, mediaSettings: project.mediaSettings }
+  }
+  if (project.videoUrl) return { type: 'video', url: project.videoUrl, mediaSettings: project.mediaSettings }
+  if (project.coverImageUrl) return { type: 'image', url: project.coverImageUrl, mediaSettings: project.mediaSettings }
+  return null
+}
+
 export const HomePage = () => {
   const [feed, setFeed] = useState({
-    heroVideo: null,
     projects: [],
-    featuredProjects: [],
     portfolio: [],
     about: null,
   })
   const [loading, setLoading] = useState(true)
 
   const loadFeed = useCallback(() => {
-    // Independent fetches — every section resolves (or fails) on its own.
     const projectsP = api
       .get('/content/projects')
       .then((res) => res.data || [])
@@ -59,22 +56,9 @@ export const HomePage = () => {
         const about = aboutR.status === 'fulfilled' ? aboutR.value : null
 
         const sortedProjects = sortByOrderThenDate(projects)
-        // Hero = newest published project that actually has a video, falling
-        // back to the first project, then to null.
-        const heroProject =
-          sortedProjects.find((p) => p?.videoUrl) || sortedProjects[0] || null
-        const heroVideo = heroProject?.videoUrl
-          ? {
-              url: heroProject.videoUrl,
-              title: heroProject.title,
-              description: heroProject.description,
-            }
-          : null
 
         setFeed({
-          heroVideo,
           projects: sortedProjects,
-          featuredProjects: sortedProjects.slice(0, 3),
           portfolio,
           about,
         })
@@ -96,18 +80,6 @@ export const HomePage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-cream">
-        <section className="relative h-screen max-h-[800px] min-h-[560px] overflow-hidden">
-          <video
-            poster={DEFAULT_HERO_POSTER}
-            muted
-            playsInline
-            preload="none"
-            fetchPriority="high"
-            className="h-full w-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        </section>
-
         <div className="section-pad container-wide">
           <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-4">
             <div className="skeleton col-span-2 aspect-[4/3]" />
@@ -123,52 +95,24 @@ export const HomePage = () => {
 
   return (
     <div className="min-h-screen bg-cream">
-      <section className="relative h-screen max-h-[800px] min-h-[560px] overflow-hidden">
-        {feed.heroVideo ? (
-          <div className="h-full">
-            <video
-              src={getOptimizedVideoUrl(feed.heroVideo.url, { width: 1280 })}
-              poster={getVideoPosterUrl(feed.heroVideo.url, { width: 1280 })}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              fetchPriority="high"
-              className="h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-          </div>
+      {/* ══════════════════════════════════════════
+          SECTION 1 — PROJECTS VIDEO SHOWCASE
+      ══════════════════════════════════════════ */}
+      <section className="relative w-full">
+        {feed.projects.length > 0 ? (
+          <ProjectVideoShowcase videos={feed.projects.map(toShowcaseItem).filter(Boolean)} className="aspect-[16/9] w-full" />
         ) : (
-          <div className="flex h-full items-center justify-center bg-linen">
+          <div className="flex aspect-[16/9] w-full items-center justify-center bg-linen">
             <div className="text-center px-4">
-              <p className="font-display text-3xl text-ink/30 sm:text-4xl">No showcase video yet</p>
-              <p className="mt-2 text-sm text-ink/50">Upload videos from the Admin Dashboard</p>
+              <p className="font-display text-2xl text-ink/30 sm:text-3xl">No projects yet</p>
+              <p className="mt-2 text-sm text-ink/50">Upload projects from the Admin Dashboard</p>
             </div>
           </div>
         )}
       </section>
 
       {/* ══════════════════════════════════════════
-          SECTION 2 — PROJECTS (from Admin Projects Dashboard)
-      ══════════════════════════════════════════ */}
-      <section className="section-pad bg-white">
-        <div className="container-wide px-6 md:px-12 lg:px-20">
-          {feed.projects.length > 0 ? (
-            <CinematicProjects projects={feed.projects.slice(0, 4)} />
-          ) : (
-            <div className="flex aspect-[16/9] w-full items-center justify-center rounded-2xl bg-linen">
-              <div className="text-center px-4">
-                <p className="font-display text-2xl text-ink/30 sm:text-3xl">No projects yet</p>
-                <p className="mt-2 text-sm text-ink/50">Upload projects from the Admin Dashboard</p>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════
-          SECTION 3 — PORTFOLIO GALLERY
+          SECTION 2 — PORTFOLIO GALLERY
       ══════════════════════════════════════════ */}
       <section className="section-pad bg-cream">
           <div className="container-wide px-6 md:px-12 lg:px-20">

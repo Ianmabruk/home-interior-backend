@@ -85,8 +85,8 @@ model Product {
 
 model Project {
   id                String   @id @default(uuid()) @map("_id")
-  title             String
-  description       String
+  title             String?
+  description       String?
   category          String?
   media             Json?
   beforeAfterImages Json?    @map("before_after_images")
