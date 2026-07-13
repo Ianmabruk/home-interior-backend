@@ -73,19 +73,17 @@ const PROJECT_FIELDS = new Set([
 ])
 
 // HOTFIX: explicit projection that omits the missing tags/services columns so
-// Prisma never generates a SELECT against them (which throws P2022).
+// Prisma never generates a SELECT against them (which throws P2022). Only the
+// columns confirmed present in the production DB are selected.
 const PROJECT_SELECT = {
   id: true,
   title: true,
   description: true,
   category: true,
   media: true,
-  beforeAfterImages: true,
-  videoUrl: true,
-  videoPublicId: true,
-  coverImageUrl: true,
-  order: true,
   mediaSettings: true,
+  coverImageUrl: true,
+  videoUrl: true,
   isPublished: true,
   createdAt: true,
   updatedAt: true,
