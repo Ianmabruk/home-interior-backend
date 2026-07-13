@@ -61,6 +61,7 @@ describe('Admin Management', () => {
       const token = generateToken(admin)
 
       mockPrisma.product.findMany.mockResolvedValue([])
+      mockPrisma.user.findMany.mockResolvedValue([])
       mockPrisma.user.count.mockResolvedValue(10)
       mockPrisma.order.findMany.mockResolvedValue([
         { id: 'order-1', total: 100, status: 'pending', createdAt: new Date(), items: [] }

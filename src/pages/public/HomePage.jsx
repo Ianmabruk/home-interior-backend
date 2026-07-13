@@ -14,6 +14,18 @@ import { getOptimizedVideoUrl, getVideoPosterUrl } from '../../utils/cloudinaryH
 const DEFAULT_HERO_POSTER =
   'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=960&q=70'
 
+// Each homepage section now loads from its OWN endpoint, the exact same
+// endpoints the public section pages (Projects / Portfolio / About) and the
+// admin dashboard use. A failure in one section (network error, 500, empty
+// result) can therefore NEVER break the others — the homepage degrades
+// gracefully section-by-section instead of going blank.
+const sortByOrderThenDate = (items) =>
+  [...(items || [])].sort((a, b) => {
+    const orderDiff = (a.order || 0) - (b.order || 0)
+    if (orderDiff !== 0) return orderDiff
+    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+  })
+
 export const HomePage = () => {
   const [feed, setFeed] = useState({
     heroVideo: null,
@@ -25,19 +37,47 @@ export const HomePage = () => {
   const [loading, setLoading] = useState(true)
 
   const loadFeed = useCallback(() => {
-    api
-      .get('/content/homepage')
-      .then((res) => {
-        const payload = res.data
+    // Independent fetches — every section resolves (or fails) on its own.
+    const projectsP = api
+      .get('/content/projects')
+      .then((res) => res.data || [])
+      .catch(() => [])
+    const portfolioP = api
+      .get('/content/portfolio')
+      .then((res) => res.data || [])
+      .catch(() => [])
+    const aboutP = api
+      .get('/content/about')
+      .then((res) => res.data || null)
+      .catch(() => null)
+
+    return Promise.allSettled([projectsP, portfolioP, aboutP])
+      .then(([projR, portR, aboutR]) => {
+        const projects = projR.status === 'fulfilled' ? projR.value : []
+        const portfolio = portR.status === 'fulfilled' ? portR.value : []
+        const about = aboutR.status === 'fulfilled' ? aboutR.value : null
+
+        const sortedProjects = sortByOrderThenDate(projects)
+        // Hero = newest published project that actually has a video, falling
+        // back to the first project, then to null.
+        const heroProject =
+          sortedProjects.find((p) => p?.videoUrl) || sortedProjects[0] || null
+        const heroVideo = heroProject?.videoUrl
+          ? {
+              url: heroProject.videoUrl,
+              title: heroProject.title,
+              description: heroProject.description,
+            }
+          : null
+
         setFeed({
-          heroVideo: payload.heroVideo,
-          projects: payload.projects || [],
-          featuredProjects: payload.featuredProjects || [],
-          portfolio: payload.portfolio || [],
-          about: payload.about,
+          heroVideo,
+          projects: sortedProjects,
+          featuredProjects: sortedProjects.slice(0, 3),
+          portfolio,
+          about,
         })
       })
-      .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
 
