@@ -1,12 +1,11 @@
 import { motion } from 'framer-motion'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
 import PositionedImage from '../../components/common/PositionedImage'
 import ProjectVideoShowcase from '../../components/common/ProjectVideoShowcase'
-import { getOptimizedVideoUrl, getVideoPosterUrl } from '../../utils/cloudinaryHelpers'
 
 const sortByOrderThenDate = (items) =>
   [...(items || [])].sort((a, b) => {
@@ -22,9 +21,6 @@ export const HomePage = () => {
     about: null,
   })
   const [loading, setLoading] = useState(true)
-  const [heroVideoUrl, setHeroVideoUrl] = useState(null)
-  const [heroPosterUrl, setHeroPosterUrl] = useState(null)
-  const heroVideoRef = useRef(null)
 
   const loadFeed = useCallback(() => {
     const projectsP = api
@@ -54,12 +50,6 @@ export const HomePage = () => {
           portfolio: sortedPortfolio,
           about,
         })
-
-        const heroProject = sortedProjects.find((p) => p.videoUrl) || sortedProjects[0]
-        if (heroProject) {
-          setHeroVideoUrl(heroProject.videoUrl || (Array.isArray(heroProject.media) && heroProject.media.find((m) => m?.type === 'video' && m.url)?.url))
-          setHeroPosterUrl(heroProject.coverImageUrl || (Array.isArray(heroProject.media) && heroProject.media.find((m) => m?.url)?.url))
-        }
       })
       .finally(() => setLoading(false))
   }, [])
@@ -67,21 +57,24 @@ export const HomePage = () => {
   useEffect(() => { loadFeed() }, [loadFeed])
 
   useEffect(() => {
+    console.log('[homepage] feed loaded:', {
+      projectCount: feed.projects.length,
+      portfolioCount: feed.portfolio.length,
+      hasAbout: Boolean(feed.about),
+    })
+  }, [feed])
+
+  useEffect(() => {
     const handler = (event) => {
       const payload = getAdminDataChangedPayload(event)
-      if (payload?.type) loadFeed().catch(() => {})
+      if (payload?.type) {
+        console.log('[homepage] admin data changed:', payload.type)
+        loadFeed().catch(() => {})
+      }
     }
     window.addEventListener(ADMIN_DATA_CHANGED_EVENT, handler)
     return () => window.removeEventListener(ADMIN_DATA_CHANGED_EVENT, handler)
   }, [loadFeed])
-
-  // Ensure hero video autoplays on all devices
-  useEffect(() => {
-    const v = heroVideoRef.current
-    if (!v || !heroVideoUrl) return
-    v.muted = true
-    v.play().catch(() => {})
-  }, [heroVideoUrl])
 
   if (loading) {
     return (
@@ -102,33 +95,7 @@ export const HomePage = () => {
   return (
     <div className="min-h-screen bg-bgPrimary text-textPrimaryDark">
       {/* ══════════════════════════════════════════
-          SECTION 1 — HERO VIDEO
-      ══════════════════════════════════════════ */}
-      <section className="relative w-full px-4 pt-4 md:px-6 lg:px-8">
-        <div className="relative overflow-hidden rounded-[24px] md:rounded-[30px] bg-bgSecondary shadow-2xl shadow-black/10 ring-1 ring-black/5 h-[55vh] md:h-[80vh]">
-          {heroVideoUrl ? (
-            <video
-              ref={heroVideoRef}
-              src={getOptimizedVideoUrl(heroVideoUrl, { width: 1280 })}
-              poster={heroPosterUrl ? getVideoPosterUrl(heroPosterUrl, { width: 1280 }) : undefined}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              fetchPriority="high"
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-bgSecondary">
-              <p className="font-display text-2xl text-textPrimaryDark/30">Upload a project video to get started</p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════
-          SECTION 2 — PROJECTS VIDEO SHOWCASE
+          SECTION 1 — PROJECTS VIDEO SHOWCASE
           Full-width, no rounded corners, no cards
           Mobile min: 500px, Tablet min: 600px, Desktop min: 700px
       ══════════════════════════════════════════ */}
@@ -149,7 +116,7 @@ export const HomePage = () => {
       </section>
 
       {/* ══════════════════════════════════════════
-          SECTION 3 — PORTFOLIO
+          SECTION 2 — PORTFOLIO
           Background: #EFE4D5
           Border top/bottom: 1px solid rgba(58,46,38,0.08)
           Spacing: 80px top, 80px bottom
@@ -207,7 +174,7 @@ export const HomePage = () => {
       </section>
 
       {/* ══════════════════════════════════════════
-          SECTION 4 — ABOUT HOK
+          SECTION 3 — ABOUT HOK
           Background: #FFFDF9
           Border top: 1px solid rgba(58,46,38,0.08)
       ══════════════════════════════════════════ */}
