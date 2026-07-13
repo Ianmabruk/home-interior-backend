@@ -21,7 +21,7 @@ const start = async () => {
   try {
     await connectDB()
     verifyCloudinaryConfig().catch(() => {})
-    app.listen(env.port, () => {
+    app.listen(env.port, "0.0.0.0", () => {
       console.log(`Server listening on port ${env.port}`)
     })
   } catch (error) {
