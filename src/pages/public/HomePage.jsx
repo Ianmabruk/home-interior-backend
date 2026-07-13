@@ -142,7 +142,85 @@ export const HomePage = () => {
       </section>
 
       {/* ══════════════════════════════════════════
-          SECTION 2 — PORTFOLIO GALLERY
+          SECTION 2 — PROJECTS (from Admin Projects Dashboard)
+      ══════════════════════════════════════════ */}
+      <section className="section-pad bg-white">
+        <div className="container-wide px-6 md:px-12 lg:px-20">
+          <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:mb-10 md:mb-12 md:flex-row md:items-end">
+            <SectionTitle eyebrow="Projects" title="Our Work" align="left" />
+            <Link
+              to="/projects"
+              className="hidden items-center gap-2 text-2xs font-medium uppercase tracking-widest text-ink/45 transition hover:text-orange md:inline-flex"
+            >
+              View All Projects <ArrowRight size={13} strokeWidth={1.5} />
+            </Link>
+          </div>
+
+          {feed.projects.length > 0 ? (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {feed.projects.slice(0, 3).map((p, i) => {
+                const mediaArr = Array.isArray(p.media) ? p.media : []
+                const mediaImg = mediaArr.find((m) => m?.type === 'image' && m.url) || mediaArr.find((m) => m?.url)
+                const img =
+                  p.coverImageUrl ||
+                  (mediaImg && mediaImg.url) ||
+                  (p.videoUrl ? getVideoPosterUrl(p.videoUrl, { width: 800 }) : null)
+                return (
+                  <motion.article
+                    key={p._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-60px' }}
+                    transition={{ duration: 0.6, delay: i * 0.05 }}
+                    className="group overflow-hidden rounded-2xl border border-sand bg-linen transition-shadow hover:shadow-lift"
+                  >
+                    <div className="aspect-[4/3] overflow-hidden bg-sand">
+                      {img ? (
+                        <PositionedImage
+                          src={img}
+                          alt={p.title}
+                          settings={p.mediaSettings}
+                          className="transition duration-700 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <p className="text-sm text-ink/30">No image</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-5">
+                      {p.category && (
+                        <p className="text-2xs font-medium uppercase tracking-widest text-orange">{p.category}</p>
+                      )}
+                      <h3 className="mt-1 font-display text-xl font-medium text-ink">{p.title}</h3>
+                      {p.description && (
+                        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-ink/55">{p.description}</p>
+                      )}
+                    </div>
+                  </motion.article>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="flex aspect-[16/9] w-full items-center justify-center rounded-2xl bg-linen">
+              <div className="text-center px-4">
+                <p className="font-display text-2xl text-ink/30 sm:text-3xl">No projects yet</p>
+                <p className="mt-2 text-sm text-ink/50">Upload projects from the Admin Dashboard</p>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-8 text-center md:hidden">
+            <Link to="/projects" className="btn-outline">
+              View All Projects <ArrowRight size={14} strokeWidth={1.5} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          SECTION 3 — PORTFOLIO GALLERY
       ══════════════════════════════════════════ */}
       <section className="section-pad bg-cream">
           <div className="container-wide px-6 md:px-12 lg:px-20">

@@ -12,7 +12,13 @@ services:
     name: home-interior-backend
     runtime: node
     rootDir: server
-    buildCommand: npm install
+    # `prisma db push` is REQUIRED: the live DB had drifted from schema.prisma
+    # (the `projects` table was missing the `tags`/`services`/`media_settings`
+    # columns added by later migrations, because no migrate step ever ran).
+    # Without this, prisma.project.findMany() throws P2022 and /content/projects
+    # + /content/homepage 500. `db push` adds the missing columns (additive, no
+    # data loss) so the schema matches schema.prisma on every deploy.
+    buildCommand: npm install && npx prisma db push
     startCommand: npm start
     envVars:
       - key: NODE_ENV
