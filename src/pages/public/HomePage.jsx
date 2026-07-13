@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
 import PositionedImage from '../../components/common/PositionedImage'
+import ProjectVideoShowcase from '../../components/common/ProjectVideoShowcase'
 import { getOptimizedVideoUrl, getVideoPosterUrl } from '../../utils/cloudinaryHelpers'
 
 const sortByOrderThenDate = (items) =>
@@ -127,7 +128,26 @@ export const HomePage = () => {
       </section>
 
       {/* ══════════════════════════════════════════
-          SECTION 2 — PORTFOLIO
+          SECTION 2 — PROJECTS VIDEO SHOWCASE
+          Full-width, prominent, autoplaying videos
+      ══════════════════════════════════════════ */}
+      <section className="px-4 py-6 md:px-6 md:py-10 lg:px-8">
+        <div className="w-full">
+          {feed.projects.length > 0 ? (
+            <ProjectVideoShowcase videos={feed.projects} className="w-full rounded-[24px] md:rounded-[32px] min-h-[420px] md:min-h-[560px] lg:min-h-[640px]" />
+          ) : (
+            <div className="flex min-h-[420px] md:min-h-[560px] w-full items-center justify-center rounded-[24px] md:rounded-[32px] bg-bgSecondary">
+              <div className="text-center px-4">
+                <p className="font-display text-2xl text-textPrimaryDark/30">No projects yet</p>
+                <p className="mt-2 text-sm text-textPrimaryDark/50">Upload projects from the Admin Dashboard</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          SECTION 3 — PORTFOLIO
           Background: #EFE4D5
           Border top/bottom: 1px solid rgba(58,46,38,0.08)
           Spacing: 80px top, 80px bottom
@@ -185,11 +205,11 @@ export const HomePage = () => {
       </section>
 
       {/* ══════════════════════════════════════════
-          SECTION 3 — ABOUT HOK
+          SECTION 4 — ABOUT HOK
           Background: #FFFDF9
-          Border top/bottom: 1px solid rgba(58,46,38,0.08)
+          Border top: 1px solid rgba(58,46,38,0.08)
       ══════════════════════════════════════════ */}
-      <section className="border-t border-b" style={{ borderColor: 'rgba(58,46,38,0.08)', backgroundColor: '#FFFDF9' }}>
+      <section className="border-t" style={{ borderColor: 'rgba(58,46,38,0.08)', backgroundColor: '#FFFDF9' }}>
         <div className="container-wide px-6 md:px-12 lg:px-20 py-16 md:py-24">
           <div className="grid items-center gap-10 sm:gap-12 md:grid-cols-2 md:gap-16">
             <motion.div
@@ -254,6 +274,9 @@ export const HomePage = () => {
           </div>
         </div>
       </section>
+
+      {/* Spacer before footer */}
+      <div className="h-[120px]" />
     </div>
   )
 }
