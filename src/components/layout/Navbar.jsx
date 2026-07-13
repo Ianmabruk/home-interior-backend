@@ -1,13 +1,13 @@
-import { User, ChevronDown, X } from 'lucide-react'
+import { User, ChevronDown } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
 const NAV_ITEMS = [
-  { to: '/shop', label: 'Shop', icon: null },
-  { to: '/virtual-interior-design', label: 'Virtual Interior Design', icon: null },
-  { to: '/about', label: 'About', icon: null },
+  { to: '/portfolio', label: 'Portfolio' },
+  { to: '/virtual-interior-design', label: 'Virtual Interior Design' },
+  { to: '/about', label: 'About' },
 ]
 
 export const Navbar = () => {
@@ -48,7 +48,7 @@ export const Navbar = () => {
           <p className="text-2xs font-medium uppercase tracking-widest text-accent">Interior Designs</p>
         </Link>
 
-        {/* Desktop Nav */}
+        {/* Desktop Nav — center */}
         <nav className="hidden items-center gap-8 md:flex lg:gap-10">
           {NAV_ITEMS.map((item) => (
             <NavLink
@@ -67,13 +67,10 @@ export const Navbar = () => {
           ))}
         </nav>
 
-        {/* Desktop Actions */}
+        {/* Desktop Actions — right */}
         <div className="hidden items-center gap-3 md:flex">
           <div className="h-5 w-px bg-border" />
-          <Link
-            to="/shop"
-            className="btn-accent text-2xs"
-          >
+          <Link to="/shop" className="btn-accent text-2xs">
             Shop With Us
           </Link>
           <div className="relative ml-1" data-profile-menu>
@@ -103,33 +100,19 @@ export const Navbar = () => {
                   {!user ? (
                     <>
                       <Link to="/login" className="block px-5 py-3 text-xs font-medium uppercase tracking-wider text-textPrimaryDark/65 transition hover:bg-linen hover:text-textPrimaryDark">
-                        Sign In
+                        Login
                       </Link>
                       <Link to="/register" className="block px-5 py-3 text-xs font-medium uppercase tracking-wider text-textPrimaryDark/65 transition hover:bg-linen hover:text-textPrimaryDark">
                         Sign Up
                       </Link>
                     </>
                   ) : (
-                    <>
-                      <div className="border-b border-border px-5 py-3">
-                        <p className="text-xs font-medium text-textPrimaryDark">{user.fullName || user.name}</p>
-                        <p className="text-2xs text-textPrimaryDark/40">{user.email}</p>
-                      </div>
-                      <Link to="/account" className="block px-5 py-3 text-xs font-medium uppercase tracking-wider text-textPrimaryDark/65 transition hover:bg-linen hover:text-textPrimaryDark">
-                        Account
-                      </Link>
-                      {user.role === 'admin' && (
-                        <Link to="/admin" className="block px-5 py-3 text-xs font-medium uppercase tracking-wider text-textPrimaryDark/65 transition hover:bg-linen hover:text-textPrimaryDark">
-                          Admin Dashboard
-                        </Link>
-                      )}
-                      <button
-                        onClick={logout}
-                        className="w-full border-t border-border px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-textPrimaryDark/65 transition hover:bg-linen hover:text-textPrimaryDark"
-                      >
-                        Sign Out
-                      </button>
-                    </>
+                    <button
+                      onClick={logout}
+                      className="w-full border-t border-border px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-textPrimaryDark/65 transition hover:bg-linen hover:text-textPrimaryDark"
+                    >
+                      Sign Out
+                    </button>
                   )}
                 </motion.div>
               )}
@@ -137,7 +120,7 @@ export const Navbar = () => {
           </div>
         </div>
 
-        {/* Mobile: logo + shop button + account */}
+        {/* Mobile: Shop With Us + account icon */}
         <div className="flex items-center gap-2 md:hidden">
           <Link to="/shop" className="btn-accent text-2xs py-2 px-4">
             Shop With Us
@@ -161,21 +144,11 @@ export const Navbar = () => {
                 >
                   {!user ? (
                     <>
-                      <Link to="/login" className="block px-5 py-3 text-xs font-medium text-textPrimaryDark/65 transition hover:bg-linen">Sign In</Link>
+                      <Link to="/login" className="block px-5 py-3 text-xs font-medium text-textPrimaryDark/65 transition hover:bg-linen">Login</Link>
                       <Link to="/register" className="block px-5 py-3 text-xs font-medium text-textPrimaryDark/65 transition hover:bg-linen">Sign Up</Link>
                     </>
                   ) : (
-                    <>
-                      <div className="border-b border-border px-5 py-3">
-                        <p className="text-xs font-medium text-textPrimaryDark">{user.fullName || user.name}</p>
-                        <p className="text-2xs text-textPrimaryDark/40">{user.email}</p>
-                      </div>
-                      <Link to="/account" className="block px-5 py-3 text-xs font-medium text-textPrimaryDark/65 transition hover:bg-linen">Account</Link>
-                      {user.role === 'admin' && (
-                        <Link to="/admin" className="block px-5 py-3 text-xs font-medium text-textPrimaryDark/65 transition hover:bg-linen">Admin Dashboard</Link>
-                      )}
-                      <button onClick={logout} className="w-full border-t border-border px-5 py-3 text-left text-xs font-medium text-textPrimaryDark/65 transition hover:bg-linen">Sign Out</button>
-                    </>
+                    <button onClick={logout} className="w-full border-t border-border px-5 py-3 text-left text-xs font-medium text-textPrimaryDark/65 transition hover:bg-linen">Sign Out</button>
                   )}
                 </motion.div>
               )}

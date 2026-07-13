@@ -178,7 +178,8 @@ export const projectsController = {
 
     const upload = await handleFileUpload(req, 'hok/projects')
     if (upload) {
-      const mediaDeletes = (existing.media || []).map((m) => m.publicId ? deleteMedia(m.publicId, m.type === 'video' ? 'video' : 'image') : Promise.resolve())
+      const mediaList = Array.isArray(existing.media) ? existing.media : []
+      const mediaDeletes = mediaList.map((m) => m.publicId ? deleteMedia(m.publicId, m.type === 'video' ? 'video' : 'image') : Promise.resolve())
       if (existing.videoPublicId && existing.videoPublicId !== upload.publicId) {
         mediaDeletes.push(deleteMedia(existing.videoPublicId, 'video'))
       }
@@ -204,7 +205,8 @@ export const projectsController = {
   remove: asyncHandler(async (req, res) => {
     const existing = await prisma.project.findUnique({ where: { id: req.params.id }, select: PROJECT_SELECT })
     if (existing) {
-      const mediaDeletes = (existing.media || []).map((m) => m.publicId ? deleteMedia(m.publicId, m.type === 'video' ? 'video' : 'image') : Promise.resolve())
+      const mediaList = Array.isArray(existing.media) ? existing.media : []
+      const mediaDeletes = mediaList.map((m) => m.publicId ? deleteMedia(m.publicId, m.type === 'video' ? 'video' : 'image') : Promise.resolve())
       if (existing.videoPublicId) {
         mediaDeletes.push(deleteMedia(existing.videoPublicId, 'video'))
       }

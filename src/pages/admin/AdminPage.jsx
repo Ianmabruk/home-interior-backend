@@ -285,8 +285,14 @@ function AdminPage() {
   const deleteProject = async (id) => {
     try {
       await api.delete(`/content/projects/${id}`)
-      setDeleteConfirm({ type: null, id: null }); fetchAll(); setSuccess('Project deleted.')
-    } catch (error) { setFailure(error, 'Delete failed.') }
+      setDeleteConfirm({ type: null, id: null })
+      fetchAll()
+      setSuccess('Project deleted.')
+    } catch (error) {
+      const msg = error?.response?.data?.message || 'Delete failed.'
+      console.error('[admin] delete project failed:', msg, error?.response?.status, error?.response?.data)
+      setFailure(error, 'Delete failed.')
+    }
   }
 
   const submitPortfolio = async (event) => {
@@ -1504,7 +1510,7 @@ function AdminPage() {
       <Sidebar />
       <div className={`transition-all duration-300 ${sidebarOpen ? 'lg:pl-[280px]' : 'lg:pl-[80px]'}`}>
         <Topbar />
-        <main className="p-4 md:p-8">
+        <main className="p-4 md:p-8 pb-24 md:pb-8">
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
             <h1 className="font-display text-3xl md:text-4xl capitalize text-textPrimary">{tabs.find((t) => t.id === activeTab)?.label || activeTab}</h1>
             <p className="text-sm text-textSecondary mt-1">Manage your {activeTab.replace('-', ' ')}</p>

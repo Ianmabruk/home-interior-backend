@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
-import PositionedImage from '../../components/common/PositionedImage'
 import ProjectVideoShowcase from '../../components/common/ProjectVideoShowcase'
+import PositionedImage from '../../components/common/PositionedImage'
 
 const sortByOrderThenDate = (items) =>
   [...(items || [])].sort((a, b) => {
@@ -89,72 +89,27 @@ export const HomePage = () => {
   return (
     <div className="min-h-screen bg-bgPrimary text-textPrimaryDark">
       {/* ══════════════════════════════════════════
-          SECTION 1 — HERO
+          SECTION 1 — PROJECT VIDEO SHOWCASE
+          Full-width immersive, no heading
       ══════════════════════════════════════════ */}
-      <section className="relative overflow-hidden bg-ink py-20 md:py-32 lg:py-40">
-        <div className="absolute inset-0 bg-gradient-to-br from-darkBrown via-ink to-black" />
-        <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-accentOrange/10 blur-3xl" />
-        <div className="absolute -bottom-24 -left-24 h-80 w-80 rounded-full bg-accentOrange/5 blur-3xl" />
-        <div className="relative container-wide px-6 md:px-12 lg:px-20">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="max-w-3xl"
-          >
-            <p className="text-2xs font-medium uppercase tracking-[0.2em] text-accent mb-4 md:mb-6">Luxury Interior Design</p>
-            <h1 className="font-display text-4xl font-medium leading-tight text-white md:text-6xl lg:text-7xl">
-              Crafting Spaces<br />
-              <span className="text-accent">That Inspire</span>
-            </h1>
-            <p className="mt-6 max-w-xl text-base leading-relaxed text-white/60 md:text-lg">
-              Premium interior design solutions for discerning clients. Transform your space with HOK Interior Designs.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-4">
-              <Link to="/shop" className="btn-accent">
-                Shop With Us <ArrowRight size={14} strokeWidth={1.5} />
-              </Link>
-              <Link to="/portfolio" className="btn-outline border-white/30 text-white hover:bg-white hover:text-ink">
-                View Portfolio
-              </Link>
+      <section className="relative bg-black">
+        {feed.projects.length > 0 ? (
+          <ProjectVideoShowcase
+            videos={feed.projects}
+            className="w-full min-h-[50vh] md:min-h-[65vh] lg:min-h-[75vh]"
+          />
+        ) : (
+          <div className="flex min-h-[50vh] md:min-h-[65vh] lg:min-h-[75vh] w-full items-center justify-center bg-bgSecondary">
+            <div className="text-center px-4">
+              <p className="font-display text-2xl text-textPrimaryDark/30">No projects yet</p>
+              <p className="mt-2 text-sm text-textPrimaryDark/50">Upload projects from the Admin Dashboard</p>
             </div>
-          </motion.div>
-        </div>
+          </div>
+        )}
       </section>
 
       {/* ══════════════════════════════════════════
-          SECTION 2 — PROJECT VIDEO SHOWCASE
-          Rounded corners, modern luxury
-      ══════════════════════════════════════════ */}
-      <section className="relative bg-bgPrimary py-12 md:py-16 lg:py-20">
-        <div className="container-wide px-4 md:px-8 lg:px-12">
-          <div className="text-center mb-8 md:mb-12">
-            <p className="text-2xs font-medium uppercase tracking-widest text-accent mb-3">Our Work</p>
-            <h2 className="font-display text-3xl font-medium text-textPrimaryDark md:text-4xl lg:text-5xl">Featured Projects</h2>
-            <p className="mt-3 max-w-2xl mx-auto text-sm text-textPrimaryDark/55 md:text-base">
-              Explore our latest interior design projects through immersive video walkthroughs.
-            </p>
-          </div>
-          <div className="rounded-[24px] md:rounded-[32px] overflow-hidden shadow-2xl shadow-black/10 ring-1 ring-black/5">
-            {feed.projects.length > 0 ? (
-              <ProjectVideoShowcase
-                videos={feed.projects}
-                className="w-full min-h-[400px] md:min-h-[500px] lg:min-h-[600px]"
-              />
-            ) : (
-              <div className="flex min-h-[400px] md:min-h-[500px] lg:min-h-[600px] w-full items-center justify-center bg-bgSecondary">
-                <div className="text-center px-4">
-                  <p className="font-display text-2xl text-textPrimaryDark/30">No projects yet</p>
-                  <p className="mt-2 text-sm text-textPrimaryDark/50">Upload projects from the Admin Dashboard</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════
-          SECTION 3 — PORTFOLIO
+          SECTION 2 — PORTFOLIO
       ══════════════════════════════════════════ */}
       <section className="border-t border-b" style={{ borderColor: 'rgba(58,46,38,0.08)', backgroundColor: '#EFE4D5', paddingTop: '80px', paddingBottom: '80px' }}>
         <div className="container-wide px-6 md:px-12 lg:px-20">
@@ -209,7 +164,7 @@ export const HomePage = () => {
       </section>
 
       {/* ══════════════════════════════════════════
-          SECTION 4 — ABOUT HOK
+          SECTION 3 — ABOUT HOK
       ══════════════════════════════════════════ */}
       <section className="border-t" style={{ borderColor: 'rgba(58,46,38,0.08)', backgroundColor: '#FFFDF9' }}>
         <div className="container-wide px-6 md:px-12 lg:px-20 py-16 md:py-24">
