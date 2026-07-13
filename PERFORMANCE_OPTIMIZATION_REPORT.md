@@ -78,7 +78,7 @@ prior commits (`c6b2417`, `caa303f`) into one picture.
 - **Compression:** gzip via `compression` (backend) + Netlify serves pre-compressed static assets.
 - **Caching:** SW + HTTP `Cache-Control` + Vite content-hashed filenames.
 - **Env:** `.env.example` scrubbed to placeholders; refresh cookie `SameSite=None; Secure` for Netlify↔Render cross-site.
-- **Build:** Yarn standardized (root + `server/yarn.lock`); Render runs `prisma migrate deploy` on start.
+- **Build:** Yarn standardized (root + `server/yarn.lock`); migrations are no longer run automatically at startup.
 
 ## PHASE 10 — Validation performed
 - `yarn build` → ✅ success, **0 warnings**; PWA SW generated.

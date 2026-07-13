@@ -14,7 +14,7 @@ Commit: `caa303f`
 - Added `packageManager: "yarn@1.22.22"` to root `package.json`.
 - Generated `yarn.lock` at repo root **and** `server/yarn.lock` (backend is deployed from `server/`).
 - Removed both `package-lock.json` files (no longer tracked).
-- Updated `DEPLOYMENT.md`: Netlify build → `yarn build`, Render build → `yarn install && npx prisma generate && npx prisma migrate deploy`, and a note forbidding reintroduction of `package-lock.json`.
+- Updated `DEPLOYMENT.md`: Netlify build → `yarn build`, Render build → `yarn install && npx prisma generate`, and a note forbidding reintroduction of `package-lock.json`.
 - Netlify/Render auto-detect Yarn from the committed lockfiles.
 
 ## 3. Remove unused dependencies — ✅ NONE FOUND
@@ -65,7 +65,7 @@ The total transferred on first visit is comparable, but the **frequently-changin
 ## 10. CORS / env / deployment fixes — ✅ DONE (prior + verified)
 - CORS tightened to explicit `allowedOrigins` (removed permissive `*.netlify/vercel/onrender` wildcards).
 - Refresh token moved to `httpOnly`, `SameSite=None` (cross-site Netlify↔Render), `Secure` in prod.
-- Migrations run automatically on backend start (`prisma migrate deploy` in `start`), fixing the earlier `media_settings` 500s.
+- Migrations are no longer run automatically at backend start. The startup sequence now connects to the database, verifies tables and required columns, and seeds the admin user. Migrations must be applied manually during planned deploy windows.
 - Cloudinary credentials validated at boot (`verifyCloudinaryConfig`) with a clear warning (no secret leaked).
 - `.env.example` secrets scrubbed to placeholders.
 

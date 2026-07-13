@@ -243,12 +243,11 @@ describe('Content Management', () => {
       expect(response.body.data.description).toBe('Desc')
     })
 
-    it('should still return 201 when the deployed Prisma client rejects `description` (stale schema)', async () => {
-      // The controller now strips `description` before calling Prisma, so a
-      // stale client that does not know the field is never sent it.
+    it('should create portfolio with description when schema supports it', async () => {
       mockPrisma.portfolio.create.mockResolvedValue({
         id: 'port-2',
         title: 'Recovered Portfolio',
+        description: 'Desc',
         category: 'Residential',
         imageUrl: 'https://test.cloudinary.com/image.jpg',
         isPublished: true,
@@ -269,7 +268,7 @@ describe('Content Management', () => {
       expect(mockPrisma.portfolio.create).toHaveBeenCalledTimes(1)
       expect(mockPrisma.portfolio.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.not.objectContaining({ description: expect.anything() }),
+          data: expect.objectContaining({ description: 'Desc' }),
         }),
       )
     })

@@ -136,9 +136,11 @@ already present via `showToast` + `ProgressBar` + `AnimatePresence`.
 ---
 
 ## How to deploy the schema change
+> **Important:** Migrations must be run manually during a planned deploy window. They must never be executed automatically at server startup.
+
 ```bash
 cd server
-npx prisma migrate deploy      # applies 20260710000000_media_positioning
+npx prisma migrate deploy      # applies pending migrations manually
 # or, for a fresh DB:
 npx prisma migrate dev
 ```

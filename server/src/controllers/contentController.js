@@ -230,10 +230,6 @@ export const portfolioController = {
       if (payload.order !== undefined) payload.order = orderValue(payload.order)
       payload.isPublished = toBoolean(req.body.isPublished, true)
 
-      // Temporarily omit description until the deployed Prisma schema
-      // and generated client are updated to support it.
-      delete payload.description
-
       const parsedMediaSettings = parseMediaSettings(req.body.mediaSettings)
       if (parsedMediaSettings) payload.mediaSettings = parsedMediaSettings
 

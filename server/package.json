@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon src/index.js",
-    "start": "node src/index.js",
+    "start": "npx prisma generate && node src/index.js",
     "build": "prisma generate",
     "postinstall": "prisma generate",
     "migrate:recover": "node scripts/recover-migration.js",
+    "fixFailedMigration": "node scripts/fixFailedMigration.js",
     "lint": "node --check src/index.js",
     "seed": "node src/seeds/seed.js",
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest --config jest.config.js",
@@ -34,7 +35,6 @@
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "pg": "^8.13.4",
-    "prisma": "6.19.3",
     "streamifier": "^0.1.1",
     "zod": "^4.1.5"
   },
@@ -44,6 +44,7 @@
     "jest": "^30.0.2",
     "jest-junit": "^16.0.0",
     "nodemon": "^3.1.10",
+    "prisma": "6.19.3",
     "supertest": "^7.1.4"
   }
 }
