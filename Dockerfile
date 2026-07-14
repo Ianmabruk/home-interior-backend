@@ -7,6 +7,7 @@ RUN npm install
 
 COPY server/prisma ./prisma
 RUN ./node_modules/.bin/prisma generate --schema ./prisma/schema.prisma
+RUN ./node_modules/.bin/prisma db push --schema ./prisma/schema.prisma
 
 COPY server/src ./src
 
