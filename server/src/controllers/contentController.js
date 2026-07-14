@@ -11,6 +11,11 @@ import path from 'path'
 
 const PROJECTS_TEMP_PATH = path.join(process.cwd(), 'temp', 'projects.json')
 
+const ensureTempDir = async () => {
+  const dir = path.dirname(PROJECTS_TEMP_PATH)
+  await fs.mkdir(dir, { recursive: true })
+}
+
 const readTempProjects = async () => {
   try {
     const raw = await fs.readFile(PROJECTS_TEMP_PATH, 'utf-8')
@@ -21,6 +26,7 @@ const readTempProjects = async () => {
 }
 
 const writeTempProjects = async (data) => {
+  await ensureTempDir()
   await fs.writeFile(PROJECTS_TEMP_PATH, JSON.stringify(data, null, 2), 'utf-8')
 }
 
@@ -137,8 +143,13 @@ export const projectsController = {
   }),
 
   create: asyncHandler(async (req, res) => {
+    console.log('DEPLOY CHECK', 'route=/api/content/projects', 'method=POST')
+
     const upload = await handleFileUpload(req, 'hok/projects')
+    console.log('DEPLOY CHECK', 'upload result:', upload ? 'success' : 'null/undefined')
+
     if (!upload) {
+      console.log('DEPLOY CHECK', 'No file uploaded - returning 400')
       return res.status(400).json({ success: false, message: 'No file uploaded' })
     }
 
@@ -159,9 +170,17 @@ export const projectsController = {
       createdAt: new Date().toISOString(),
     }
 
-    const stored = await readTempProjects()
-    stored.projects.push(project)
-    await writeTempProjects(stored)
+    console.log('DEPLOY CHECK', 'project object:', JSON.stringify(project, null, 2))
+
+    try {
+      const stored = await readTempProjects()
+      stored.projects.push(project)
+      await writeTempProjects(stored)
+      console.log('DEPLOY CHECK', 'temp write success')
+    } catch (writeErr) {
+      console.error('DEPLOY CHECK', 'temp write failed:', writeErr)
+      return res.status(500).json({ success: false, message: 'Failed to save project' })
+    }
 
     res.status(201).json({
       success: true,
