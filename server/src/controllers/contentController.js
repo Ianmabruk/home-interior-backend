@@ -149,8 +149,15 @@ export const projectsController = {
 
     payload.isPublished = payload.isPublished ?? true
 
+    if (!payload.title) {
+      payload.title = 'Project'
+    }
+
     const item = await prismaSafeWrite(
-      (data) => prisma.project.create({ data }),
+      (data) => {
+        console.log('PROJECT CREATE PAYLOAD', JSON.stringify(data, null, 2))
+        return prisma.project.create({ data })
+      },
       payload,
       'PROJECT][CREATE',
     )
