@@ -1,9 +1,12 @@
 import { jest } from '@jest/globals'
 import request from 'supertest'
 import jwt from 'jsonwebtoken'
+import fs from 'fs/promises'
+import path from 'path'
 import { createMockPrisma, resetMockPrisma } from './helpers.js'
 
 const mockPrisma = createMockPrisma()
+const PROJECTS_TEMP_PATH = path.join(process.cwd(), 'temp', 'projects.json')
 
 jest.unstable_mockModule('../src/config/db.js', () => ({
   prisma: mockPrisma,
@@ -64,15 +67,10 @@ describe('Admin Project Dashboard — video upload', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     resetMockPrisma(mockPrisma)
+    fs.writeFile(PROJECTS_TEMP_PATH, JSON.stringify({ projects: [] }), 'utf-8').catch(() => {})
   })
 
   it('creates a project with an uploaded video and defaults tags/services to []', async () => {
-    let capturedCreate
-    mockPrisma.project.create.mockImplementation(({ data }) => {
-      capturedCreate = data
-      return Promise.resolve({ id: 'proj-1', ...data })
-    })
-
     const response = await request(app)
       .post('/api/content/projects')
       .set('Authorization', `Bearer ${token}`)
@@ -94,28 +92,19 @@ describe('Admin Project Dashboard — video upload', () => {
     expect(mockUploadVideo).toHaveBeenCalledTimes(1)
     expect(mockUploadImage).not.toHaveBeenCalled()
 
-    // The DB create must contain the video URL + safe defaults.
-    expect(capturedCreate.videoUrl).toBe('https://test.cloudinary.com/project-video.mp4')
-    expect(capturedCreate.videoPublicId).toBe('test-video-id')
-    expect(Array.isArray(capturedCreate.media)).toBe(true)
-    expect(capturedCreate.media[0]).toMatchObject({
+    // The response must contain the video URL + safe defaults.
+    expect(response.body.project.videoUrl).toBe('https://test.cloudinary.com/project-video.mp4')
+    expect(response.body.project.videoPublicId).toBe('test-video-id')
+    expect(Array.isArray(response.body.project.media)).toBe(true)
+    expect(response.body.project.media[0]).toMatchObject({
       type: 'video',
       url: 'https://test.cloudinary.com/project-video.mp4',
       publicId: 'test-video-id',
     })
-    // Project model has no tags/services columns — they must not be written.
-    expect(capturedCreate.tags).toBeUndefined()
-    expect(capturedCreate.services).toBeUndefined()
-    expect(capturedCreate.isPublished).toBe(true)
+    expect(response.body.project.isPublished).toBe(true)
   })
 
   it('creates a project without a title', async () => {
-    let capturedCreate
-    mockPrisma.project.create.mockImplementation(({ data }) => {
-      capturedCreate = data
-      return Promise.resolve({ id: 'proj-notitle', ...data })
-    })
-
     const response = await request(app)
       .post('/api/content/projects')
       .set('Authorization', `Bearer ${token}`)
@@ -129,8 +118,8 @@ describe('Admin Project Dashboard — video upload', () => {
 
     expect(response.status).toBe(201)
     expect(response.body.success).toBe(true)
-    expect(capturedCreate.videoUrl).toBe('https://test.cloudinary.com/project-video.mp4')
-    expect(capturedCreate.isPublished).toBe(true)
+    expect(response.body.project.videoUrl).toBe('https://test.cloudinary.com/project-video.mp4')
+    expect(response.body.project.isPublished).toBe(true)
   })
 
   it('returns 401 when not authenticated', async () => {

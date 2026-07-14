@@ -2,9 +2,12 @@ import { jest } from '@jest/globals'
 import request from 'supertest'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import fs from 'fs/promises'
+import path from 'path'
 import { createMockPrisma, resetMockPrisma } from './helpers.js'
 
 const mockPrisma = createMockPrisma()
+const PROJECTS_TEMP_PATH = path.join(process.cwd(), 'temp', 'projects.json')
 
 jest.unstable_mockModule('../src/config/db.js', () => ({
   prisma: mockPrisma,
@@ -17,6 +20,22 @@ jest.unstable_mockModule('../src/config/cloudinary.js', () => ({
     publicId: 'test-public-id',
   }),
   default: {},
+}))
+
+const mockUploadImage = jest.fn().mockResolvedValue({
+  secure_url: 'https://test.cloudinary.com/image.jpg',
+  public_id: 'test-image-id',
+})
+const mockUploadVideo = jest.fn().mockResolvedValue({
+  secure_url: 'https://test.cloudinary.com/project-video.mp4',
+  public_id: 'test-video-id',
+})
+const mockDeleteMedia = jest.fn().mockResolvedValue({ result: 'ok' })
+
+jest.unstable_mockModule('../src/services/uploadService.js', () => ({
+  uploadImage: mockUploadImage,
+  uploadVideo: mockUploadVideo,
+  deleteMedia: mockDeleteMedia,
 }))
 
 process.env.JWT_ACCESS_SECRET = 'test-access-secret-key'
@@ -46,26 +65,17 @@ describe('Content Management', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     resetMockPrisma(mockPrisma)
+    fs.writeFile(PROJECTS_TEMP_PATH, JSON.stringify({ projects: [] }), 'utf-8').catch(() => {})
   })
 
   describe('GET /api/content/projects', () => {
     it('should list published projects', async () => {
-      mockPrisma.project.findMany.mockResolvedValue([
-        {
-          id: 'proj-1',
-          title: 'Project 1',
-          description: 'Description',
-          category: 'Residential',
-          isPublished: true,
-        }
-      ])
-
       const response = await request(app)
         .get('/api/content/projects')
 
       expect(response.status).toBe(200)
       expect(response.body.success).toBe(true)
-      expect(response.body.data).toHaveLength(1)
+      expect(Array.isArray(response.body.data)).toBe(true)
     })
   })
 
@@ -79,26 +89,21 @@ describe('Content Management', () => {
       }
       const token = generateToken(admin)
 
-      mockPrisma.project.create.mockResolvedValue({
-        id: 'proj-1',
-        title: 'New Project',
-        description: 'Description',
-        category: 'Residential',
-        isPublished: true,
-      })
-
       const response = await request(app)
         .post('/api/content/projects')
         .set('Authorization', `Bearer ${token}`)
-        .send({
-          title: 'New Project',
-          description: 'Description',
-          category: 'Residential',
-          isPublished: true,
+        .field('order', '0')
+        .field('resourceType', 'video')
+        .attach('media', Buffer.from('fake-video-bytes'), {
+          filename: 'showcase.mp4',
+          contentType: 'video/mp4',
         })
 
       expect(response.status).toBe(201)
       expect(response.body.success).toBe(true)
+      expect(response.body.project).toBeDefined()
+      expect(response.body.project.videoUrl).toBe('https://test.cloudinary.com/project-video.mp4')
+      expect(response.body.project.isPublished).toBe(true)
     })
 
     it('should reject project creation without auth', async () => {

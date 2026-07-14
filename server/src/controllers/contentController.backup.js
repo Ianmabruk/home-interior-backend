@@ -6,23 +6,6 @@ import { sendSuccess } from '../utils/sendSuccess.js'
 import { env } from '../config/env.js'
 import { withId, withIdArray, parseMaybeJson, parseMediaSettings, DEFAULT_MEDIA_SETTINGS } from '../utils/helpers.js'
 import { prismaSafeWrite } from '../utils/prismaSafeWrite.js'
-import fs from 'fs/promises'
-import path from 'path'
-
-const PROJECTS_TEMP_PATH = path.join(process.cwd(), 'temp', 'projects.json')
-
-const readTempProjects = async () => {
-  try {
-    const raw = await fs.readFile(PROJECTS_TEMP_PATH, 'utf-8')
-    return JSON.parse(raw)
-  } catch {
-    return { projects: [] }
-  }
-}
-
-const writeTempProjects = async (data) => {
-  await fs.writeFile(PROJECTS_TEMP_PATH, JSON.stringify(data, null, 2), 'utf-8')
-}
 
 const parseServices = (value) => {
   const parsed = parseMaybeJson(value, null)
@@ -127,20 +110,22 @@ export const projectsController = {
   // empty list on any failure.
   list: asyncHandler(async (req, res) => {
     try {
-      const stored = await readTempProjects()
-      const items = Array.isArray(stored.projects) ? stored.projects : []
+      const items = await prisma.project.findMany({
+        where: { isPublished: true },
+        select: PROJECT_SELECT,
+      })
       res.json(sendSuccess(withIdArray(sortByOrderThenDate(items))))
     } catch (error) {
-      console.error('[PROJECTS][LIST] temp read failed:', error?.message)
+      console.error('[PROJECTS][LIST] failed:', error?.message)
       res.json(sendSuccess([]))
     }
   }),
 
   create: asyncHandler(async (req, res) => {
     const upload = await handleFileUpload(req, 'hok/projects')
-    if (!upload) {
-      return res.status(400).json({ success: false, message: 'No file uploaded' })
-    }
+    const media = upload
+      ? [{ type: upload.kind, url: upload.url, publicId: upload.publicId }]
+      : []
 
     const mediaSettings = parseMediaSettings(req.body.mediaSettings) || {
       position: 'center',
@@ -148,25 +133,30 @@ export const projectsController = {
       fit: 'cover',
     }
 
-    const project = {
-      id: Date.now().toString(),
-      videoUrl: upload.url,
-      videoPublicId: upload.publicId,
-      media: [{ type: upload.kind, url: upload.url, publicId: upload.publicId }],
-      mediaSettings,
+    const videoUrl = upload?.url || null
+    const videoPublicId = upload?.publicId || null
+
+    const createData = {
       order: Number(req.body.order || 0),
+      media,
+      videoUrl,
+      videoPublicId,
+      mediaSettings,
       isPublished: true,
-      createdAt: new Date().toISOString(),
     }
 
-    const stored = await readTempProjects()
-    stored.projects.push(project)
-    await writeTempProjects(stored)
+    console.log('PROJECT CREATE DATA', JSON.stringify(createData, null, 2))
 
-    res.status(201).json({
-      success: true,
-      project,
+    console.log(
+      'DEPLOY CHECK',
+      __filename,
+      JSON.stringify(createData, null, 2)
+    )
+
+    const item = await prisma.project.create({
+      data: createData,
     })
+    res.status(201).json(sendSuccess(withId(item)))
   }),
 
   update: asyncHandler(async (req, res) => {
