@@ -69,7 +69,7 @@ const rethrowAsHttpError = (err, label) => {
 // a P2022 on production where the columns never existed). Project records rely on
 // title/description/category/media/videoUrl/coverImageUrl/order/mediaSettings.
 const PROJECT_FIELDS = new Set([
-  'title', 'description', 'category', 'media', 'beforeAfterImages',
+  'description', 'category', 'media', 'beforeAfterImages',
   'videoUrl', 'videoPublicId', 'coverImageUrl', 'order', 'isPublished',
   'mediaSettings',
 ])
@@ -149,13 +149,7 @@ export const projectsController = {
 
     payload.isPublished = payload.isPublished ?? true
 
-    if (!payload.title) {
-      payload.title = 'Project'
-    }
-
-    console.log('TITLE TYPE:', typeof payload.title)
-    console.log('TITLE VALUE:', payload.title)
-    console.log('FULL PAYLOAD:', JSON.stringify(payload, null, 2))
+    console.log('PROJECT CREATE PAYLOAD', JSON.stringify(payload, null, 2))
 
     const item = await prisma.project.create({
       data: payload

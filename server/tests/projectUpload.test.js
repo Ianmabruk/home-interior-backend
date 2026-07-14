@@ -109,7 +109,7 @@ describe('Admin Project Dashboard — video upload', () => {
     expect(capturedCreate.isPublished).toBe(true)
   })
 
-  it('creates a project without a title (title is optional)', async () => {
+  it('creates a project without a title', async () => {
     let capturedCreate
     mockPrisma.project.create.mockImplementation(({ data }) => {
       capturedCreate = data
@@ -130,7 +130,6 @@ describe('Admin Project Dashboard — video upload', () => {
     expect(response.status).toBe(201)
     expect(response.body.success).toBe(true)
     expect(capturedCreate.videoUrl).toBe('https://test.cloudinary.com/project-video.mp4')
-    expect(capturedCreate.title).toBe('Project')
     expect(capturedCreate.isPublished).toBe(true)
   })
 
