@@ -133,19 +133,28 @@ export const projectsController = {
       fit: 'cover',
     }
 
-    const payload = {
+    const videoUrl = upload?.url || null
+    const videoPublicId = upload?.publicId || null
+
+    const createData = {
       order: Number(req.body.order || 0),
       media,
-      videoUrl: upload?.url || null,
-      videoPublicId: upload?.publicId || null,
+      videoUrl,
+      videoPublicId,
       mediaSettings,
       isPublished: true,
     }
 
-    console.log('PROJECT CREATE PAYLOAD', JSON.stringify(payload, null, 2))
+    console.log('PROJECT CREATE DATA', JSON.stringify(createData, null, 2))
+
+    console.log(
+      'DEPLOY CHECK',
+      __filename,
+      JSON.stringify(createData, null, 2)
+    )
 
     const item = await prisma.project.create({
-      data: payload,
+      data: createData,
     })
     res.status(201).json(sendSuccess(withId(item)))
   }),
