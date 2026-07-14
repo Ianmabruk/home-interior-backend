@@ -143,6 +143,8 @@ export const projectsController = {
   }),
 
   create: asyncHandler(async (req, res) => {
+    console.log('PROJECT_CONTROLLER_VERSION_20260714')
+    console.log('DEPLOY_COMMIT_CHECK', 'e009cbfe9aff688b868c170f6ec5c27f2a3532a1')
     console.log('DEPLOY CHECK', 'route=/api/content/projects', 'method=POST')
 
     const upload = await handleFileUpload(req, 'hok/projects')
