@@ -6,7 +6,6 @@ import { sendSuccess } from '../utils/sendSuccess.js'
 import { env } from '../config/env.js'
 import { withId, withIdArray, parseMaybeJson, parseMediaSettings, DEFAULT_MEDIA_SETTINGS } from '../utils/helpers.js'
 import { prismaSafeWrite } from '../utils/prismaSafeWrite.js'
-import crypto from 'node:crypto'
 
 const parseServices = (value) => {
   const parsed = parseMaybeJson(value, null)
@@ -149,10 +148,6 @@ export const projectsController = {
     }
 
     payload.isPublished = payload.isPublished ?? true
-
-    if (!payload.title) {
-      payload.title = `project-${crypto.randomUUID()}`
-    }
 
     const item = await prismaSafeWrite(
       (data) => prisma.project.create({ data }),
