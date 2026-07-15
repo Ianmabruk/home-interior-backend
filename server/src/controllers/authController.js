@@ -273,3 +273,44 @@ export const logout = asyncHandler(async (req, res) => {
   clearRefreshCookie(res)
   res.json(sendSuccess({ message: 'Logged out' }))
 })
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(8),
+  newPassword: z.string().min(8),
+})
+
+export const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = parseBody(changePasswordSchema, req.body)
+
+  const user = await prisma.user.findUnique({ where: { id: req.user.userId } })
+  if (!user) {
+    throw new ApiError(404, 'User not found')
+  }
+
+  const matches = await bcrypt.compare(currentPassword, user.passwordHash)
+  if (!matches) {
+    throw new ApiError(401, 'Current password is incorrect')
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 12)
+  await prismaSafeWrite(
+    (writeData) => prisma.user.update({
+      where: { id: user.id },
+      data: writeData,
+    }),
+    { passwordHash, refreshToken: null },
+    'AUTH][CHANGE_PASSWORD',
+  )
+
+  res.json(sendSuccess({ message: 'Password changed successfully. Please log in again.' }))
+})
+
+export const authController = {
+  register,
+  login,
+  refresh,
+  forgotPassword,
+  resetPassword,
+  logout,
+  changePassword,
+}
