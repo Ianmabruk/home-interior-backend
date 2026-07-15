@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { Outlet } from 'react-router-dom'
-import { Footer } from './Footer'
-import { Navbar } from './Navbar'
+import { Footer } from '../Footer'
+import { Navbar } from '../Navbar'
 
 const PageLoader = () => (
   <div className="flex min-h-[60vh] items-center justify-center">
@@ -11,9 +11,9 @@ const PageLoader = () => (
 
 export const Layout = () => {
   return (
-    <div className="min-h-screen bg-primary text-textPrimaryDark">
+    <div className="min-h-screen bg-primary-bg text-charcoal">
       <Navbar />
-      <main className="pt-[88px] md:pt-[108px]">
+      <main className="min-h-screen">
         <Suspense fallback={<PageLoader />}>
           <Outlet />
         </Suspense>

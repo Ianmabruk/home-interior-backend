@@ -43,6 +43,7 @@ vi.mock('lucide-react', () => ({
   LayoutGrid: () => <span data-testid="layout-grid">Grid</span>,
   Armchair: () => <span data-testid="armchair">Armchair</span>,
   ClipboardList: () => <span data-testid="clipboard">Clipboard</span>,
+  User: () => <span data-testid="user">User</span>,
   Brush: () => <span data-testid="brush">Brush</span>,
   CalendarCheck: () => <span data-testid="calendar-check">Calendar</span>,
   Inbox: () => <span data-testid="inbox">Inbox</span>,
@@ -51,6 +52,10 @@ vi.mock('lucide-react', () => ({
   Clock: () => <span data-testid="clock">Clock</span>,
   CheckCircle2: () => <span data-testid="check-circle">Check</span>,
   XCircle: () => <span data-testid="x-circle">X</span>,
+  Images: () => <span data-testid="images">Images</span>,
+  Newspaper: () => <span data-testid="newspaper">News</span>,
+  Shield: () => <span data-testid="shield">Shield</span>,
+  Settings2: () => <span data-testid="settings2">Settings</span>,
 }))
 
 vi.mock('react-router-dom', async () => {

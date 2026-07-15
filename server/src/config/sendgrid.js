@@ -176,6 +176,51 @@ export const buildQuoteEmailTemplate = ({ fullName, email, projectType, budget, 
   `
 }
 
+export const buildConsultationEmailTemplate = ({ name, email, phone, message, preferredDate, preferredTime }) => {
+  return `
+    <div style="font-family: 'Helvetica Neue', Arial, sans-serif; background:#f7f4ef; padding:32px;">
+      <div style="max-width:640px; margin:0 auto; background:#ffffff; border-radius:20px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+        <div style="background:linear-gradient(135deg, #111111 0%, #2a2a2a 100%); color:#ffffff; padding:28px 32px; text-align:center;">
+          <h1 style="margin:0; font-size:26px; letter-spacing:0.1em; font-weight:300;">HOK</h1>
+          <p style="margin:6px 0 0; color:#d97706; font-size:11px; letter-spacing:0.25em; text-transform:uppercase;">New Consultation Request</p>
+        </div>
+        <div style="padding:32px; color:#252525;">
+          <p style="margin:0 0 16px; font-size:15px; line-height:1.6;">You have received a new consultation request:</p>
+          <table style="width:100%; border-collapse:collapse; margin:20px 0; border-radius:12px; overflow:hidden; border:1px solid #e8e1d5;">
+            <tr>
+              <td style="padding:12px 16px; background:#faf8f5; font-size:12px; color:#8a7f70; text-transform:uppercase; letter-spacing:0.08em; width:40%;">Name</td>
+              <td style="padding:12px 16px; font-size:14px; color:#2c2c2c;">${name}</td>
+            </tr>
+            <tr>
+              <td style="padding:12px 16px; background:#faf8f5; font-size:12px; color:#8a7f70; text-transform:uppercase; letter-spacing:0.08em;">Email</td>
+              <td style="padding:12px 16px; font-size:14px; color:#2c2c2c;">${email}</td>
+            </tr>
+            <tr>
+              <td style="padding:12px 16px; background:#faf8f5; font-size:12px; color:#8a7f70; text-transform:uppercase; letter-spacing:0.08em;">Phone</td>
+              <td style="padding:12px 16px; font-size:14px; color:#2c2c2c;">${phone || 'Not provided'}</td>
+            </tr>
+            <tr>
+              <td style="padding:12px 16px; background:#faf8f5; font-size:12px; color:#8a7f70; text-transform:uppercase; letter-spacing:0.08em;">Preferred Date</td>
+              <td style="padding:12px 16px; font-size:14px; color:#2c2c2c;">${preferredDate ? new Date(preferredDate).toLocaleDateString() : 'Not specified'}</td>
+            </tr>
+            <tr>
+              <td style="padding:12px 16px; background:#faf8f5; font-size:12px; color:#8a7f70; text-transform:uppercase; letter-spacing:0.08em;">Preferred Time</td>
+              <td style="padding:12px 16px; font-size:14px; color:#2c2c2c;">${preferredTime || 'Not specified'}</td>
+            </tr>
+            <tr>
+              <td style="padding:12px 16px; background:#faf8f5; font-size:12px; color:#8a7f70; text-transform:uppercase; letter-spacing:0.08em;">Message</td>
+              <td style="padding:12px 16px; font-size:14px; color:#2c2c2c; white-space:pre-wrap;">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</td>
+            </tr>
+          </table>
+        </div>
+        <div style="padding:20px 32px; text-align:center; border-top:1px solid #e8e1d5;">
+          <p style="margin:0; font-size:11px; color:#b8a99a; letter-spacing:0.05em;">HOK Interior Designs &mdash; Timeless spaces, elevated living.</p>
+        </div>
+      </div>
+    </div>
+  `
+}
+
 export const buildReceiptEmailTemplate = ({ orderId, items, total, customerName }) => {
   const itemsHtml = items.map(item => `
     <tr>

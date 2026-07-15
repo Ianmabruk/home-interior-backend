@@ -15,6 +15,7 @@ import {
   uploadMediaController,
 } from '../controllers/contentController.js'
 import { testimonialController } from '../controllers/testimonialController.js'
+import { consultationController } from '../controllers/consultationController.js'
 import { auth, authorize } from '../middleware/auth.js'
 import { sanitizeInput, validateFileUpload, validateBody } from '../middleware/validate.js'
 import { auditLog } from '../middleware/auditLog.js'
@@ -55,6 +56,17 @@ const portfolioSchema = z.object({
 
 const validatePortfolioBody = validateBody(portfolioSchema)
 
+const consultationSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  phone: z.string().optional(),
+  message: z.string().min(10),
+  preferredDate: z.string().optional(),
+  preferredTime: z.string().optional(),
+})
+
+const validateConsultationBody = validateBody(consultationSchema)
+
 router.get('/homepage', homepageFeed)
 router.get('/analytics', auth, getAnalytics)
 
@@ -71,6 +83,9 @@ router.delete('/portfolio/:id', auth, authorize('admin'), writeLimiter, auditLog
 
 router.get('/about', getAbout)
 router.put('/about', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, upsertAbout)
+
+// Consultations
+router.post('/consultations', validateConsultationBody, consultationController.createConsultation)
 
 // Testimonials — public carousel feed (active only).
 router.get('/testimonials', testimonialController.listPublic)

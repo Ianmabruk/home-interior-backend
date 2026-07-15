@@ -250,3 +250,16 @@ model Testimonial {
 
   @@map("testimonials")
 }
+
+model Consultation {
+  id        String   @id @default(uuid()) @map("_id")
+  name      String
+  email     String
+  phone     String?
+  message   String
+  status    String   @default("new")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("consultations")
+}

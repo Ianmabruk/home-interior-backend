@@ -13,6 +13,16 @@ window.ResizeObserver = window.ResizeObserver || (() => ({
   disconnect: () => {},
 }))
 
+window.IntersectionObserver = window.IntersectionObserver || (function() {
+  function IntersectionObserver() {
+    this.observe = () => {}
+    this.unobserve = () => {}
+    this.disconnect = () => {}
+    this.takeRecords = () => []
+  }
+  return IntersectionObserver
+})()
+
 HTMLCanvasElement.prototype.getContext = () => ({
   fillRect: () => {},
   clearRect: () => {},

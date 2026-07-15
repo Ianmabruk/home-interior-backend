@@ -6,6 +6,7 @@ import { sendSuccess } from '../utils/sendSuccess.js'
 import { env } from '../config/env.js'
 import { withId, withIdArray, parseMaybeJson, parseMediaSettings, DEFAULT_MEDIA_SETTINGS } from '../utils/helpers.js'
 import { prismaSafeWrite } from '../utils/prismaSafeWrite.js'
+import { sendEmail, buildConsultationEmailTemplate } from '../config/sendgrid.js'
 
 const PROJECT_SELECT = {
   id: true,
@@ -22,20 +23,6 @@ const PROJECT_SELECT = {
   isPublished: true,
   createdAt: true,
   updatedAt: true,
-}
-
-const readTempProjects = async () => {
-  try {
-    const raw = await fs.readFile(PROJECTS_TEMP_PATH, 'utf-8')
-    return JSON.parse(raw)
-  } catch {
-    return { projects: [] }
-  }
-}
-
-const writeTempProjects = async (data) => {
-  await ensureTempDir()
-  await fs.writeFile(PROJECTS_TEMP_PATH, JSON.stringify(data, null, 2), 'utf-8')
 }
 
 const parseServices = (value) => {
@@ -124,19 +111,6 @@ const PROJECT_FIELDS = new Set([
 
 // Projection returned to the public + admin clients. Deliberately excludes
 // tags/services (not part of the Project model) to avoid P2022.
-const PROJECT_SELECT = {
-  id: true,
-  title: true,
-  description: true,
-  category: true,
-  media: true,
-  mediaSettings: true,
-  coverImageUrl: true,
-  videoUrl: true,
-  isPublished: true,
-  createdAt: true,
-  updatedAt: true,
-}
 const PORTFOLIO_FIELDS = new Set([
   'title', 'description', 'category', 'imageUrl', 'imagePublicId', 'beforeAfterImages', 'gallery', 'order', 'isPublished', 'mediaSettings',
 ])
@@ -370,7 +344,7 @@ export const portfolioController = {
           try {
             await deleteMedia(existing.imagePublicId, 'image')
           } catch (deleteErr) {
-            console.error('[PORTFOLIO][UPDATE] delete old media failed:', deleteErr?.message')
+            console.error('[PORTFOLIO][UPDATE] delete old media failed:', deleteErr?.message)
           }
         }
         const upload = await uploadImage(mediaFile.buffer, 'hok/portfolio', mediaFile.mimetype)
@@ -387,22 +361,6 @@ export const portfolioController = {
       const galleryFiles = (Array.isArray(req.files) ? req.files : []).filter((f) => f.fieldname === 'gallery')
       if (galleryFiles.length > 0) {
         const galleryUploads = await handleMultipleUploads(galleryFiles, 'hok/portfolio')
-        payload.gallery = galleryUploads.map((u) => ({ url: u.url, publicId: u.publicId }))
-      }
-        }
-        payload.imageUrl = upload.url
-        payload.imagePublicId = upload.publicId
-      }
-
-      if (req.body.beforeImage) {
-        const beforeUpload = await handleFileUpload(req, 'hok/portfolio')
-        if (beforeUpload) {
-          payload.beforeAfterImages = [{ url: beforeUpload.url, publicId: beforeUpload.publicId, label: 'Before' }]
-        }
-      }
-
-      if (req.files && Array.isArray(req.files.gallery)) {
-        const galleryUploads = await handleMultipleUploads(req.files.gallery, 'hok/portfolio')
         payload.gallery = galleryUploads.map((u) => ({ url: u.url, publicId: u.publicId }))
       }
 
