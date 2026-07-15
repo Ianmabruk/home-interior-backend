@@ -79,6 +79,7 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+    historyApiFallback: true,
   },
   build: {
     // es2020 lets Vite/Rolldown emit modern syntax without legacy helpers

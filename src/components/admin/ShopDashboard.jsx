@@ -15,11 +15,15 @@ import {
   Palette,
   Tag,
   Box,
+  Sparkles,
+  Layers,
+  Brush,
 } from 'lucide-react'
 import { api } from '../../services/api'
 import { emitAdminDataChanged } from '../../utils/adminEvents'
 
 const CATEGORIES = ['Mirrors', 'Frames', 'Throw Pillows']
+const STYLE_VARIANTS = ['Modern', 'Classic', 'Luxury', 'Minimalist', 'Contemporary']
 
 const INITIAL_FORM = {
   name: '',
@@ -34,6 +38,7 @@ const INITIAL_FORM = {
   isFeatured: false,
   isPublished: true,
   colorVariants: [],
+  styleVariants: [],
 }
 
 const PAGE_SIZE = 12
@@ -112,6 +117,10 @@ export const ShopDashboard = () => {
 
       if (form.colorVariants.length > 0) {
         payload.append('colorVariants', JSON.stringify(form.colorVariants))
+      }
+
+      if (form.styleVariants.length > 0) {
+        payload.append('styleVariants', JSON.stringify(form.styleVariants))
       }
 
       if (editingId) {
@@ -560,6 +569,113 @@ export const ShopDashboard = () => {
                   </motion.button>
                 </motion.div>
               ))}
+            </div>
+          </div>
+
+          {/* Style Variants */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70 flex items-center gap-1.5">
+                <Sparkles size={12} />
+                Style Variants
+              </p>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                type="button"
+                onClick={() => setForm(f => ({ ...f, styleVariants: [...f.styleVariants, { styleName: '', images: [], description: '', specifications: {} }] }))}
+                className="text-[10px] text-[#C69B6D] hover:text-[#241711] transition-colors font-medium flex items-center gap-1"
+              >
+                <Plus size={12} />
+                Add
+              </motion.button>
+            </div>
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1 scrollbar-hide">
+              {form.styleVariants.map((s, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-gradient-to-r from-[#F8F4EF] to-[#E8D3BE]/20 p-3 rounded-xl"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-gold">Style {i + 1}</p>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, styleVariants: f.styleVariants.filter((_, idx) => idx !== i) }))}
+                      className="text-[#C62828] hover:bg-[#C62828]/10 p-1 rounded-lg"
+                    >
+                      <Trash2 size={12} />
+                    </motion.button>
+                  </div>
+                  <div className="space-y-2">
+                    <input
+                      value={s.styleName}
+                      onChange={(e) => setForm(f => ({ ...f, styleVariants: f.styleVariants.map((sv, idx) => idx === i ? { ...sv, styleName: e.target.value } : sv) }))}
+                      className="input !h-9 text-xs"
+                      placeholder="Style name (e.g., Modern, Classic, Luxury)"
+                    />
+                    <textarea
+                      value={s.description || ''}
+                      onChange={(e) => setForm(f => ({ ...f, styleVariants: f.styleVariants.map((sv, idx) => idx === i ? { ...sv, description: e.target.value } : sv) }))}
+                      className="textarea"
+                      placeholder="Style description..."
+                      rows={2}
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">Materials</label>
+                        <input
+                          value={s.specifications?.materials || ''}
+                          onChange={(e) => setForm(f => ({ ...f, styleVariants: f.styleVariants.map((sv, idx) => idx === i ? { ...sv, specifications: { ...sv.specifications, materials: e.target.value } } : sv) }))}
+                          className="input"
+                          placeholder="Materials"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">Dimensions</label>
+                        <input
+                          value={s.specifications?.dimensions || ''}
+                          onChange={(e) => setForm(f => ({ ...f, styleVariants: f.styleVariants.map((sv, idx) => idx === i ? { ...sv, specifications: { ...sv.specifications, dimensions: e.target.value } } : sv) }))}
+                          className="input"
+                          placeholder="Dimensions"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">Available Colors</label>
+                        <input
+                          value={s.availableColors?.join(', ') || ''}
+                          onChange={(e) => setForm(f => ({ ...f, styleVariants: f.styleVariants.map((sv, idx) => idx === i ? { ...sv, availableColors: e.target.value.split(',').map(c => c.trim()) } : sv) }))}
+                          className="input"
+                          placeholder="White, Beige, Brown"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">Images</label>
+                        <input
+                          value={s.images?.join(', ') || ''}
+                          onChange={(e) => setForm(f => ({ ...f, styleVariants: f.styleVariants.map((sv, idx) => idx === i ? { ...sv, images: e.target.value.split(',').map(c => c.trim()) } : sv) }))}
+                          className="input"
+                          placeholder="Image URLs (comma separated)"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="button"
+                onClick={() => setForm(f => ({ ...f, styleVariants: [...f.styleVariants, { styleName: '', images: [], description: '', specifications: {}, availableColors: [] }] }))}
+                className="w-full mt-2 btn-secondary text-2xs flex items-center justify-center gap-1.5"
+              >
+                <Plus size={14} /> Add Another Style
+              </motion.button>
             </div>
           </div>
 
