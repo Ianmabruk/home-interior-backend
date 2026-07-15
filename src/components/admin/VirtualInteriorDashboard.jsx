@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { api } from '../../services/api'
 import { emitAdminDataChanged } from '../../utils/adminEvents'
+import { getOptimizedVideoUrl, getVideoPosterUrl } from '../../utils/cloudinaryHelpers'
 
 const INITIAL_FORM = {
   title: '',
@@ -79,7 +80,7 @@ export const VirtualInteriorDashboard = () => {
       setVideoPreview(null)
       const res = await api.get('/content/virtual-design')
       setItems(Array.isArray(res.data) ? res.data : res.data?.items || [])
-      emitAdminDataChanged({ type: 'virtual-design-changed' })
+      emitAdminDataChanged({ type: 'virtual-changed' })
     } catch {
       // handle error
     } finally {
@@ -112,7 +113,7 @@ export const VirtualInteriorDashboard = () => {
       setDeleteId(null)
       const res = await api.get('/content/virtual-design')
       setItems(Array.isArray(res.data) ? res.data : res.data?.items || [])
-      emitAdminDataChanged({ type: 'virtual-design-changed' })
+      emitAdminDataChanged({ type: 'virtual-changed' })
     } catch {
       // handle error
     }
@@ -138,10 +139,10 @@ export const VirtualInteriorDashboard = () => {
         className="flex items-end justify-between"
       >
         <div>
-          <h2 className="font-['Playfair_Display'] text-3xl text-[#241711]">
+          <h2 className="font-['Playfair_Display'] text-3xl text-charcoal">
             Virtual Interior Design
           </h2>
-          <p className="text-sm text-[#6D5647] mt-1">
+          <p className="text-sm text-textSecondary mt-1">
             Manage virtual design services and packages
           </p>
         </div>
@@ -156,16 +157,16 @@ export const VirtualInteriorDashboard = () => {
           className="admin-card-glass space-y-5 self-start"
         >
           <div>
-            <h3 className="font-['Playfair_Display'] text-xl text-[#241711]">
+            <h3 className="font-['Playfair_Display'] text-xl text-charcoal">
               {editingId ? 'Edit' : 'Add'} Virtual Design
             </h3>
-            <p className="text-[10px] text-[#6D5647] mt-1">
+            <p className="text-[10px] text-textSecondary mt-1">
               {editingId ? 'Update design details' : 'Create a new virtual design'}
             </p>
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">
+            <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-charcoal/60">
               Title
             </label>
             <input
@@ -178,7 +179,7 @@ export const VirtualInteriorDashboard = () => {
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">
+            <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-charcoal/60">
               Description
             </label>
             <textarea
@@ -192,7 +193,7 @@ export const VirtualInteriorDashboard = () => {
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">
+            <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-charcoal/60">
               Services
             </label>
             <input
@@ -205,7 +206,7 @@ export const VirtualInteriorDashboard = () => {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">
+              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-charcoal/60">
                 Category
               </label>
               <input
@@ -216,7 +217,7 @@ export const VirtualInteriorDashboard = () => {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">
+              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-charcoal/60">
                 Tags
               </label>
               <input
@@ -230,7 +231,7 @@ export const VirtualInteriorDashboard = () => {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">
+              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-charcoal/60">
                 Primary CTA
               </label>
               <input
@@ -241,7 +242,7 @@ export const VirtualInteriorDashboard = () => {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">
+              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-charcoal/60">
                 Secondary CTA
               </label>
               <input
@@ -255,8 +256,8 @@ export const VirtualInteriorDashboard = () => {
 
           <div className="border-t border-border pt-5 space-y-3">
             <div className="flex items-center gap-2 mb-3">
-              <Package size={16} className="text-[#C69B6D]" />
-              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">
+              <Package size={16} className="text-bronze" />
+              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-charcoal/60">
                 Packages & Pricing
               </p>
             </div>
@@ -266,7 +267,7 @@ export const VirtualInteriorDashboard = () => {
                   key={i}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex gap-2 items-start bg-gradient-to-r from-[#F8F4EF] to-[#E8D3BE]/20 p-2.5 rounded-xl"
+                  className="flex gap-2 items-start bg-secondary/60 p-2.5 rounded-xl"
                 >
                   <input
                     value={pkg.name}
@@ -285,7 +286,7 @@ export const VirtualInteriorDashboard = () => {
                     whileTap={{ scale: 0.9 }}
                     type="button"
                     onClick={() => removePackage(i)}
-                    className="text-[#C62828] hover:bg-[#C62828]/10 p-1.5 rounded-lg"
+                    className="text-error hover:bg-error/10 p-1.5 rounded-lg"
                   >
                     <Trash2 size={12} />
                   </motion.button>
@@ -297,7 +298,7 @@ export const VirtualInteriorDashboard = () => {
               whileTap={{ scale: 0.98 }}
               type="button"
               onClick={addPackage}
-              className="text-xs text-[#C69B6D] hover:text-[#241711] transition-colors font-medium flex items-center gap-1"
+              className="text-xs text-bronze hover:text-charcoal transition-colors font-medium flex items-center gap-1"
             >
               <Plus size={14} />
               Add Package
@@ -327,7 +328,7 @@ export const VirtualInteriorDashboard = () => {
                     setVideoFile(null)
                     setVideoPreview(null)
                   }}
-                  className="absolute top-3 right-3 bg-[#241711]/90 backdrop-blur-sm text-white p-2 rounded-full hover:bg-[#241711] shadow-lg"
+                  className="absolute top-3 right-3 bg-charcoal/90 backdrop-blur-sm text-white p-2 rounded-full hover:bg-charcoal shadow-lg"
                 >
                   <X size={14} />
                 </motion.button>
@@ -337,15 +338,15 @@ export const VirtualInteriorDashboard = () => {
                 <motion.div
                   animate={{ y: [0, -5, 0] }}
                   transition={{ duration: 2, repeat: Infinity }}
-                  className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#C69B6D]/10 to-[#E8D3BE]/10 flex items-center justify-center text-[#C69B6D]"
+                  className="w-14 h-14 rounded-2xl bg-gradient-to-br from-bronze/10 to-secondary/40 flex items-center justify-center text-bronze"
                 >
                   <Video size={28} />
                 </motion.div>
                 <div>
-                  <p className="text-sm font-medium text-[#241711]">
+                  <p className="text-sm font-medium text-charcoal">
                     Drop video here or click to browse
                   </p>
-                  <p className="text-[10px] text-[#6D5647] mt-1">MP4, MOV up to 50MB</p>
+                  <p className="text-[10px] text-textSecondary mt-1">MP4, MOV up to 50MB</p>
                 </div>
               </div>
             )}
@@ -354,7 +355,7 @@ export const VirtualInteriorDashboard = () => {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="btn-accent w-full"
+            className="bg-forest text-white w-full py-3 rounded-xl text-[11px] font-semibold uppercase tracking-wider transition-all duration-300 hover:bg-forestDark hover:shadow-lg"
             disabled={loading}
           >
             {loading ? 'Saving…' : editingId ? 'Update Design' : 'Upload Design'}
@@ -374,24 +375,25 @@ export const VirtualInteriorDashboard = () => {
               <div className="relative">
                 {item.videoUrl ? (
                   <video
-                    src={item.videoUrl}
+                    src={getOptimizedVideoUrl(item.videoUrl, { width: 480 })}
+                    poster={getVideoPosterUrl(item.videoUrl, { width: 480 })}
                     className="h-44 w-full object-cover"
                     autoPlay
                     muted
                     loop
                   />
                 ) : (
-                  <div className="h-44 w-full bg-gradient-to-br from-[#F8F4EF] to-[#E8D3BE]/30 flex items-center justify-center text-[#6D5647]/30">
+                  <div className="h-44 w-full bg-secondary/60 flex items-center justify-center text-charcoal/30">
                     <Video size={40} />
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#241711]/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-charcoal/0 transition-all duration-300 group-hover:bg-charcoal/30" />
                 <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => startEdit(item)}
-                    className="p-2 bg-white/90 backdrop-blur-sm rounded-xl text-[#241711] hover:bg-white shadow-lg"
+                    className="p-2 bg-white/90 backdrop-blur-sm rounded-xl text-charcoal hover:bg-white shadow-lg"
                   >
                     <Edit size={14} />
                   </motion.button>
@@ -399,22 +401,22 @@ export const VirtualInteriorDashboard = () => {
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => setDeleteId(item._id || item.id)}
-                    className="p-2 bg-[#C62828]/90 backdrop-blur-sm rounded-xl text-white hover:bg-[#C62828] shadow-lg"
+                    className="p-2 bg-error/90 backdrop-blur-sm rounded-xl text-white hover:bg-error shadow-lg"
                   >
                     <Trash2 size={14} />
                   </motion.button>
                 </div>
               </div>
               <div className="p-5">
-                <h3 className="font-['Playfair_Display'] text-lg text-[#241711]">{item.title}</h3>
-                <p className="text-xs text-[#6D5647] mt-1.5 line-clamp-2 leading-relaxed">
+                <h3 className="font-['Playfair_Display'] text-lg text-charcoal">{item.title}</h3>
+                <p className="text-xs text-textSecondary mt-1.5 line-clamp-2 leading-relaxed">
                   {item.description}
                 </p>
                 <div className="flex flex-wrap gap-1.5 mt-3">
                   {(item.tags || []).slice(0, 3).map((tag, idx) => (
                     <span
                       key={idx}
-                      className="text-[10px] px-2 py-0.5 rounded-full bg-[#C69B6D]/10 text-[#C69B6D] font-medium"
+                      className="text-[10px] px-2 py-0.5 rounded-full bg-bronze/10 text-bronze font-medium"
                     >
                       {tag}
                     </span>
@@ -429,10 +431,10 @@ export const VirtualInteriorDashboard = () => {
               animate={{ opacity: 1 }}
               className="col-span-full py-20 text-center"
             >
-              <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-[#E8D3BE]/30 to-[#C69B6D]/10 flex items-center justify-center mb-4 text-[#6D5647]/30">
+              <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-secondary/30 to-bronze/10 flex items-center justify-center mb-4 text-charcoal/30">
                 <Video size={32} />
               </div>
-              <p className="font-['Playfair_Display'] text-xl text-[#241711]/30">
+              <p className="font-['Playfair_Display'] text-xl text-charcoal/30">
                 No virtual designs yet
               </p>
             </motion.div>
@@ -449,7 +451,7 @@ export const VirtualInteriorDashboard = () => {
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
             <div
-              className="absolute inset-0 bg-[#241711]/40 backdrop-blur-sm"
+              className="absolute inset-0 bg-charcoal/40 backdrop-blur-sm"
               onClick={() => setDeleteId(null)}
             />
             <motion.div
@@ -458,13 +460,13 @@ export const VirtualInteriorDashboard = () => {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="relative bg-white rounded-3xl p-8 max-w-sm w-full shadow-[0_30px_80px_rgba(0,0,0,0.2)]"
             >
-              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[#C62828]/10 flex items-center justify-center text-[#C62828]">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-error/10 flex items-center justify-center text-error">
                 <Trash2 size={24} />
               </div>
-              <h3 className="font-['Playfair_Display'] text-xl text-[#241711] text-center mb-2">
+              <h3 className="font-['Playfair_Display'] text-xl text-charcoal text-center mb-2">
                 Confirm Delete
               </h3>
-              <p className="text-sm text-[#6D5647] text-center mb-6">
+              <p className="text-sm text-textSecondary text-center mb-6">
                 Are you sure? This action cannot be undone.
               </p>
               <div className="flex gap-3 justify-end">
@@ -480,7 +482,7 @@ export const VirtualInteriorDashboard = () => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={deleteItem}
-                  className="btn-danger"
+                  className="bg-error text-white px-5 py-2.5 rounded-xl text-[11px] font-semibold uppercase tracking-wider transition-all duration-300 hover:bg-error/90"
                 >
                   Delete
                 </motion.button>

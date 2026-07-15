@@ -1,19 +1,54 @@
-import { useState, useEffect } from 'react'
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion'
 import {
+  LayoutDashboard,
   Images,
   ShoppingBag,
-  FileText,
-  Users,
-  Activity,
-  UploadCloud,
-  Plus,
   MessageSquare,
   Newspaper,
+  Settings,
+  Search,
+  Bell,
+  Mail,
+  CheckCircle2,
+  X,
+  Shield,
+  Users,
+  FileText,
+  UploadCloud,
+  Plus,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  Calendar,
+  BarChart3,
+  LineChart,
+  PieChart,
+  RefreshCw,
+  Download,
+  Filter,
+  ChevronLeft,
+  ChevronRight,
+  Menu,
+  Sparkles,
+  LogOut,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
+  Eye,
+  Edit,
+  Trash2,
+  Clock,
+  DollarSign as DollarSignIcon,
+  Activity,
+  Images as ImagesIcon,
 } from 'lucide-react'
 import { api } from '../../services/api'
+import { useAuth } from '../../context/AuthContext'
+import { Sidebar } from '../admin/Sidebar'
+import { emitAdminDataChanged } from '../../utils/adminEvents'
 
-const AnimatedCounter = ({ value, delay = 0 }) => {
+const AnimatedCounter = ({ value, delay = 0, prefix = '', suffix = '' }) => {
   const count = useMotionValue(0)
   const rounded = useTransform(count, (latest) => Math.round(latest))
 
@@ -27,23 +62,40 @@ const AnimatedCounter = ({ value, delay = 0 }) => {
     return () => clearTimeout(timer)
   }, [value, delay, count])
 
-  return <motion.span>{rounded}</motion.span>
+  return (
+    <span className="flex items-baseline gap-1">
+      <span className="text-charcoal/40 text-xl font-medium">{prefix}</span>
+      <motion.span className="font-['Playfair_Display'] text-3xl font-semibold text-charcoal">{rounded}</motion.span>
+      <span className="text-charcoal/40 text-xl font-medium">{suffix}</span>
+    </span>
+  )
 }
 
-const StatCard = ({ title, value, icon: Icon, delay, color }) => (
+const StatCard = ({ title, value, icon: Icon, delay, trend, trendUp, color, onClick }) => (
   <motion.div
     initial={{ opacity: 0, y: 30 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay, duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
     whileHover={{ y: -4, transition: { duration: 0.2 } }}
-    className="admin-card group cursor-default"
+    className={`group cursor-pointer relative overflow-hidden rounded-2xl border border-border bg-white/80 backdrop-blur-xl p-5 shadow-[0_10px_40px_rgba(31,77,58,0.06)] transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 ${onClick ? 'cursor-pointer' : ''}`}
+    onClick={onClick}
   >
-    <div className="flex items-center justify-between">
+    <div className="absolute inset-0 bg-gradient-to-r from-bronze/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+    <div className="relative flex items-center justify-between">
       <div className="flex-1">
         <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-charcoal/50">{title}</p>
-        <p className="mt-3 font-['Playfair_Display'] text-3xl font-semibold text-charcoal">
+        <p className="mt-3 flex items-baseline gap-1">
           <AnimatedCounter value={value ?? 0} delay={delay * 1000} />
         </p>
+        {trend !== undefined && (
+          <p className="mt-2 flex items-center gap-1 font-medium text-[10px]">
+            <span className={`flex items-center ${trendUp ? 'text-success' : 'text-error'}`}>
+              {trendUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+              {Math.abs(trend).toFixed(1)}%
+            </span>
+            <span className="text-charcoal/40">vs last month</span>
+          </p>
+        )}
       </div>
       <motion.div
         whileHover={{ scale: 1.1, rotate: 5 }}
@@ -60,6 +112,28 @@ const StatCard = ({ title, value, icon: Icon, delay, color }) => (
       className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-bronze/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
     />
   </motion.div>
+)
+
+const QuickActionCard = ({ label, icon: Icon, color, onClick }) => (
+  <motion.button
+    initial={{ opacity: 0, scale: 0.9 }}
+    animate={{ opacity: 1, scale: 1 }}
+    transition={{ delay: 0.7 }}
+    whileHover={{ scale: 1.02, y: -2 }}
+    whileTap={{ scale: 0.98 }}
+    onClick={onClick}
+    className="flex flex-col items-center gap-3 p-5 rounded-2xl bg-gradient-to-br from-secondary/40 to-secondary/10 hover:from-bronze/5 hover:to-secondary/30 transition-all duration-300 group border border-transparent hover:border-bronze/20"
+  >
+    <motion.div
+      whileHover={{ rotate: 10, scale: 1.1 }}
+      className={`w-12 h-12 rounded-xl ${color} flex items-center justify-center text-white shadow-lg`}
+    >
+      <Icon size={22} />
+    </motion.div>
+    <span className="text-xs font-medium text-charcoal group-hover:text-bronze transition-colors">
+      {label}
+    </span>
+  </motion.button>
 )
 
 export const DashboardOverview = ({ overview, onNavigate }) => {
@@ -266,33 +340,30 @@ export const DashboardOverview = ({ overview, onNavigate }) => {
           <p className="text-xs text-textSecondary mt-1">Frequently used shortcuts</p>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: 'New Portfolio', icon: Plus, action: 'portfolio', color: 'from-bronze to-bronzeDark' },
-            { label: 'Add Product', icon: ShoppingBag, action: 'shop', color: 'from-forest to-forestDark' },
-            { label: 'View Messages', icon: MessageSquare, action: 'consultations', color: 'from-bronze to-bronzeDark' },
-            { label: 'Virtual Design', icon: Newspaper, action: 'virtual', color: 'from-forest to-forestDark' },
-          ].map((action, i) => (
-            <motion.button
-              key={action.action}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.7 + i * 0.05 }}
-              whileHover={{ scale: 1.02, y: -2 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => onNavigate?.(action.action)}
-              className="flex flex-col items-center gap-3 p-5 rounded-2xl bg-gradient-to-br from-secondary/40 to-secondary/10 hover:from-bronze/5 hover:to-secondary/30 transition-all duration-300 group border border-transparent hover:border-bronze/20"
-            >
-              <motion.div
-                whileHover={{ rotate: 10, scale: 1.1 }}
-                className={`w-12 h-12 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center text-white shadow-lg`}
-              >
-                <action.icon size={22} />
-              </motion.div>
-              <span className="text-xs font-medium text-charcoal group-hover:text-bronze transition-colors">
-                {action.label}
-              </span>
-            </motion.button>
-          ))}
+          <QuickActionCard
+            label="New Portfolio"
+            icon={Plus}
+            color="bg-gradient-to-br from-bronze to-bronzeDark"
+            onClick={() => onNavigate?.('portfolio')}
+          />
+          <QuickActionCard
+            label="Add Product"
+            icon={ShoppingBag}
+            color="bg-gradient-to-br from-forest to-forestDark"
+            onClick={() => onNavigate?.('shop')}
+          />
+          <QuickActionCard
+            label="View Messages"
+            icon={MessageSquare}
+            color="bg-gradient-to-br from-bronze to-bronzeDark"
+            onClick={() => onNavigate?.('consultations')}
+          />
+          <QuickActionCard
+            label="Virtual Design"
+            icon={Newspaper}
+            color="bg-gradient-to-br from-forest to-forestDark"
+            onClick={() => onNavigate?.('virtual')}
+          />
         </div>
       </motion.div>
     </div>

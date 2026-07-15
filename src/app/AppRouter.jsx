@@ -2,6 +2,22 @@ import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import { Layout } from '../components/layout/Layout'
 import { ProtectedRoute } from './ProtectedRoute'
+import { ErrorBoundary } from '../components/common/ErrorBoundary'
+
+const RouteFallback = () => (
+  <div className="flex min-h-[60vh] items-center justify-center">
+    <div className="h-10 w-10 animate-spin rounded-full border-2 border-borderSubtle border-t-accent" />
+  </div>
+)
+
+const ErrorFallback = () => (
+  <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
+    <p className="font-display text-2xl text-charcoal">Failed to load page</p>
+    <button onClick={() => window.location.reload()} className="mt-4 rounded-full bg-forest px-4 py-2 text-xs font-medium uppercase tracking-widest text-white transition hover:bg-forestDark">
+      Reload Page
+    </button>
+  </div>
+)
 
 const AuthShell = lazy(() => import('../pages/auth/AuthShell').then((m) => ({ default: m.AuthShell })))
 const AccountPage = lazy(() => import('../pages/account/AccountPage').then((m) => ({ default: m.AccountPage })))
@@ -23,10 +39,10 @@ const ShopPage = lazy(() => import('../pages/public/ShopPage').then((m) => ({ de
 const VirtualDesignPage = lazy(() => import('../pages/public/VirtualDesignPage').then((m) => ({ default: m.VirtualDesignPage })))
 const NotFoundPage = lazy(() => import('../pages/public/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
 
-const RouteFallback = () => (
-  <div className="flex min-h-[60vh] items-center justify-center">
-    <div className="h-10 w-10 animate-spin rounded-full border-2 border-sand border-t-orange" />
-  </div>
+const ErrorBoundaryRoute = ({ element }) => (
+  <ErrorBoundary fallback={<ErrorFallback />}>
+    {element}
+  </ErrorBoundary>
 )
 
 export const AppRouter = () => {
@@ -34,25 +50,25 @@ export const AppRouter = () => {
     <Suspense fallback={<RouteFallback />}>
       <Routes>
       <Route element={<Layout />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/shop" element={<ShopPage />} />
-        <Route path="/shop/:id" element={<ProductDetailPage />} />
-        <Route path="/portfolio" element={<PortfolioPage />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/virtual-design" element={<VirtualDesignPage />} />
-        <Route path="/virtual-interior-design" element={<VirtualDesignPage />} />
-        <Route path="/chat" element={<ChatPage />} />
+        <Route path="/" element={<ErrorBoundaryRoute element={<HomePage />} />} />
+        <Route path="/shop" element={<ErrorBoundaryRoute element={<ShopPage />} />} />
+        <Route path="/shop/:id" element={<ErrorBoundaryRoute element={<ProductDetailPage />} />} />
+        <Route path="/portfolio" element={<ErrorBoundaryRoute element={<PortfolioPage />} />} />
+        <Route path="/about" element={<ErrorBoundaryRoute element={<AboutPage />} />} />
+        <Route path="/virtual-design" element={<ErrorBoundaryRoute element={<VirtualDesignPage />} />} />
+        <Route path="/virtual-interior-design" element={<ErrorBoundaryRoute element={<VirtualDesignPage />} />} />
+        <Route path="/chat" element={<ErrorBoundaryRoute element={<ChatPage />} />} />
 
         <Route element={<ProtectedRoute />}>
-          <Route path="/account" element={<AccountPage />} />
-          <Route path="/wishlist" element={<WishlistPage />} />
-          <Route path="/cart" element={<CartPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/account" element={<ErrorBoundaryRoute element={<AccountPage />} />} />
+          <Route path="/wishlist" element={<ErrorBoundaryRoute element={<WishlistPage />} />} />
+          <Route path="/cart" element={<ErrorBoundaryRoute element={<CartPage />} />} />
+          <Route path="/checkout" element={<ErrorBoundaryRoute element={<CheckoutPage />} />} />
         </Route>
 
         <Route element={<ProtectedRoute adminOnly />}>
-          <Route path="/admin" element={<AdminPage />} />
-          <Route path="/admin/chat" element={<AdminChatPage />} />
+          <Route path="/admin" element={<ErrorBoundaryRoute element={<AdminPage />} />} />
+          <Route path="/admin/chat" element={<ErrorBoundaryRoute element={<AdminChatPage />} />} />
         </Route>
       </Route>
 

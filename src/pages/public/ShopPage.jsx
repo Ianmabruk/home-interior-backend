@@ -6,6 +6,7 @@ import { api } from '../../services/api'
 import { SHOP_CATEGORIES, CURRENCIES } from '../../utils/constants'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
 import { useCurrency } from '../../context/CurrencyContext'
+import { getOptimizedUrl } from '../../utils/cloudinaryHelpers'
 
 const categoryIcons = {
   Mirrors: Square,
@@ -36,14 +37,14 @@ export const ShopPage = () => {
   const [currencyOpen, setCurrencyOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  const loadProducts = () => {
+  const loadProducts = useCallback(() => {
     api.get('/products', { params: { sort: '-createdAt', limit: 100 } })
       .then((res) => setAllProducts(res.data.items || []))
       .catch(() => setAllProducts([]))
       .finally(() => setLoading(false))
-  }
+  }, [])
 
-  useEffect(() => { loadProducts() }, [])
+  useEffect(() => { loadProducts() }, [loadProducts])
 
   useEffect(() => {
     const handler = (event) => {
@@ -52,7 +53,7 @@ export const ShopPage = () => {
     }
     window.addEventListener(ADMIN_DATA_CHANGED_EVENT, handler)
     return () => window.removeEventListener(ADMIN_DATA_CHANGED_EVENT, handler)
-  }, [])
+  }, [loadProducts])
 
   const products = useMemo(() => {
     let next = [...allProducts]
@@ -84,18 +85,30 @@ export const ShopPage = () => {
   const hasFilters = category || query || minPrice || maxPrice
   const clearFilters = useCallback(() => { setCategory(''); setQuery(''); setMinPrice(''); setMaxPrice('') }, [])
 
+  const heroImage = 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=2000&q=80'
+
   return (
     <div className="min-h-screen bg-primary-bg">
-      {/* Page Header */}
-      <section className="relative section-pad bg-dark-luxury overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(198,155,109,0.12),transparent_50%)]" />
+      {/* Page Header with Luxury Interior Background */}
+      <section className="relative section-pad overflow-hidden">
+        <div className="absolute inset-0">
+          <img
+            src={getOptimizedUrl(heroImage, { width: 2000, crop: 'limit' })}
+            alt="Luxury interior with beige sofa, brown furniture, warm lighting"
+            className="h-full w-full object-cover"
+            loading="eager"
+            decoding="async"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-charcoal/65 from-charcoal/75" />
+        </div>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(184,138,90,0.15),transparent_50%)]" />
         <div className="relative z-10 container-wide px-6 md:px-12 lg:px-20">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}>
-            <p className="eyebrow mb-4 text-champagne/70">Curated Collection</p>
-            <h1 className="font-display text-5xl font-medium leading-tight text-white md:text-7xl lg:text-8xl">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-cream/80 mb-4">Curated Collection</p>
+            <h1 className="font-['Playfair_Display'] text-5xl font-medium leading-tight text-white md:text-7xl lg:text-8xl">
               Shop
             </h1>
-            <p className="mt-6 max-w-xl text-base text-white/50 leading-relaxed">
+            <p className="mt-6 max-w-xl text-base text-white/60 leading-relaxed">
               Handpicked luxury pieces to elevate your interior spaces with timeless elegance.
             </p>
           </motion.div>
@@ -108,17 +121,17 @@ export const ShopPage = () => {
           {/* Mobile Row */}
           <div className="flex items-center gap-2 md:hidden">
             <div className="relative flex-1">
-              <Search size={16} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/40" />
+              <Search size={16} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-charcoal/40" />
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search..."
-                className="w-full rounded-full border border-champagne/40 bg-linen pl-9 pr-3 py-2.5 text-sm outline-none placeholder:text-ink/35 focus:border-warm-gold focus:ring-2 focus:ring-warm-gold/20 transition"
+                placeholder="Search products..."
+                className="w-full rounded-full border border-champagne/40 bg-cream pl-9 pr-3 py-2.5 text-sm outline-none placeholder:text-charcoal/35 focus:border-bronze focus:ring-2 focus:ring-bronze/20 transition"
               />
             </div>
             <button
               onClick={() => setMobileMenuOpen((p) => !p)}
-              className="flex items-center gap-1.5 rounded-full border border-champagne/40 bg-white px-3 py-2.5 text-2xs font-semibold uppercase tracking-widest text-ink/70"
+              className="flex items-center gap-1.5 rounded-full border border-champagne/40 bg-white px-3 py-2.5 text-2xs font-semibold uppercase tracking-widest text-charcoal/70"
             >
               <Filter size={14} strokeWidth={1.5} />
               {hasFilters ? 'Filters' : 'Menu'}
@@ -128,12 +141,12 @@ export const ShopPage = () => {
           {/* Desktop Controls */}
           <div className="hidden md:flex items-center gap-4">
             <div className="relative flex-1 max-w-md">
-              <Search size={16} strokeWidth={1.5} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/40" />
+              <Search size={16} strokeWidth={1.5} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-charcoal/40" />
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search products..."
-                className="w-full rounded-full border border-champagne/40 bg-linen pl-10 pr-4 py-2.5 text-sm outline-none placeholder:text-ink/35 focus:border-warm-gold focus:ring-2 focus:ring-warm-gold/20 transition"
+                className="w-full rounded-full border border-champagne/40 bg-cream pl-10 pr-4 py-2.5 text-sm outline-none placeholder:text-charcoal/35 focus:border-bronze focus:ring-2 focus:ring-bronze/20 transition"
               />
             </div>
 
@@ -141,7 +154,7 @@ export const ShopPage = () => {
               <div className="relative">
                 <button
                   onClick={() => setCurrencyOpen((p) => !p)}
-                  className="flex items-center gap-2 rounded-full border border-champagne/40 bg-white px-4 py-2 text-2xs font-semibold uppercase tracking-widest text-ink/70 hover:border-warm-gold transition"
+                  className="flex items-center gap-2 rounded-full border border-champagne/40 bg-white px-4 py-2 text-2xs font-semibold uppercase tracking-widest text-charcoal/70 hover:border-bronze transition"
                 >
                   {currency} <ChevronDown size={12} strokeWidth={2} className={`transition-transform ${currencyOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -157,8 +170,8 @@ export const ShopPage = () => {
                         <button
                           key={c.code}
                           onClick={() => { changeCurrency(c.code); setCurrencyOpen(false) }}
-                          className={`w-full px-4 py-2.5 text-left text-xs font-medium uppercase tracking-widest transition ${
-                            currency === c.code ? 'bg-linen text-warm-gold' : 'text-ink hover:bg-linen/50'
+                          className={`w-full px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-widest transition ${
+                            currency === c.code ? 'bg-cream text-bronze' : 'text-charcoal hover:bg-cream/50'
                           }`}
                         >
                           {c.code} ({c.symbol})
@@ -172,7 +185,7 @@ export const ShopPage = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="rounded-full border border-champagne/40 bg-white px-4 py-2 text-2xs font-semibold uppercase tracking-widest text-ink/70 focus:outline-none focus:ring-2 focus:ring-warm-gold/20 transition cursor-pointer"
+                className="rounded-full border border-champagne/40 bg-white px-4 py-2 text-2xs font-semibold uppercase tracking-widest text-charcoal/70 focus:outline-none focus:ring-2 focus:ring-bronze/20 transition cursor-pointer"
               >
                 <option value="newest">Newest</option>
                 <option value="price-low">Price: Low to High</option>
@@ -182,7 +195,7 @@ export const ShopPage = () => {
 
               <button
                 onClick={() => setFiltersOpen((p) => !p)}
-                className="flex items-center gap-2 rounded-full border border-champagne/40 bg-white px-4 py-2 text-2xs font-semibold uppercase tracking-widest text-ink/60 transition hover:border-warm-gold hover:text-warm-gold"
+                className="flex items-center gap-2 rounded-full border border-champagne/40 bg-white px-4 py-2 text-2xs font-semibold uppercase tracking-widest text-charcoal/60 transition hover:border-bronze hover:text-bronze"
               >
                 <SlidersHorizontal size={13} strokeWidth={1.5} />
                 Filters
@@ -191,13 +204,13 @@ export const ShopPage = () => {
               {hasFilters && (
                 <button
                   onClick={clearFilters}
-                  className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-widest text-ink/40 transition hover:text-warm-gold"
+                  className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-widest text-charcoal/40 transition hover:text-bronze"
                 >
                   <X size={12} strokeWidth={1.5} /> Clear
                 </button>
               )}
 
-              <span className="text-2xs text-ink/40 font-medium">{products.length} items</span>
+              <span className="text-2xs text-charcoal/40 font-medium">{products.length} items</span>
             </div>
           </div>
 
@@ -207,7 +220,7 @@ export const ShopPage = () => {
               <button
                 onClick={() => setCategory('')}
                 className={`px-5 py-2 text-2xs font-semibold uppercase tracking-widest transition rounded-full ${
-                  !category ? 'bg-dark-luxury text-white shadow-md' : 'text-ink/50 hover:text-ink bg-linen border border-champagne/40'
+                  !category ? 'bg-forest text-white shadow-md' : 'text-charcoal/50 hover:text-charcoal bg-cream border border-champagne/40'
                 }`}
               >
                 All
@@ -219,7 +232,7 @@ export const ShopPage = () => {
                     key={cat}
                     onClick={() => setCategory(cat === category ? '' : cat)}
                     className={`flex items-center gap-1.5 px-5 py-2 text-2xs font-semibold uppercase tracking-widest transition rounded-full ${
-                      category === cat ? 'bg-dark-luxury text-white shadow-md' : 'text-ink/50 hover:text-ink bg-linen border border-champagne/40'
+                      category === cat ? 'bg-forest text-white shadow-md' : 'text-charcoal/50 hover:text-charcoal bg-cream border border-champagne/40'
                     }`}
                   >
                     <Icon size={12} strokeWidth={1.5} />
@@ -245,23 +258,23 @@ export const ShopPage = () => {
                 className="flex flex-col lg:flex-row gap-6 py-6 overflow-hidden"
               >
                 <div className="flex-1 max-w-xs">
-                  <label className="block text-2xs font-semibold uppercase tracking-widest text-ink/50 mb-2">Min Price ({CURRENCIES.find(c => c.code === currency)?.symbol || currency})</label>
+                  <label className="block text-2xs font-semibold uppercase tracking-widest text-charcoal/50 mb-2">Min Price ({CURRENCIES.find(c => c.code === currency)?.symbol || currency})</label>
                   <input
                     value={minPrice}
                     onChange={(e) => setMinPrice(e.target.value)}
                     placeholder="0"
                     type="number"
-                    className="w-full rounded-full border border-champagne/40 bg-linen px-4 py-2.5 text-sm outline-none placeholder:text-ink/35 focus:border-warm-gold focus:ring-2 focus:ring-warm-gold/20 transition"
+                    className="w-full rounded-full border border-champagne/40 bg-cream px-4 py-2.5 text-sm outline-none placeholder:text-charcoal/35 focus:border-bronze focus:ring-2 focus:ring-bronze/20 transition"
                   />
                 </div>
                 <div className="flex-1 max-w-xs">
-                  <label className="block text-2xs font-semibold uppercase tracking-widest text-ink/50 mb-2">Max Price ({CURRENCIES.find(c => c.code === currency)?.symbol || currency})</label>
+                  <label className="block text-2xs font-semibold uppercase tracking-widest text-charcoal/50 mb-2">Max Price ({CURRENCIES.find(c => c.code === currency)?.symbol || currency})</label>
                   <input
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(e.target.value)}
                     placeholder="Any"
                     type="number"
-                    className="w-full rounded-full border border-champagne/40 bg-linen px-4 py-2.5 text-sm outline-none placeholder:text-ink/35 focus:border-warm-gold focus:ring-2 focus:ring-warm-gold/20 transition"
+                    className="w-full rounded-full border border-champagne/40 bg-cream px-4 py-2.5 text-sm outline-none placeholder:text-charcoal/35 focus:border-bronze focus:ring-2 focus:ring-bronze/20 transition"
                   />
                 </div>
               </motion.div>
@@ -278,7 +291,7 @@ export const ShopPage = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-dark-luxury/50 md:hidden"
+              className="fixed inset-0 z-40 bg-forest/50 md:hidden"
               onClick={() => setMobileMenuOpen(false)}
             />
             <motion.div
@@ -289,20 +302,20 @@ export const ShopPage = () => {
               className="fixed bottom-0 left-0 right-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-[2rem] bg-white shadow-2xl md:hidden"
             >
               <div className="flex items-center justify-between border-b border-champagne/20 p-5">
-                <p className="font-display text-xl text-ink">Filters & Categories</p>
-                <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-ink/50 hover:text-ink transition">
+                <p className="font-['Playfair_Display'] text-xl text-charcoal">Filters & Categories</p>
+                <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-charcoal/50 hover:text-charcoal transition">
                   <X size={20} strokeWidth={1.5} />
                 </button>
               </div>
 
               <div className="p-5 space-y-6">
                 <div>
-                  <p className="text-2xs font-semibold uppercase tracking-widest text-ink/50 mb-3">Categories</p>
+                  <p className="text-2xs font-semibold uppercase tracking-widest text-charcoal/50 mb-3">Categories</p>
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => { setCategory(''); setMobileMenuOpen(false) }}
                       className={`px-4 py-2 text-2xs font-semibold uppercase tracking-widest transition rounded-full ${
-                        !category ? 'bg-dark-luxury text-white' : 'text-ink/50 hover:text-ink bg-linen border border-champagne/40'
+                        !category ? 'bg-forest text-white' : 'text-charcoal/50 hover:text-charcoal bg-cream border border-champagne/40'
                       }`}
                     >
                       All
@@ -314,7 +327,7 @@ export const ShopPage = () => {
                           key={cat}
                           onClick={() => { setCategory(cat === category ? '' : cat); setMobileMenuOpen(false) }}
                           className={`flex items-center gap-1.5 px-4 py-2 text-2xs font-semibold uppercase tracking-widest transition rounded-full ${
-                            category === cat ? 'bg-dark-luxury text-white' : 'text-ink/50 hover:text-ink bg-linen border border-champagne/40'
+                            category === cat ? 'bg-forest text-white' : 'text-charcoal/50 hover:text-charcoal bg-cream border border-champagne/40'
                           }`}
                         >
                           <Icon size={12} strokeWidth={1.5} />
@@ -326,14 +339,14 @@ export const ShopPage = () => {
                 </div>
 
                 <div>
-                  <p className="text-2xs font-semibold uppercase tracking-widest text-ink/50 mb-3">Currency</p>
+                  <p className="text-2xs font-semibold uppercase tracking-widest text-charcoal/50 mb-3">Currency</p>
                   <div className="flex flex-wrap gap-2">
                     {CURRENCIES.map((c) => (
                       <button
                         key={c.code}
                         onClick={() => { changeCurrency(c.code); setCurrencyOpen(false) }}
                         className={`px-4 py-2 text-2xs font-semibold uppercase tracking-widest transition rounded-full ${
-                          currency === c.code ? 'bg-dark-luxury text-white' : 'text-ink/50 hover:text-ink bg-linen border border-champagne/40'
+                          currency === c.code ? 'bg-forest text-white' : 'text-charcoal/50 hover:text-charcoal bg-cream border border-champagne/40'
                         }`}
                       >
                         {c.code} ({c.symbol})
@@ -343,11 +356,11 @@ export const ShopPage = () => {
                 </div>
 
                 <div>
-                  <p className="text-2xs font-semibold uppercase tracking-widest text-ink/50 mb-3">Sort By</p>
+                  <p className="text-2xs font-semibold uppercase tracking-widest text-charcoal/50 mb-3">Sort By</p>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full rounded-2xl border border-champagne/40 bg-linen px-4 py-3 text-sm outline-none focus:border-warm-gold transition"
+                    className="w-full rounded-2xl border border-champagne/40 bg-cream px-4 py-3 text-sm outline-none focus:border-bronze transition"
                   >
                     <option value="newest">Newest</option>
                     <option value="price-low">Price: Low to High</option>
@@ -357,21 +370,21 @@ export const ShopPage = () => {
                 </div>
 
                 <div>
-                  <p className="text-2xs font-semibold uppercase tracking-widest text-ink/50 mb-3">Price Range</p>
+                  <p className="text-2xs font-semibold uppercase tracking-widest text-charcoal/50 mb-3">Price Range</p>
                   <div className="flex gap-3">
                     <input
                       value={minPrice}
                       onChange={(e) => setMinPrice(e.target.value)}
                       placeholder="Min"
                       type="number"
-                      className="flex-1 rounded-2xl border border-champagne/40 bg-linen px-4 py-3 text-sm outline-none placeholder:text-ink/35 focus:border-warm-gold transition"
+                      className="flex-1 rounded-2xl border border-champagne/40 bg-cream px-4 py-3 text-sm outline-none placeholder:text-charcoal/35 focus:border-bronze transition"
                     />
                     <input
                       value={maxPrice}
                       onChange={(e) => setMaxPrice(e.target.value)}
                       placeholder="Max"
                       type="number"
-                      className="flex-1 rounded-2xl border border-champagne/40 bg-linen px-4 py-3 text-sm outline-none placeholder:text-ink/35 focus:border-warm-gold transition"
+                      className="flex-1 rounded-2xl border border-champagne/40 bg-cream px-4 py-3 text-sm outline-none placeholder:text-charcoal/35 focus:border-bronze transition"
                     />
                   </div>
                 </div>
@@ -379,7 +392,7 @@ export const ShopPage = () => {
                 {hasFilters && (
                   <button
                     onClick={() => { clearFilters(); setMobileMenuOpen(false) }}
-                    className="w-full rounded-full border border-champagne/40 bg-white py-3 text-2xs font-semibold uppercase tracking-widest text-ink/50 hover:text-warm-gold hover:border-warm-gold transition"
+                    className="w-full rounded-full border border-champagne/40 bg-white py-3 text-2xs font-semibold uppercase tracking-widest text-charcoal/50 hover:text-bronze hover:border-bronze transition"
                   >
                     Clear All Filters
                   </button>
@@ -411,11 +424,13 @@ export const ShopPage = () => {
           {!loading && products.length === 0 && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="py-24 text-center">
               <Sparkles size={48} strokeWidth={1} className="mx-auto text-champagne mb-4" />
-              <p className="font-display text-3xl text-ink/30">No products found</p>
-              <p className="mt-2 text-sm text-ink/35">Try adjusting your filters</p>
+              <p className="font-['Playfair_Display'] text-3xl text-charcoal/30">
+                {allProducts.length === 0 ? 'No products yet.' : 'No products found'}
+              </p>
+              <p className="mt-2 text-sm text-charcoal/35">Try adjusting your filters</p>
               {hasFilters && (
-                <button onClick={clearFilters} className="btn-outline border-warm-gold text-warm-gold mt-6 hover:bg-warm-gold hover:text-white hover:border-warm-gold">
-                  Clear Filters
+                <button onClick={clearFilters} className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 text-2xs font-semibold uppercase tracking-widest border border-bronze text-bronze hover:bg-bronze hover:text-white hover:border-bronze rounded-full transition">
+                  <X size={12} strokeWidth={1.5} /> Clear Filters
                 </button>
               )}
             </motion.div>

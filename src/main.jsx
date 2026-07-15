@@ -7,18 +7,21 @@ import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext'
 import { ShopProvider } from './context/ShopContext'
 import { CurrencyProvider } from './context/CurrencyContext'
+import { ErrorBoundary } from './components/common/ErrorBoundary'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <MotionConfig reducedMotion="user">
-        <AuthProvider>
-          <ShopProvider>
-            <CurrencyProvider>
-              <App />
-            </CurrencyProvider>
-          </ShopProvider>
-        </AuthProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <ShopProvider>
+              <CurrencyProvider>
+                <App />
+              </CurrencyProvider>
+            </ShopProvider>
+          </AuthProvider>
+        </ErrorBoundary>
       </MotionConfig>
     </BrowserRouter>
   </StrictMode>,

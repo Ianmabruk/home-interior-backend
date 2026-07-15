@@ -1,7 +1,8 @@
-import { Suspense } from 'react'
+import { Suspense, lazy } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Footer } from '../Footer'
 import { Navbar } from '../Navbar'
+import { ErrorBoundary } from '../common/ErrorBoundary'
 
 const PageLoader = () => (
   <div className="flex min-h-[60vh] items-center justify-center">
@@ -9,16 +10,33 @@ const PageLoader = () => (
   </div>
 )
 
+const ErrorFallback = () => (
+  <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
+    <p className="font-display text-2xl text-charcoal">Something went wrong</p>
+    <p className="mt-2 text-sm text-stone">Failed to load this page.</p>
+    <button
+      onClick={() => window.location.reload()}
+      className="mt-6 rounded-full bg-forest px-6 py-2.5 text-xs font-medium uppercase tracking-widest text-white transition hover:bg-forestDark"
+    >
+      Reload Page
+    </button>
+  </div>
+)
+
 export const Layout = () => {
   return (
-    <div className="min-h-screen bg-primary-bg text-charcoal">
-      <Navbar />
-      <main className="min-h-screen">
-        <Suspense fallback={<PageLoader />}>
-          <Outlet />
-        </Suspense>
-      </main>
-      <Footer />
-    </div>
+    <ErrorBoundary>
+      <div className="min-h-screen bg-primary-bg text-charcoal">
+        <Navbar />
+        <main className="min-h-screen">
+          <Suspense fallback={<PageLoader />}>
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
+          </Suspense>
+        </main>
+        <Footer />
+      </div>
+    </ErrorBoundary>
   )
 }

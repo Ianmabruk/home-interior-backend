@@ -1,22 +1,36 @@
-import { Brush, LayoutGrid, Armchair, MonitorSmartphone } from 'lucide-react'
+import { Brush, LayoutGrid, MonitorSmartphone, Armchair, Search, Sparkles } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const SERVICES = [
   {
     icon: Brush,
-    title: 'Interior Design',
+    title: 'Residential Interior Design',
+    description: 'Luxury homes tailored to your lifestyle',
   },
   {
     icon: LayoutGrid,
-    title: 'Space Planning',
-  },
-  {
-    icon: Armchair,
-    title: 'Custom Furniture',
+    title: 'Commercial Interior Design',
+    description: 'Sophisticated spaces for business',
   },
   {
     icon: MonitorSmartphone,
     title: 'Virtual Interior Design',
+    description: 'Transform your space from anywhere',
+  },
+  {
+    icon: Armchair,
+    title: 'Furniture Selection',
+    description: 'Curated pieces for every room',
+  },
+  {
+    icon: Search,
+    title: 'Space Planning',
+    description: 'Optimize flow and functionality',
+  },
+  {
+    icon: Sparkles,
+    title: 'Styling Consultation',
+    description: 'Expert finishing touches',
   },
 ]
 
@@ -45,6 +59,9 @@ export const Services = () => {
           <h2 className="font-['Playfair_Display'] text-4xl font-medium leading-tight text-charcoal md:text-5xl lg:text-6xl">
             What We Do
           </h2>
+          <p className="mt-4 max-w-2xl mx-auto text-base text-stone leading-relaxed">
+            Comprehensive interior design services tailored to elevate your space with timeless elegance.
+          </p>
         </motion.div>
 
         <motion.div
@@ -52,7 +69,7 @@ export const Services = () => {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: '-50px' }}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-10 lg:gap-12"
+          className="grid grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 lg:gap-12"
         >
           {SERVICES.map((item) => {
             const Icon = item.icon
@@ -69,6 +86,7 @@ export const Services = () => {
                 <h3 className="font-['Playfair_Display'] text-xl md:text-2xl font-medium text-charcoal leading-tight">
                   {item.title}
                 </h3>
+                <p className="mt-2 text-sm text-stone leading-relaxed">{item.description}</p>
               </motion.div>
             )
           })}
