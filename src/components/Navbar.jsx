@@ -12,6 +12,7 @@ import {
   Package,
   CreditCard,
   Heart,
+  CalendarCheck,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
@@ -25,7 +26,7 @@ const NAV_ITEMS = [
 
 export const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth()
-  const { cart } = useShop()
+  const { cart, removeFromCart, setCartQuantity } = useShop()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [cartOpen, setCartOpen] = useState(false)
@@ -64,10 +65,15 @@ export const Navbar = () => {
   const cartItems = cart || []
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0)
 
+  const handleRemoveFromCart = (item) => {
+    // The removeFromCart function is available from useShop context
+    // We'll need to import it
+  }
+
   return (
     <header
       ref={navRef}
-      className={`relative w-full z-50 transition-all duration-300 ${
+      className={`relative w-full z-50 transition-all duration-300 sticky top-0 ${
         scrolled
           ? 'bg-white/90 backdrop-blur-xl border-b border-[#E6D8C9]/40 shadow-[0_8px_32px_rgba(27,23,20,0.08)]'
           : 'bg-white/70 backdrop-blur-lg border-b border-[#E6D8C9]/30'
@@ -231,18 +237,27 @@ export const Navbar = () => {
                                     </div>
                                     <div className="flex flex-col items-end gap-1.5">
                                       <button
-                                        onClick={() => {}}
+                                        onClick={() => removeFromCart(item._id, item.selectedVariant)}
                                         className="p-1.5 rounded-lg text-[#2A241F]/40 hover:text-[#E89A43] hover:bg-[#E6D8C9]/30 transition-colors"
                                         aria-label="Remove from cart"
                                       >
                                         <X size={14} strokeWidth={1.5} />
                                       </button>
                                       <div className="flex items-center rounded-full border border-[#E6D8C9]/60 bg-white">
-                                        <button className="flex h-8 w-8 items-center justify-center text-[#2A241F]/50 transition hover:text-[#2A241F]" aria-label="Decrease quantity">
+                                        <button
+                                          onClick={() => setCartQuantity(item._id, item.quantity - 1, item.selectedVariant)}
+                                          disabled={item.quantity <= 1}
+                                          className="flex h-8 w-8 items-center justify-center text-[#2A241F]/50 transition hover:text-[#2A241F] disabled:opacity-30 disabled:cursor-not-allowed"
+                                          aria-label="Decrease quantity"
+                                        >
                                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /></svg>
                                         </button>
                                         <span className="min-w-8 text-center text-sm font-medium text-[#2A241F]">{item.quantity}</span>
-                                        <button className="flex h-8 w-8 items-center justify-center text-[#2A241F]/50 transition hover:text-[#2A241F]" aria-label="Increase quantity">
+                                        <button
+                                          onClick={() => setCartQuantity(item._id, item.quantity + 1, item.selectedVariant)}
+                                          className="flex h-8 w-8 items-center justify-center text-[#2A241F]/50 transition hover:text-[#2A241F]"
+                                          aria-label="Increase quantity"
+                                        >
                                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
                                         </button>
                                       </div>
@@ -447,6 +462,30 @@ export const Navbar = () => {
               className="fixed left-0 right-0 top-[96px] z-50 bg-white border-b border-[#E6D8C9]/40 shadow-xl md:hidden overflow-hidden"
             >
               <div className="container-wide px-4 md:px-8 lg:px-12 py-6 space-y-6">
+                {/* Hero Buttons - Primary Actions */}
+                <div className="space-y-3 pt-2">
+                  <Link
+                    to="/portfolio"
+                    onClick={() => setMobileOpen(false)}
+                    className="btn-luxury-primary w-full justify-center"
+                  >
+                    View Portfolio
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300 group-hover:translate-x-1">
+                      <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                  <button
+                    onClick={() => { setMobileOpen(false); setTimeout(() => window.dispatchEvent(new CustomEvent('open-consultation')), 100) }}
+                    className="btn-luxury-secondary w-full justify-center group"
+                  >
+                    Book Consultation
+                    <CalendarCheck size={14} strokeWidth={1.5} className="transition-transform duration-300 group-hover:scale-110" />
+                  </button>
+                </div>
+
+                {/* Divider */}
+                <div className="h-px bg-[#E6D8C9]/40" aria-hidden="true" />
+
                 {/* Nav Links */}
                 <nav className="space-y-4" role="navigation" aria-label="Mobile navigation">
                   {NAV_ITEMS.map((item) => {

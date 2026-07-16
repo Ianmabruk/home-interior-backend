@@ -185,70 +185,30 @@ export const Hero = ({ onBookConsultation }) => {
         ))}
       </div>
 
-      {/* Content - Centered */}
-      <div className="relative z-10 flex h-full items-center justify-center px-6 md:px-12 lg:px-20">
+      {/* Buttons Only - Lower Position */}
+      <div className="relative z-10 flex h-full items-end justify-center px-6 md:px-12 lg:px-20 pb-20 md:pb-28">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="max-w-5xl text-center"
+          transition={{ duration: 1.2, delay: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          className="max-w-5xl w-full flex flex-col sm:flex-row items-center justify-center gap-4"
         >
-          <motion.p
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 1, delay: 0.6 }}
-            className="text-[11px] font-semibold uppercase tracking-widest text-orange-accent mb-6 md:mb-8"
+          <Link
+            to="/portfolio"
+            className="btn-luxury-primary group w-full sm:w-auto"
           >
-            Interior Design Studio
-          </motion.p>
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.7 }}
-            className="font-display text-hero-desktop md:text-hero-tablet lg:text-hero-desktop font-normal leading-[1.0] text-white"
+            View Portfolio
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300 group-hover:translate-x-1">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </Link>
+          <button
+            onClick={onBookConsultation}
+            className="btn-luxury-secondary group w-full sm:w-auto"
           >
-            Timeless Interiors.
-            <br />
-            <span className="text-orange-accent">Designed for a Life Well Lived.</span>
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.9 }}
-            className="mt-6 md:mt-8 text-base md:text-lg leading-relaxed text-white/70 max-w-2xl mx-auto"
-          >
-            We design luxurious, functional spaces that reflect your style and elevate everyday living.
-          </motion.p>
-          {/* Luxury Divider */}
-          <motion.div
-            initial={{ opacity: 0, scaleX: 0 }}
-            animate={{ opacity: 1, scaleX: 1 }}
-            transition={{ duration: 1, delay: 1, ease: [0.22, 1, 0.36, 1] }}
-            className="luxury-divider mt-10 md:mt-12"
-          />
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 1.1 }}
-            className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
-          >
-            <Link
-              to="/portfolio"
-              className="btn-luxury-primary group"
-            >
-              View Portfolio
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300 group-hover:translate-x-1">
-                <path d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
-            </Link>
-            <button
-              onClick={onBookConsultation}
-              className="btn-luxury-secondary group"
-            >
-              Book Consultation
-              <CalendarCheck size={14} strokeWidth={1.5} className="transition-transform duration-300 group-hover:scale-110" />
-            </button>
-          </motion.div>
+            Book Consultation
+            <CalendarCheck size={14} strokeWidth={1.5} className="transition-transform duration-300 group-hover:scale-110" />
+          </button>
         </motion.div>
       </div>
 

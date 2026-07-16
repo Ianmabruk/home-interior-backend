@@ -41,7 +41,7 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-[var(--primary)]/40 backdrop-blur-sm z-30 lg:hidden"
+            className="fixed inset-0 bg-[#1B1714]/60 backdrop-blur-sm z-30 lg:hidden"
             onClick={onCloseMobile}
           />
         )}
@@ -53,7 +53,7 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
           width: sidebarOpen ? 300 : 88,
         }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-        className="fixed inset-y-0 left-0 z-40 flex flex-col bg-[var(--sidebar)] text-white border-r border-white/5 shadow-2xl"
+        className="fixed inset-y-0 left-0 z-40 flex flex-col bg-[#1B1714] text-white border-r border-white/10 shadow-2xl"
       >
         {/* Logo Section */}
         <div className="flex items-center gap-3 h-20 px-5 border-b border-white/10">
@@ -96,19 +96,19 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
                 }}
                 className={`relative w-full flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center px-2'} py-3 text-sm font-medium transition-all duration-200 rounded-xl ${
                   isActive
-                    ? 'text-[var(--primary)] bg-white rounded-xl shadow-sm font-semibold'
-                    : 'text-white/75 hover:bg-white/10 hover:text-white'
+                    ? 'text-[var(--accent)] bg-white/10 rounded-xl shadow-sm font-semibold'
+                    : 'text-white/75 hover:bg-white/5 hover:text-white'
                 }`}
                 title={!sidebarOpen ? item.label : undefined}
               >
                 {isActive && (
                   <motion.div
                     layoutId="sidebar-active-indicator"
-                    className="absolute inset-0 bg-white rounded-xl shadow-lg"
+                    className="absolute inset-0 bg-white/10 rounded-xl"
                     transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
                   />
                 )}
-                <span className={`relative z-10 flex-shrink-0 ${isActive ? 'text-[var(--primary)]' : ''}`}>
+                <span className={`relative z-10 flex-shrink-0 ${isActive ? 'text-[var(--accent)]' : ''}`}>
                   <Icon size={18} className="flex-shrink-0" />
                 </span>
                 <AnimatePresence>
@@ -118,7 +118,7 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -5 }}
                       transition={{ duration: 0.2 }}
-                      className={`relative z-10 font-medium whitespace-nowrap ${isActive ? 'text-[var(--primary)]' : 'text-white/75'}`}
+                      className={`relative z-10 font-medium whitespace-nowrap ${isActive ? 'text-[var(--accent)]' : 'text-white/75'}`}
                     >
                       {item.label}
                     </motion.span>
