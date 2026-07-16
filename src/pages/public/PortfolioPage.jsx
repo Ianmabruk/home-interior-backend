@@ -92,7 +92,7 @@ export const PortfolioPage = () => {
       <section className="section-pad bg-[var(--bg)] pt-12">
         <div className="container-wide px-6 md:px-12 lg:px-20">
           {loading && (
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid gap-8 grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                 <div key={i} className="group">
                   <div className="skeleton aspect-[3/4] w-full rounded-3xl" />
@@ -122,7 +122,7 @@ export const PortfolioPage = () => {
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: '-50px' }}
-            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            className="grid gap-6 grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
           >
             {paginated.map((item, index) => (
               <motion.figure

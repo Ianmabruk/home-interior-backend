@@ -417,7 +417,7 @@ export const ShopPage = () => {
             </motion.div>
           )}
 
-          <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={staggerContainer} className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={staggerContainer} className="grid gap-6 grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {products.map((product, i) => (
               <motion.div key={product._id} variants={fadeUp} custom={i}>
                 <ProductCard product={product} />

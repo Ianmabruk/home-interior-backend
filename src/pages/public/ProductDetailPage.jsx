@@ -44,14 +44,12 @@ export const ProductDetailPage = () => {
       const res = await api.get(`/products/${id}`)
       const productData = res.data
       
-      // Validate product data structure
       if (!productData || !productData._id) {
         throw new Error('Invalid product data received')
       }
 
       setProduct(productData)
 
-      // Set default color variant
       const variants = productData?.colorVariants || []
       if (variants.length) {
         const def = variants.find((v) => v.isDefault) || variants[0]
@@ -59,7 +57,6 @@ export const ProductDetailPage = () => {
         setViewImage(null)
       }
 
-      // Fetch related products
       if (productData?.category) {
         try {
           const r = await api.get('/products', { 
@@ -113,7 +110,6 @@ export const ProductDetailPage = () => {
 
   const isWishlisted = wishlist?.some((w) => w._id === product?._id)
 
-  // Render loading skeleton
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--bg)]">
@@ -131,7 +127,6 @@ export const ProductDetailPage = () => {
     )
   }
 
-  // Render error state with retry
   if (error || !product) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center bg-[var(--bg)] px-4">
@@ -212,7 +207,7 @@ export const ProductDetailPage = () => {
                     <PositionedImage
                       src={displayImage}
                       alt={product.name}
-                      settings={product.mediaSettings}
+                      settings={{ fit: 'contain', position: 'center', zoom: 100 }}
                       className="h-full w-full"
                       sizes="(min-width:1024px) 50vw, 100vw"
                       loading="eager"
@@ -245,7 +240,13 @@ export const ProductDetailPage = () => {
                       }`}
                       aria-label={`View image ${i + 1}`}
                     >
-                      <img src={url} alt={`${product.name} ${i + 1}`} className="h-full w-full object-cover" loading="lazy" />
+                      <PositionedImage
+                        src={url}
+                        alt={`${product.name} ${i + 1}`}
+                        settings={{ fit: 'contain', position: 'center', zoom: 100 }}
+                        className="h-full w-full object-cover bg-[var(--bg)]"
+                        loading="lazy"
+                      />
                     </button>
                   ))}
                 </div>
@@ -329,7 +330,7 @@ export const ProductDetailPage = () => {
                 </div>
               )}
 
-              {/* Color Variants */}
+              {/* Color Variants - Single selector, no duplicates */}
               {product.colorVariants?.length > 0 && (
                 <div className="mt-8">
                   <p className="text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/50 mb-3">
@@ -348,7 +349,13 @@ export const ProductDetailPage = () => {
                         }`}
                       >
                         {variant.imageUrl ? (
-                          <img src={variant.imageUrl} alt={variant.colorName} className="h-full w-full object-cover" />
+                          <PositionedImage
+                            src={variant.imageUrl}
+                            alt={variant.colorName}
+                            settings={{ fit: 'contain', position: 'center', zoom: 100 }}
+                            className="h-full w-full object-cover bg-[var(--bg)]"
+                            loading="lazy"
+                          />
                         ) : (
                           <span className="block h-full w-full rounded-full" style={{ backgroundColor: variant.colorHex || '#ccc' }} />
                         )}

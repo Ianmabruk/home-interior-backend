@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react'
-import { Route, Routes } from 'react-router-dom'
+import { lazy, Suspense, useEffect } from 'react'
+import { Route, Routes, useLocation } from 'react-router-dom'
 import { Layout } from '../components/layout/Layout'
 import { ProtectedRoute } from './ProtectedRoute'
 import { ErrorBoundary } from '../components/common/ErrorBoundary'
@@ -18,6 +18,14 @@ const ErrorFallback = () => (
     </button>
   </div>
 )
+
+const ScrollToTop = () => {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
+  return null
+}
 
 const AuthShell = lazy(() => import('../pages/auth/AuthShell').then((m) => ({ default: m.AuthShell })))
 const AccountPage = lazy(() => import('../pages/account/AccountPage').then((m) => ({ default: m.AccountPage })))
@@ -81,6 +89,7 @@ export const AppRouter = () => {
 
       <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      <ScrollToTop />
     </Suspense>
   )
 }

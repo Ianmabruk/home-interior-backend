@@ -86,7 +86,7 @@ export const Navbar = () => {
           {/* LEFT SECTION - Logo */}
           <Link
             to="/"
-            className="flex-shrink-0 leading-tight group"
+            className="flex-shrink-0 leading-tight group -ml-4 md:-ml-8"
             aria-label="HOK INTERIOR DESIGNS - Home"
           >
             <div className="flex flex-col items-start">

@@ -31,8 +31,8 @@ export const ProductCard = memo(({ product, onQuickView }) => {
         <PositionedImage
           src={primaryImage}
           alt={product.name}
-          settings={product.mediaSettings}
-          className="h-full w-full transition duration-700 group-hover:scale-105"
+          settings={{ fit: 'contain', position: 'center', zoom: 100 }}
+          className="h-full w-full transition duration-700 group-hover:scale-105 bg-[var(--bg)]"
           loading="lazy"
           sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
         />
@@ -76,15 +76,6 @@ export const ProductCard = memo(({ product, onQuickView }) => {
         </div>
 
         <div className="absolute inset-0 bg-[var(--primary)]/0 transition-all duration-500 group-hover:bg-[var(--primary)]/20" />
-
-        <Link
-          to={`/shop/${product._id}`}
-          className="absolute inset-0 flex items-center justify-center bg-[var(--primary)]/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        >
-          <span className="rounded-full bg-white px-6 py-2.5 text-xs font-medium uppercase tracking-wider text-[var(--primary)]">
-            View Product
-          </span>
-        </Link>
       </div>
 
       <div className="p-5">

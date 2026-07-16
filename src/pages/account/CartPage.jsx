@@ -22,11 +22,10 @@ export const CartPage = () => {
         {!cart.length ? (
           <div className="mt-16 rounded-2xl border-2 border-dashed border-[var(--border)] bg-white p-12 text-center">
             <ShoppingBag size={48} className="mx-auto text-[var(--primary)]/20 mb-4" />
-            <p className="font-display text-3xl text-[var(--primary)]/40">Your cart is empty</p>
-            <p className="mt-2 text-sm text-[var(--primary)]/55">Add pieces from the shop to start your order.</p>
-            {!isAuthenticated ? <p className="mt-2 text-xs uppercase tracking-widest text-[var(--accent)]">Guests can browse freely and sign in later to sync their cart.</p> : null}
-            <Link to="/shop" className="mt-6 inline-block rounded-full bg-[var(--accent)] px-8 py-3 text-xs font-medium uppercase tracking-widest text-white transition hover:bg-[var(--accent)] hover:shadow-lg">
-              Shop Now
+            <p className="font-display text-3xl text-[var(--primary)]">Cart is Empty</p>
+            <p className="mt-2 text-sm text-[var(--primary)]/55">Looks like you haven't added anything yet.</p>
+            <Link to="/shop" className="mt-6 inline-block rounded-full bg-[var(--primary)] px-8 py-3 text-xs font-medium uppercase tracking-widest text-white transition hover:bg-[var(--primary)]/90 hover:shadow-lg">
+              Go to Shopping
             </Link>
           </div>
         ) : (

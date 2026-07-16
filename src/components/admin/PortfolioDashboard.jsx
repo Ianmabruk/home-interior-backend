@@ -1,15 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import {
-  UploadCloud,
-  X,
-  Edit,
-  Trash2,
-  Search,
-  Images,
-  GripVertical,
-  Filter,
-} from 'lucide-react'
+import { UploadCloud, X, Edit, Trash2, Images, Eye } from 'lucide-react'
 import { api } from '../../services/api'
 import { emitAdminDataChanged } from '../../utils/adminEvents'
 
@@ -22,8 +13,6 @@ export const PortfolioDashboard = () => {
   const [mediaFile, setMediaFile] = useState(null)
   const [mediaPreview, setMediaPreview] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [search, setSearch] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('')
   const [deleteId, setDeleteId] = useState(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const fileRef = useRef(null)
@@ -120,256 +109,295 @@ export const PortfolioDashboard = () => {
     }
   }
 
-  const categories = Array.from(new Set(portfolio.map((p) => p.category).filter(Boolean)))
-
-  const filtered = portfolio.filter((p) => {
-    if (categoryFilter && p.category !== categoryFilter) return false
-    if (search) {
-      const q = search.toLowerCase()
-      return p.title?.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q)
-    }
-    return true
-  })
-
   return (
     <div className="space-y-6">
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row md:items-center justify-between gap-4"
+        className="flex items-center justify-between"
       >
         <div>
           <h2 className="font-display text-3xl text-[var(--primary)]">Portfolio</h2>
-          <p className="text-sm text-[var(--primary)]/50 mt-1">{filtered.length} items</p>
+          <p className="text-sm text-[var(--primary)]/50 mt-1">{portfolio.length} projects</p>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <motion.div whileHover={{ scale: 1.02 }} className="relative">
-            <Search
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--primary)]/50"
-            />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition pl-9 max-w-xs"
-              placeholder="Search portfolio..."
-            />
+        <div className="flex items-center gap-3">
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="relative"
+            onClick={() => fileRef.current?.click()}
+          >
+            <UploadCloud size={20} className="text-[var(--accent)]" />
+            <span className="sr-only">Add new project</span>
           </motion.div>
-          {categories.length > 0 && (
-            <motion.div whileHover={{ scale: 1.02 }} className="relative">
-              <Filter
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--primary)]/50 pointer-events-none"
-              />
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition cursor-pointer pl-9"
-              >
-                <option value="">All Categories</option>
-                {categories.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </motion.div>
-          )}
         </div>
       </motion.div>
 
-      <div className="grid gap-8 lg:grid-cols-[420px_1fr]">
-        <motion.form
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-          onSubmit={submit}
-          className="bg-white/80 backdrop-blur-xl border border-[var(--border)]/60 rounded-2xl p-5 shadow-[0_10px_40px_rgba(42,36,31,0.06)] space-y-5 self-start"
-        >
-          <div>
-            <h3 className="font-display text-xl text-[var(--primary)]">
-              {editingId ? 'Edit' : 'Add'} Portfolio Item
-            </h3>
-            <p className="text-[10px] text-[var(--primary)]/50 mt-1">
-              {editingId ? 'Update item details' : 'Upload a new portfolio item'}
-            </p>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Title</label>
-            <input
-              value={form.title}
-              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-              className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
-              placeholder="Portfolio title"
-              required
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Category</label>
-            <input
-              value={form.category}
-              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-              className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
-              placeholder="e.g., Living Room, Bedroom"
-              required
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Description</label>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition resize-none"
-              placeholder="Describe this portfolio piece..."
-              rows={3}
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Display Order</label>
-            <input
-              value={form.order}
-              onChange={(e) => setForm((f) => ({ ...f, order: Number(e.target.value) || 0 }))}
-              type="number"
-              className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
-              placeholder="0"
-            />
-          </div>
-
-          <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
-          <motion.div
-            whileHover={{ scale: 1.01 }}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onClick={() => fileRef.current?.click()}
-            className={`relative border-2 border-dashed rounded-2xl transition-all duration-300 ${
-              isDragOver ? 'border-[var(--accent)] bg-[var(--accent)]/5' : 'border-[var(--border)] bg-[var(--bg)]/30'
-            }`}
+      {/* Upload Form - Hidden by default, slides down when adding/editing */}
+      <AnimatePresence>
+        {(editingId || mediaPreview) && (
+          <motion.form
+            initial={{ opacity: 0, height: 0, y: -20 }}
+            animate={{ opacity: 1, height: 'auto', y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -20 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            onSubmit={submit}
+            className="bg-white/80 backdrop-blur-xl border border-[var(--border)]/60 rounded-2xl p-5 shadow-[0_10px_40px_rgba(42,36,31,0.06)] space-y-5 mb-6"
           >
-            {mediaPreview ? (
-              <div className="relative rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-display text-xl text-[var(--primary)]">
+                  {editingId ? 'Edit' : 'Add'} Portfolio Project
+                </h3>
+                <p className="text-[10px] text-[var(--primary)]/50 mt-1">
+                  {editingId ? 'Update project details' : 'Upload a new portfolio project'}
+                </p>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                type="button"
+                onClick={() => {
+                  setEditingId(null)
+                  setForm(INITIAL_FORM)
+                  setMediaFile(null)
+                  setMediaPreview(null)
+                }}
+                className="p-2 rounded-xl text-[var(--primary)]/50 hover:bg-[var(--secondary)]/30 hover:text-[var(--primary)] transition"
+              >
+                <X size={20} strokeWidth={1.5} />
+              </motion.button>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Title</label>
+              <input
+                value={form.title}
+                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
+                placeholder="Project title"
+                required
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Category</label>
+              <input
+                value={form.category}
+                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
+                placeholder="e.g., Commercial Boutique, Luxury Residential"
+                required
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Description</label>
+              <textarea
+                value={form.description}
+                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition resize-none"
+                placeholder="Describe this portfolio piece..."
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Display Order</label>
+              <input
+                value={form.order}
+                onChange={(e) => setForm((f) => ({ ...f, order: Number(e.target.value) || 0 }))}
+                type="number"
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
+                placeholder="0"
+              />
+            </div>
+
+            <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+            <motion.div
+              whileHover={{ scale: 1.01 }}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onClick={() => fileRef.current?.click()}
+              className={`relative border-2 border-dashed rounded-2xl transition-all duration-300 ${
+                isDragOver ? 'border-[var(--accent)] bg-[var(--accent)]/5' : 'border-[var(--border)] bg-[var(--bg)]/30'
+              }`}
+            >
+              {mediaPreview ? (
+                <div className="relative rounded-xl overflow-hidden">
+                  <img
+                    src={mediaPreview}
+                    alt="preview"
+                    className="h-48 w-full object-cover"
+                  />
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setMediaFile(null)
+                      setMediaPreview(null)
+                    }}
+                    className="absolute top-3 right-3 bg-[var(--primary)]/90 backdrop-blur-sm text-white p-2 rounded-full hover:bg-[var(--primary)] shadow-lg"
+                  >
+                    <X size={14} />
+                  </motion.button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-3 py-8">
+                  <motion.div
+                    animate={{ y: [0, -5, 0] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--accent)]/10 to-[var(--secondary)]/10 flex items-center justify-center text-[var(--accent)]"
+                  >
+                    <UploadCloud size={28} />
+                  </motion.div>
+                  <div>
+                    <p className="text-sm font-medium text-[var(--primary)]">Drop image here or click to browse</p>
+                    <p className="text-[10px] text-[var(--primary)]/50 mt-1">PNG, JPG up to 10MB</p>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+
+            <div className="flex gap-3 pt-2">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="button"
+                onClick={() => {
+                  setEditingId(null)
+                  setForm(INITIAL_FORM)
+                  setMediaFile(null)
+                  setMediaPreview(null)
+                }}
+                className="flex-1 rounded-full border border-[var(--border)] bg-white px-6 py-3 text-[11px] font-semibold uppercase tracking-widest text-[var(--primary)]/70 transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              >
+                Cancel
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex-1 rounded-full bg-[var(--primary)] text-white py-3 text-[11px] font-semibold uppercase tracking-wider transition-all duration-300 hover:bg-[var(--primary)]/90 hover:shadow-lg"
+                disabled={loading}
+              >
+                {loading ? 'Saving…' : editingId ? 'Update Project' : 'Upload Project'}
+              </motion.button>
+            </div>
+          </motion.form>
+        )}
+      </AnimatePresence>
+
+      {/* Portfolio Gallery - Clean Luxury Grid */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      >
+        {portfolio.map((item, i) => (
+          <motion.article
+            layout
+            key={item._id || item.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="group bg-white rounded-3xl overflow-hidden shadow-[0_2px_16px_rgba(42,36,31,0.04)] hover:shadow-[0_20px_60px_rgba(42,36,31,0.08)] transition-all duration-500"
+          >
+            <div className="relative aspect-[3/4] overflow-hidden">
+              {item.imageUrl ? (
                 <img
-                  src={mediaPreview}
-                  alt="preview"
-                  className="h-52 w-full object-cover"
+                  src={item.imageUrl}
+                  alt={item.title}
+                  className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                  loading="lazy"
                 />
+              ) : (
+                <div className="h-full w-full bg-gradient-to-br from-[var(--bg)] to-[var(--secondary)]/30 flex items-center justify-center text-[var(--primary)]/30">
+                  <Images size={40} />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-[var(--primary)]/85 via-[var(--primary)]/40 to-transparent opacity-100" />
+              
+              {/* View Project Button - Bottom Center */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => window.location.href = `/portfolio/${item._id}`}
+                className="absolute bottom-6 left-1/2 -translate-x-1/2 btn-luxury-primary group flex items-center gap-2 text-[10px] px-5 py-2.5 rounded-full opacity-0 translate-y-4 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0"
+              >
+                View Project
+                <Eye size={12} strokeWidth={1.5} className="transition-transform duration-300 group-hover:scale-110" />
+              </motion.button>
+
+              {/* Quick Actions - Top Right */}
+              <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setMediaFile(null)
-                    setMediaPreview(null)
-                  }}
-                  className="absolute top-3 right-3 bg-[var(--primary)]/90 backdrop-blur-sm text-white p-2 rounded-full hover:bg-[var(--primary)] shadow-lg"
+                  onClick={() => startEdit(item)}
+                  className="p-2 bg-white/90 backdrop-blur-sm rounded-xl text-[var(--primary)] hover:bg-white shadow-lg"
+                  aria-label="Edit project"
                 >
-                  <X size={14} />
+                  <Edit size={14} />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setDeleteId(item._id || item.id)}
+                  className="p-2 bg-[var(--error)]/90 backdrop-blur-sm rounded-xl text-white hover:bg-[var(--error)] shadow-lg"
+                  aria-label="Delete project"
+                >
+                  <Trash2 size={14} />
                 </motion.button>
               </div>
-            ) : (
-              <div className="flex flex-col items-center gap-3 py-8">
-                <motion.div
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--accent)]/10 to-[var(--secondary)]/10 flex items-center justify-center text-[var(--accent)]"
+            </div>
+
+            {/* Info Card at Bottom */}
+            <div className="p-5 md:p-6 border-t border-[var(--border)]/40 bg-white">
+              {item.category && (
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.2 }}
+                  className="text-[10px] font-semibold uppercase tracking-widest text-[var(--accent)] mb-2"
                 >
-                  <UploadCloud size={28} />
-                </motion.div>
-                <div>
-                  <p className="text-sm font-medium text-[var(--primary)]">Drop image here or click to browse</p>
-                  <p className="text-[10px] text-[var(--primary)]/50 mt-1">PNG, JPG up to 10MB</p>
-                </div>
-              </div>
-            )}
-          </motion.div>
-
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full rounded-full bg-[var(--primary)] text-white py-3 text-[11px] font-semibold uppercase tracking-wider transition-all duration-300 hover:bg-[var(--primary)]/90 hover:shadow-lg"
-            disabled={loading}
+                  {item.category}
+                </motion.p>
+              )}
+              <motion.h3
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+                className="font-display text-xl md:text-2xl font-normal text-[var(--primary)] leading-tight"
+              >
+                {item.title}
+              </motion.h3>
+            </div>
+          </motion.article>
+        ))}
+        
+        {portfolio.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="col-span-full py-20 text-center"
           >
-            {loading ? 'Saving…' : editingId ? 'Update Item' : 'Upload Item'}
-          </motion.button>
-        </motion.form>
+            <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-[var(--secondary)]/30 to-[var(--accent)]/10 flex items-center justify-center mb-4 text-[var(--primary)]/30">
+              <Images size={32} />
+            </div>
+            <p className="font-display text-xl text-[var(--primary)]/30">No portfolio projects yet</p>
+            <p className="text-sm text-[var(--primary)]/40 mt-2">Click the upload icon to add your first project</p>
+          </motion.div>
+        )}
+      </motion.div>
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          {filtered.map((item, i) => (
-            <motion.div
-              layout
-              key={item._id || item.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="bg-white/80 backdrop-blur-xl border border-[var(--border)]/60 rounded-2xl p-5 shadow-[0_10px_40px_rgba(42,36,31,0.06)] overflow-hidden group"
-            >
-              <div className="relative overflow-hidden">
-                {item.imageUrl ? (
-                  <img
-                    src={item.imageUrl}
-                    alt={item.title}
-                    className="h-52 w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="h-52 w-full bg-gradient-to-br from-[var(--bg)] to-[var(--secondary)]/30 flex items-center justify-center text-[var(--primary)]/30">
-                    <Images size={40} />
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-[var(--primary)]/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => startEdit(item)}
-                    className="p-2 bg-white/90 backdrop-blur-sm rounded-xl text-[var(--primary)] hover:bg-white shadow-lg"
-                  >
-                    <Edit size={14} />
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setDeleteId(item._id || item.id)}
-                    className="p-2 bg-[var(--error)]/90 backdrop-blur-sm rounded-xl text-white hover:bg-[var(--error)] shadow-lg"
-                  >
-                    <Trash2 size={14} />
-                  </motion.button>
-                </div>
-              </div>
-              <div className="p-5">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-display text-lg text-[var(--primary)] truncate">
-                      {item.title}
-                    </p>
-                    <p className="text-[10px] uppercase tracking-[0.15em] text-[var(--accent)] mt-1 font-medium">
-                      {item.category}
-                    </p>
-                  </div>
-                  <GripVertical size={16} className="text-[var(--primary)]/30 flex-shrink-0 mt-1" />
-                </div>
-              </div>
-            </motion.div>
-          ))}
-          {filtered.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="col-span-full py-20 text-center"
-            >
-              <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-[var(--secondary)]/30 to-[var(--accent)]/10 flex items-center justify-center mb-4 text-[var(--primary)]/30">
-                <Images size={32} />
-              </div>
-              <p className="font-display text-xl text-[var(--primary)]/30">No portfolio items found</p>
-            </motion.div>
-          )}
-        </div>
-      </div>
-
+      {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {deleteId && (
           <motion.div

@@ -186,16 +186,29 @@ export const Hero = ({ onBookConsultation }) => {
       </div>
 
       {/* Luxury Statement Text - Far Left of Fading Overlay (Desktop/Tablet Only) */}
-      <div className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 px-6 md:px-12 lg:px-20 pointer-events-none">
-        <motion.p
+      <div className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 px-6 md:px-12 lg:px-20 pointer-events-none">
+        <motion.div
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 1.2, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="font-display text-3xl md:text-4xl lg:text-5xl font-normal leading-tight text-white/80 tracking-tight max-w-xl"
-          style={{ textShadow: '0 2px 20px rgba(0,0,0,0.3)' }}
+          className="max-w-xs"
         >
-          Designing Luxurious Functional Spaces
-        </motion.p>
+          <p className="font-display text-orange-accent text-5xl md:text-6xl lg:text-7xl font-medium leading-none tracking-tight select-none" style={{ textShadow: '0 4px 30px rgba(232,154,67,0.3)' }}>
+            D
+          </p>
+          <p className="font-display text-lg md:text-xl lg:text-2xl font-normal leading-snug text-white/90 tracking-tight -mt-2" style={{ textShadow: '0 2px 20px rgba(0,0,0,0.3)' }}>
+            esigning
+          </p>
+          <p className="font-display text-lg md:text-xl lg:text-2xl font-normal leading-snug text-white/90 tracking-tight -mt-2" style={{ textShadow: '0 2px 20px rgba(0,0,0,0.3)' }}>
+            Luxurious
+          </p>
+          <p className="font-display text-lg md:text-xl lg:text-2xl font-normal leading-snug text-white/90 tracking-tight -mt-2" style={{ textShadow: '0 2px 20px rgba(0,0,0,0.3)' }}>
+            Functional
+          </p>
+          <p className="font-display text-lg md:text-xl lg:text-2xl font-normal leading-snug text-white/90 tracking-tight -mt-2" style={{ textShadow: '0 2px 20px rgba(0,0,0,0.3)' }}>
+            Spaces
+          </p>
+        </motion.div>
       </div>
 
       {/* Buttons Only - Lower Position */}
