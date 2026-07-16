@@ -1,4 +1,4 @@
-import { Maximize2, X, Play, Sparkles, Video, ArrowRight, Truck, CheckCircle, Zap, Layers } from 'lucide-react'
+import { Maximize2, X, Play, Sparkles, Video, ArrowRight, Truck, CheckCircle, Zap, Layers, ArrowRight as ArrowRightIcon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -107,7 +107,7 @@ export const VirtualDesignPage = () => {
     return next
   }, [items, query, categoryFilter])
 
-  return (
+return (
     <div className="min-h-screen bg-cream">
       {/* Hero Section - Different from Shop */}
       <section className="relative h-[80vh] min-h-[600px] overflow-hidden">
@@ -133,6 +133,78 @@ export const VirtualDesignPage = () => {
               Virtual Interiors
             </h1>
           </motion.div>
+        </div>
+      </section>
+
+      {/* Projects Gallery */}
+      <section className="bg-cream px-6 md:px-12 lg:px-20 py-24 md:py-36">
+        <div className="container-wide">
+
+      {/* Stats Bar */}
+      <section className="bg-cream/50 border-y border-linen/40 py-12">
+        <div className="container-wide px-6 md:px-12 lg:px-20">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
+            {[
+              { label: 'Projects Completed', value: '247+' },
+              { label: 'Virtual Consultations', value: '1,200+' },
+              { label: 'Client Satisfaction', value: '98%' },
+              { label: 'Countries Served', value: '15+' },
+            ].map((stat, i) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: i * 0.1 }}
+                className="text-center"
+              >
+                <p className="font-['Playfair_Display'] text-4xl md:text-5xl font-semibold text-espresso">{stat.value}</p>
+                <p className="mt-2 text-sm text-stone">{stat.label}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Process Section */}
+      <section id="process" className="bg-cream px-6 md:px-12 lg:px-20 py-24 md:py-36">
+        <div className="container-wide">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+            className="mb-16 md:mb-24 text-center"
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-bronze mb-4">Our Process</p>
+            <h2 className="font-['Playfair_Display'] text-4xl font-medium leading-tight text-espresso md:text-5xl lg:text-6xl">
+              Designing Virtually,<br />Delivering Reality
+            </h2>
+          </motion.div>
+
+          <div className="grid gap-8 md:grid-cols-4">
+            {[
+              { number: '01', title: 'Discovery Call', desc: 'We discuss your vision, style preferences, and functional needs.' },
+              { number: '02', title: 'Concept Development', desc: 'Our designers create mood boards and initial layouts.' },
+              { number: '03', title: 'Design Refinement', desc: 'We refine the design with your feedback and material selections.' },
+              { number: '04', title: 'Final Presentation', desc: 'Complete 3D renders, detailed specs, and shopping lists delivered.' },
+            ].map((step, i) => (
+              <motion.div
+                key={step.number}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: i * 0.1 }}
+                className="group relative p-6 md:p-8 bg-cream rounded-3xl border border-linen/30 shadow-soft hover:shadow-lift transition-all duration-500"
+              >
+                <div className="mb-4 inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-linen/60 text-espresso transition-all duration-500 group-hover:bg-bronze group-hover:text-cream group-hover:scale-110">
+                  <span className="text-2xl font-semibold">{step.number}</span>
+                </div>
+                <h3 className="font-['Playfair_Display'] text-xl md:text-2xl font-medium text-espresso leading-tight mb-2">{step.title}</h3>
+                <p className="text-sm text-stone leading-relaxed">{step.desc}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 

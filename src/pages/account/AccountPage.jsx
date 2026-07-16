@@ -306,52 +306,6 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
     </motion.div>
   )
 }
-
-// Guest state component
-const GuestAccountPage = ({ onLogin, onRegister }) => {
-  return (
-    <div className="mx-auto max-w-7xl px-4 py-12 md:px-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center max-w-2xl mx-auto py-20 px-6"
-      >
-        <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-bronze/10 text-bronze">
-          <User size={32} strokeWidth={1.5} />
-        </div>
-        <h1 className="font-['Playfair_Display'] text-4xl md:text-5xl font-medium text-charcoal mb-4">
-          Welcome to HOK
-        </h1>
-        <p className="text-base md:text-lg text-stone/60 mb-10 max-w-lg mx-auto leading-relaxed">
-          Create an account to access your orders, save products, and manage your consultations.
-        </p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link
-            to="/login"
-            onClick={onLogin}
-            className="group inline-flex items-center justify-center gap-3 rounded-full bg-forest px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-white transition-all duration-300 hover:bg-forestDark hover:shadow-[0_8px_30px_rgba(31,77,58,0.15)] hover:-translate-y-0.5"
-          >
-            <LogIn size={14} strokeWidth={1.5} />
-            Login
-          </Link>
-          <Link
-            to="/register"
-            onClick={onRegister}
-            className="group inline-flex items-center justify-center gap-3 rounded-full border border-border bg-white px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-charcoal transition-all duration-300 hover:border-bronze hover:text-bronze"
-          >
-            <UserPlus size={14} strokeWidth={1.5} />
-            Register
-          </Link>
-        </div>
-        <p className="mt-8 text-sm text-stone/50">
-          By continuing, you agree to our <Link to="/terms" className="underline hover:text-bronze">Terms of Service</Link> and <Link to="/privacy" className="underline hover:text-bronze">Privacy Policy</Link>.
-        </p>
-      </motion.div>
-    </div>
-  )
-}
-
-// Logged in user account page
 const LoggedInAccountPage = ({ user, orders, ordersLoading, onLogout, onChangePassword }) => {
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const [changingPassword, setChangingPassword] = useState(false)
@@ -693,9 +647,10 @@ export const AccountPage = () => {
     )
   }
 
-  // Show guest state if not logged in
+  // Redirect to login if not authenticated
   if (!user) {
-    return <GuestAccountPage onLogin={() => navigate('/login')} onRegister={() => navigate('/register')} />
+    navigate('/login', { replace: true })
+    return null
   }
 
   return <LoggedInAccountPage user={user} orders={orders} ordersLoading={ordersLoading} onLogout={handleLogout} onChangePassword={handleChangePassword} />

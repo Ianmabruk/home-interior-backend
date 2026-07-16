@@ -18,17 +18,49 @@ export const Hero = ({ onBookConsultation }) => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await api.get('/content/portfolio', { params: { limit: 5, sort: '-createdAt', isPublished: true } })
-        const portfolioItems = res.data?.items || res.data || []
-        if (Array.isArray(portfolioItems) && portfolioItems.length > 0) {
-          setImages(
-            portfolioItems
-              .filter(item => item.imageUrl)
-              .map((item) => ({
+        const res = await api.get('/content/homepage')
+        const data = res.data || {}
+        
+        // Collect images from multiple sources for the carousel
+        const carouselImages = []
+        
+        // 1. Hero image from about section (dedicated hero image)
+        if (data.about?.aboutImageUrl) {
+          carouselImages.push({
+            url: data.about.aboutImageUrl,
+            alt: 'HOK Interior Design Studio',
+            priority: true
+          })
+        }
+        
+        // 2. Portfolio items with images
+        if (data.portfolio && Array.isArray(data.portfolio)) {
+          data.portfolio
+            .filter(item => item.imageUrl)
+            .slice(0, 4)
+            .forEach(item => {
+              carouselImages.push({
                 url: item.imageUrl,
-                alt: item.title || 'Luxury interior design project',
-              })),
-          )
+                alt: item.title || 'Luxury interior design project'
+              })
+            })
+        }
+        
+        // 3. Projects with cover images
+        if (data.projects && Array.isArray(data.projects)) {
+          data.projects
+            .filter(item => item.coverImageUrl || item.media?.[0]?.url)
+            .slice(0, 3)
+            .forEach(item => {
+              carouselImages.push({
+                url: item.coverImageUrl || item.media?.[0]?.url,
+                alt: item.title || 'Luxury interior design project'
+              })
+            })
+        }
+
+        if (carouselImages.length > 0) {
+          setImages(carouselImages)
         }
       } catch {
         // noop
