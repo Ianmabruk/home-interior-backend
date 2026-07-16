@@ -37,7 +37,7 @@ export const RegisterPage = () => {
       className="space-y-8"
     >
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--accent)] mb-3">Join HQK</p>
+         <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--accent)] mb-3">Join HOK</p>
         <h1 className="font-display text-5xl font-normal text-[var(--primary)]">Create Account</h1>
       </div>
 

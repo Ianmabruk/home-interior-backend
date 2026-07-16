@@ -114,14 +114,14 @@ export const Navbar = () => {
               <Link
                 to="/"
                 className="flex-shrink-0 leading-tight group"
-                aria-label="HQK INTERIORS - Home"
+                aria-label="HOK INTERIOR DESIGNS - Home"
               >
                 <div className="flex flex-col items-start">
                   <p className="font-display text-[52px] font-medium tracking-[0.25em] leading-tight text-[#2A241F] transition-colors duration-300 group-hover:text-[#E89A43]">
-                    HQK
+                    HOK
                   </p>
                   <p className="font-sans text-[11px] font-medium uppercase tracking-[0.35em] leading-none text-[#E89A43] -mt-1">
-                    INTERIORS
+                    INTERIOR DESIGNS
                   </p>
                 </div>
               </Link>
@@ -305,8 +305,8 @@ export const Navbar = () => {
             >
               <div className="flex items-center justify-between px-6 py-4 border-b border-[#E6D8C9]">
                 <div>
-                  <p className="font-display text-xl font-normal tracking-[0.25em] text-[#2A241F]">HQK</p>
-                  <p className="font-sans text-[11px] font-medium uppercase tracking-[0.35em] text-[#E89A43] -mt-1">INTERIORS</p>
+                  <p className="font-display text-xl font-normal tracking-[0.25em] text-[#2A241F]">HOK</p>
+                  <p className="font-sans text-[11px] font-medium uppercase tracking-[0.35em] text-[#E89A43] -mt-1">INTERIOR DESIGNS</p>
                 </div>
                 <motion.button
                   onClick={() => setMobileOpen(false)}

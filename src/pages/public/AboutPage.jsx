@@ -110,7 +110,7 @@ export const AboutPage = () => {
           {about.aboutImageUrl && (
             <PositionedImage
               src={about.aboutImageUrl}
-              alt="About HQK Interior Designs"
+              alt="About HOK Interior Designs"
               settings={about.mediaSettings}
               className="h-full w-full"
               loading="eager"
@@ -124,7 +124,7 @@ export const AboutPage = () => {
             <motion.div variants={fadeUp} custom={0}>
               <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--accent)]/80 mb-4">Our Story</p>
               <h1 className="font-display text-5xl font-normal leading-[0.95] text-white md:text-7xl lg:text-8xl">
-                About HQK
+                 About HOK
               </h1>
               <p className="mt-6 max-w-xl text-base text-white/70 leading-relaxed">
                 Redefining luxury interiors with timeless elegance and meticulous attention to detail since 2010.
@@ -215,7 +215,7 @@ export const AboutPage = () => {
           >
             <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--accent)] mb-4">Our Team</p>
             <h2 className="font-display text-4xl font-normal leading-tight text-[var(--primary)] md:text-5xl lg:text-6xl">
-              The People Behind HQK
+               The People Behind HOK
             </h2>
             <p className="mt-6 max-w-2xl mx-auto text-base text-[var(--primary)]/60 leading-relaxed">
               A collective of passionate designers, architects, and project managers dedicated to creating exceptional spaces.

@@ -321,7 +321,7 @@ export const AdminPage = () => {
                         value={settingsForm.siteName}
                         onChange={(e) => setSettingsForm((s) => ({ ...s, siteName: e.target.value }))}
                         className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
-                        placeholder="HQK Interior Designs"
+                        placeholder="HOK Interior Designs"
                       />
                     </div>
 

@@ -22,8 +22,8 @@ export const AuthShell = () => {
         <div className="absolute bottom-12 left-12 max-w-sm">
           <Link to="/">
             <div className="flex flex-col items-start">
-              <p className="font-display text-4xl font-medium tracking-[0.25em] text-white">HQK</p>
-              <p className="font-sans text-[11px] font-medium uppercase tracking-[0.35em] text-[var(--accent)] -mt-1">INTERIORS</p>
+              <p className="font-display text-4xl font-medium tracking-[0.25em] text-white">HOK</p>
+              <p className="font-sans text-[11px] font-medium uppercase tracking-[0.35em] text-[var(--accent)] -mt-1">INTERIOR DESIGNS</p>
             </div>
           </Link>
           <p className="mt-6 font-display text-3xl font-normal leading-snug text-white/85">
@@ -39,8 +39,8 @@ export const AuthShell = () => {
           <div className="mb-10 md:hidden">
             <Link to="/">
               <div className="flex flex-col items-center">
-                <p className="font-display text-3xl font-medium tracking-[0.25em] text-[var(--primary)]">HQK</p>
-                <p className="font-sans text-[11px] font-medium uppercase tracking-[0.35em] text-[var(--accent)] -mt-1">INTERIORS</p>
+                <p className="font-display text-3xl font-medium tracking-[0.25em] text-[var(--primary)]">HOK</p>
+                <p className="font-sans text-[11px] font-medium uppercase tracking-[0.35em] text-[var(--accent)] -mt-1">INTERIOR DESIGNS</p>
               </div>
             </Link>
           </div>

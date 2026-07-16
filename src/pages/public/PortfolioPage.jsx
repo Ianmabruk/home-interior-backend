@@ -89,7 +89,7 @@ export const PortfolioPage = () => {
               Portfolio
             </h1>
             <p className="mt-6 max-w-xl text-base text-white/50 leading-relaxed">
-              A curated selection of premium interiors crafted by HQK INTERIORS. Each project tells a unique story of luxury and refinement.
+               A curated selection of premium interiors crafted by HOK INTERIOR DESIGNS. Each project tells a unique story of luxury and refinement.
             </p>
           </motion.div>
         </div>

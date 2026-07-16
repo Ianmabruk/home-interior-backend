@@ -70,7 +70,7 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
                 className="overflow-hidden"
               >
                 <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-medium">Admin Panel</p>
-                <p className="text-base font-semibold whitespace-nowrap font-display text-white">HQK Studio</p>
+                <p className="text-base font-semibold whitespace-nowrap font-display text-white">HOK Studio</p>
               </motion.div>
             )}
           </AnimatePresence>

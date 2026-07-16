@@ -49,13 +49,13 @@ export const Footer = () => {
         >
           {/* Logo */}
           <motion.div variants={itemVariants} className="mb-12 md:mb-16 text-center">
-            <Link to="/" className="inline-block group" aria-label="HQK INTERIORS - Home">
+            <Link to="/" className="inline-block group" aria-label="HOK INTERIOR DESIGNS - Home">
               <div className="flex flex-col items-center">
                 <p className="font-display text-3xl md:text-4xl font-medium tracking-[0.25em] leading-tight text-[var(--footer-text)] transition-colors duration-300 group-hover:text-[var(--accent)]">
-                  HQK
+                  HOK
                 </p>
                 <p className="font-sans text-[11px] font-medium uppercase tracking-[0.35em] leading-none text-[var(--accent)] -mt-1">
-                  INTERIORS
+                  INTERIOR DESIGNS
                 </p>
               </div>
             </Link>
@@ -104,7 +104,7 @@ export const Footer = () => {
             className="mt-16 md:mt-24 pt-8 md:pt-12 border-t border-white/10 text-center"
           >
             <p className="text-[11px] uppercase tracking-widest text-[var(--footer-text)]/30">
-              &copy; {new Date().getFullYear()} HQK INTERIORS. All rights reserved.
+              &copy; {new Date().getFullYear()} HOK INTERIOR DESIGNS. All rights reserved.
             </p>
           </motion.div>
         </motion.div>
