@@ -1,10 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useShop } from '../../context/ShopContext'
 import { useCurrency } from '../../context/CurrencyContext'
 import { api } from '../../services/api'
-import { Star, Heart, ShoppingBag, Truck, Shield, ArrowLeft, ChevronRight, Check, Package, Ruler, Palette, Sparkles, AlertCircle, RefreshCw } from 'lucide-react'
+import { Star, Heart, ShoppingBag, Truck, Shield, ArrowLeft, ChevronRight, Check, Package, Ruler, Palette, Sparkles, AlertCircle, RefreshCw, CreditCard } from 'lucide-react'
 import PositionedImage from '../../components/common/PositionedImage'
 
 const fadeUp = {
@@ -21,6 +21,7 @@ const SPECIFICATION_FIELDS = [
 
 export const ProductDetailPage = () => {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { formatPrice } = useCurrency()
   const { addToCart, toggleWishlist, wishlist } = useShop()
   const [product, setProduct] = useState(null)
@@ -379,6 +380,19 @@ export const ProductDetailPage = () => {
                 >
                   {addedToCart ? <Check size={16} strokeWidth={2} /> : <ShoppingBag size={16} strokeWidth={1.5} />}
                   {addedToCart ? 'Added!' : 'Add to Cart'}
+                </button>
+                <button
+                  onClick={() => navigate('/checkout', { state: { buyNow: product, variant: activeVariant ? { 
+                    colorName: activeVariant.colorName, 
+                    colorHex: activeVariant.colorHex, 
+                    imageUrl: activeVariant.imageUrl,
+                    priceOverride: activeVariant.priceOverride 
+                  } : null } })}
+                  disabled={!inStock || product.stock === 0}
+                  className="btn-luxury-secondary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <CreditCard size={16} strokeWidth={1.5} />
+                  Buy Now
                 </button>
                 <button
                   onClick={() => toggleWishlist(product)}

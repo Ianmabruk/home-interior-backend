@@ -11,6 +11,7 @@ import {
   Settings,
   LogOut,
   Sparkles,
+  Star,
 } from 'lucide-react'
 
 const tabs = [
@@ -19,6 +20,7 @@ const tabs = [
   { id: 'shop', label: 'Shop', icon: ShoppingBag },
   { id: 'virtual', label: 'Virtual Interior Design', icon: Brush },
   { id: 'about', label: 'About', icon: Info },
+  { id: 'testimonials', label: 'Testimonials', icon: Star },
   { id: 'consultations', label: 'Consultations', icon: MessageSquare },
   { id: 'newsletter', label: 'Newsletter', icon: Newspaper },
   { id: 'settings', label: 'Settings', icon: Settings },
@@ -48,11 +50,12 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
       <motion.aside
         initial={false}
         animate={{
-          width: sidebarOpen ? 280 : 72,
+          width: sidebarOpen ? 300 : 88,
         }}
-        transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         className="fixed inset-y-0 left-0 z-40 flex flex-col bg-[var(--sidebar)] text-white border-r border-white/5 shadow-2xl"
       >
+        {/* Logo Section */}
         <div className="flex items-center gap-3 h-20 px-5 border-b border-white/10">
           <motion.div
             whileHover={{ scale: 1.05 }}
@@ -60,22 +63,23 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
           >
             <Sparkles size={20} className="text-white" />
           </motion.div>
-          <AnimatePresence>
+          <AnimatePresence mode="wait">
             {sidebarOpen && (
               <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
+                initial={{ opacity: 0, x: -10, width: 0 }}
+                animate={{ opacity: 1, x: 0, width: 'auto' }}
+                exit={{ opacity: 0, x: -10, width: 0 }}
+                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                className="overflow-hidden whitespace-nowrap"
               >
                 <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-medium">Admin Panel</p>
-                <p className="text-base font-semibold whitespace-nowrap font-display text-white">HOK Studio</p>
+                <p className="text-base font-semibold font-display text-white">HOK Studio</p>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
+        {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-hide">
           {tabs.map((item, idx) => {
             const Icon = item.icon
@@ -90,7 +94,11 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
                   onTabChange(item.id)
                   onCloseMobile()
                 }}
-                className={`relative w-full flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center px-2'} py-2.5 text-sm font-medium transition-all duration-200 ${isActive ? 'text-[var(--primary)] bg-white rounded-xl shadow-sm font-semibold' : 'text-white/75 hover:bg-white/10 hover:text-white'}`}
+                className={`relative w-full flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center px-2'} py-3 text-sm font-medium transition-all duration-200 rounded-xl ${
+                  isActive
+                    ? 'text-[var(--primary)] bg-white rounded-xl shadow-sm font-semibold'
+                    : 'text-white/75 hover:bg-white/10 hover:text-white'
+                }`}
                 title={!sidebarOpen ? item.label : undefined}
               >
                 {isActive && (
@@ -100,7 +108,7 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
                     transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
                   />
                 )}
-                <span className={`relative z-10 ${isActive ? 'text-[var(--primary)]' : ''}`}>
+                <span className={`relative z-10 flex-shrink-0 ${isActive ? 'text-[var(--primary)]' : ''}`}>
                   <Icon size={18} className="flex-shrink-0" />
                 </span>
                 <AnimatePresence>
@@ -121,6 +129,7 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
           })}
         </nav>
 
+        {/* User Section */}
         <div className="p-3 border-t border-white/10">
           {sidebarOpen ? (
             <motion.div

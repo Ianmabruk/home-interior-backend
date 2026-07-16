@@ -8,6 +8,12 @@ import { getOptimizedUrl } from '../utils/cloudinaryHelpers'
 const SLIDE_DURATION = 8000
 const FADE_DURATION = 2.5
 
+// Simple seeded random for consistent particle generation
+const seededRandom = (seed) => {
+  let x = Math.sin(seed) * 10000
+  return x - Math.floor(x)
+}
+
 export const Hero = ({ onBookConsultation }) => {
   const [images, setImages] = useState([])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -18,11 +24,11 @@ export const Hero = ({ onBookConsultation }) => {
 
   const particles = useMemo(() => Array.from({ length: 15 }, (_, i) => ({
     id: i,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-    size: Math.random() * 3 + 1,
-    delay: Math.random() * 15,
-    duration: 10 + Math.random() * 20
+    x: seededRandom(i * 1000) * 100,
+    y: seededRandom(i * 2000) * 100,
+    size: seededRandom(i * 3000) * 3 + 1,
+    delay: seededRandom(i * 4000) * 15,
+    duration: 10 + seededRandom(i * 5000) * 20
   })), [])
 
   useEffect(() => {
@@ -69,6 +75,7 @@ export const Hero = ({ onBookConsultation }) => {
           setImages(carouselImages)
         }
       } catch {
+        // Silently fail - fallback image will be used
       } finally {
         setLoading(false)
       }
