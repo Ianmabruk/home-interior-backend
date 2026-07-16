@@ -20,10 +20,10 @@ export const Hero = ({ onBookConsultation }) => {
       try {
         const res = await api.get('/content/homepage')
         const data = res.data || {}
-        
+
         // Collect images from multiple sources for the carousel
         const carouselImages = []
-        
+
         // 1. Hero image from about section (dedicated hero image)
         if (data.about?.aboutImageUrl) {
           carouselImages.push({
@@ -32,7 +32,7 @@ export const Hero = ({ onBookConsultation }) => {
             priority: true
           })
         }
-        
+
         // 2. Portfolio items with images
         if (data.portfolio && Array.isArray(data.portfolio)) {
           data.portfolio
@@ -45,7 +45,7 @@ export const Hero = ({ onBookConsultation }) => {
               })
             })
         }
-        
+
         // 3. Projects with cover images
         if (data.projects && Array.isArray(data.projects)) {
           data.projects
@@ -90,9 +90,9 @@ export const Hero = ({ onBookConsultation }) => {
 
   const activeImage = currentImage?.url || fallbackImage
 
-  return (
+return (
     <section
-      className="relative h-screen min-h-[600px] overflow-hidden bg-charcoal rounded-[32px] mx-4 md:mx-8 lg:mx-12 mt-20 md:mt-24"
+      className="relative h-screen min-h-[600px] overflow-hidden bg-charcoal mx-4 md:mx-8 lg:mx-12 mt-20 md:mt-24"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >

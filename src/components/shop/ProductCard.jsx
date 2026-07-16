@@ -28,7 +28,7 @@ export const ProductCard = memo(({ product, onQuickView }) => {
     <motion.article
       whileHover={{ y: -4 }}
       transition={{ duration: 0.3 }}
-      className="group relative overflow-hidden rounded-2xl bg-white shadow-lg hover:shadow-xl"
+      className="group relative overflow-hidden bg-white shadow-lg hover:shadow-xl"
     >
       <div className="relative aspect-[1/1] overflow-hidden bg-linen">
         <PositionedImage

@@ -40,7 +40,7 @@ export const AboutPreview = () => {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-            className="relative overflow-hidden rounded-[28px] md:rounded-[36px] shadow-[0_24px_80px_rgba(31,77,58,0.08)] aspect-[4/5] md:aspect-[3/4]"
+            className="relative overflow-hidden shadow-[0_24px_80px_rgba(31,77,58,0.08)] aspect-[4/5] md:aspect-[3/4]"
           >
             <img
               src={getOptimizedUrl(imageUrl, { width: 1200, crop: 'limit' })}
@@ -78,7 +78,7 @@ export const AboutPreview = () => {
               to="/about"
               className="group inline-flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-forest transition-colors duration-300 hover:text-bronze"
             >
-              Learn More About Us
+              Creating Warm, Elegant Interiors That Feel Like Home
               <ArrowRight size={14} strokeWidth={1.5} className="transition-transform duration-300 group-hover:translate-x-1" />
             </Link>
           </motion.div>

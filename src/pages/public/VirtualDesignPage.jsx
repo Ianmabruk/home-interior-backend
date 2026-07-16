@@ -1,4 +1,4 @@
-import { Maximize2, X, Play, Sparkles, Video, ArrowRight, Truck, CheckCircle, Zap, Layers } from 'lucide-react'
+import { Maximize2, X, Play, Sparkles, Video, ArrowRight, CheckCircle, Zap, Layers } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -232,7 +232,7 @@ export const VirtualDesignPage = () => {
                     custom={i}
                     className="group"
                   >
-                    <div className="relative overflow-hidden rounded-3xl bg-cream shadow-card hover:shadow-lift transition-all duration-500 aspect-[4/3]">
+                    <div className="relative overflow-hidden bg-cream shadow-card hover:shadow-lift transition-all duration-500 aspect-[4/3]">
                       <LazyVideo
                         src={getOptimizedVideoUrl(item.videoUrl, { width: 640 })}
                         poster={getVideoPosterUrl(item.videoUrl, { width: 640 })}

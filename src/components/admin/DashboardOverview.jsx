@@ -307,10 +307,10 @@ export const DashboardOverview = ({ overview, onNavigate }) => {
                       <img
                         src={item.imageUrl}
                         alt={item.title}
-                        className="w-10 h-10 rounded-lg object-cover shadow-sm"
+                        className="w-10 h-10 object-cover shadow-sm"
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-secondary/40 to-bronze/10 flex items-center justify-center text-charcoal/20">
+                      <div className="w-10 h-10 bg-gradient-to-br from-secondary/40 to-bronze/10 flex items-center justify-center text-charcoal/20">
                         <Images size={16} />
                       </div>
                     )}

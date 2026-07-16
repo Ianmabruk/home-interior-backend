@@ -115,7 +115,7 @@ export const FeaturedProjects = () => {
             <motion.div
               key={item._id}
               variants={itemVariants}
-              className="group relative overflow-hidden rounded-3xl bg-white border border-border shadow-[0_4px_24px_rgba(31,77,58,0.04)] transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_24px_80px_rgba(31,77,58,0.1)] cursor-pointer"
+              className="group relative overflow-hidden bg-white border border-border shadow-[0_4px_24px_rgba(31,77,58,0.04)] transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_24px_80px_rgba(31,77,58,0.1)] cursor-pointer"
               style={{ aspectRatio: '3/4' }}
             >
               <img
