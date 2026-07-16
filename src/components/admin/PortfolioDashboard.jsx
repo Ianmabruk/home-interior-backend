@@ -1,20 +1,28 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { UploadCloud, X, Edit, Trash2, Images, Eye } from 'lucide-react'
+import { UploadCloud, X, Edit, Trash2, Images, Eye, Plus, Image, Save, MoreVertical } from 'lucide-react'
 import { api } from '../../services/api'
 import { emitAdminDataChanged } from '../../utils/adminEvents'
 
-const INITIAL_FORM = { title: '', category: '', description: '', order: 0 }
+const INITIAL_FORM = { 
+  title: '', 
+  category: '', 
+  description: '', 
+  location: '',
+  completionDate: '',
+  order: 0 
+}
 
 export const PortfolioDashboard = () => {
   const [portfolio, setPortfolio] = useState([])
   const [form, setForm] = useState(INITIAL_FORM)
   const [editingId, setEditingId] = useState(null)
-  const [mediaFile, setMediaFile] = useState(null)
-  const [mediaPreview, setMediaPreview] = useState(null)
+  const [mediaFiles, setMediaFiles] = useState([])
+  const [mediaPreviews, setMediaPreviews] = useState([])
   const [loading, setLoading] = useState(false)
   const [deleteId, setDeleteId] = useState(null)
   const [isDragOver, setIsDragOver] = useState(false)
+  const [showForm, setShowForm] = useState(false)
   const fileRef = useRef(null)
 
   useEffect(() => {
@@ -29,22 +37,17 @@ export const PortfolioDashboard = () => {
     load()
   }, [])
 
-  const handleFile = (e) => {
-    const f = e.target.files?.[0] || null
-    setMediaFile(f)
-    if (f?.type?.startsWith('image/')) setMediaPreview(URL.createObjectURL(f))
-    else setMediaPreview(null)
+  const handleFiles = (files) => {
+    const validFiles = Array.from(files).filter(f => f.type.startsWith('image/'))
+    const newFiles = [...mediaFiles, ...validFiles].slice(0, 10)
+    setMediaFiles(newFiles)
+    validFiles.forEach(f => setMediaPreviews(prev => [...prev, URL.createObjectURL(f)]))
   }
 
   const handleDrop = (e) => {
     e.preventDefault()
     setIsDragOver(false)
-    const f = e.dataTransfer.files?.[0] || null
-    if (f) {
-      setMediaFile(f)
-      if (f?.type?.startsWith('image/')) setMediaPreview(URL.createObjectURL(f))
-      else setMediaPreview(null)
-    }
+    handleFiles(e.dataTransfer.files)
   }
 
   const handleDragOver = (e) => {
@@ -54,34 +57,12 @@ export const PortfolioDashboard = () => {
 
   const handleDragLeave = () => setIsDragOver(false)
 
-  const submit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    try {
-      const payload = new FormData()
-      payload.append('title', form.title)
-      payload.append('category', form.category)
-      if (form.description) payload.append('description', form.description)
-      payload.append('order', String(form.order || 0))
-      if (mediaFile) payload.append('media', mediaFile)
-
-      if (editingId) {
-        await api.patch(`/content/portfolio/${editingId}`, payload)
-        setEditingId(null)
-      } else {
-        await api.post('/content/portfolio', payload)
-      }
-      setForm(INITIAL_FORM)
-      setMediaFile(null)
-      setMediaPreview(null)
-      const res = await api.get('/content/portfolio')
-      setPortfolio(Array.isArray(res.data) ? res.data : res.data?.items || [])
-      emitAdminDataChanged({ type: 'portfolio-changed' })
-    } catch {
-      // handle error
-    } finally {
-      setLoading(false)
-    }
+  const removeMedia = (index) => {
+    setMediaFiles(prev => prev.filter((_, i) => i !== index))
+    setMediaPreviews(prev => {
+      URL.revokeObjectURL(prev[index])
+      return prev.filter((_, i) => i !== index)
+    })
   }
 
   const startEdit = (item) => {
@@ -90,10 +71,61 @@ export const PortfolioDashboard = () => {
       title: item.title,
       category: item.category,
       description: item.description || '',
+      location: item.location || '',
+      completionDate: item.completionDate || '',
       order: item.order || 0,
     })
-    setMediaPreview(item.imageUrl || null)
-    setMediaFile(null)
+    setMediaFiles(item.images ? item.images.map(img => null) : [])
+    setMediaPreviews(item.images ? item.images.map(img => img.url || img) : [])
+    setShowForm(true)
+  }
+
+  const resetForm = () => {
+    setEditingId(null)
+    setForm(INITIAL_FORM)
+    setMediaFiles([])
+    setMediaPreviews([])
+    setShowForm(false)
+  }
+
+  const submit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      const payload = new FormData()
+      payload.append('title', form.title)
+      payload.append('category', form.category)
+      if (form.description) payload.append('description', form.description)
+      if (form.location) payload.append('location', form.location)
+      if (form.completionDate) payload.append('completionDate', form.completionDate)
+      payload.append('order', String(form.order || 0))
+      
+      mediaFiles.forEach((file, index) => {
+        if (file) payload.append('media', file)
+      })
+      // Also send existing image URLs for editing
+      if (editingId) {
+        mediaPreviews.forEach((preview, index) => {
+          if (preview && !mediaFiles[index]) {
+            payload.append('existingImages', preview)
+          }
+        })
+      }
+
+      if (editingId) {
+        await api.patch(`/content/portfolio/${editingId}`, payload)
+      } else {
+        await api.post('/content/portfolio', payload)
+      }
+      resetForm()
+      const res = await api.get('/content/portfolio')
+      setPortfolio(Array.isArray(res.data) ? res.data : res.data?.items || [])
+      emitAdminDataChanged({ type: 'portfolio-changed' })
+    } catch {
+      // handle error
+    } finally {
+      setLoading(false)
+    }
   }
 
   const deleteItem = async () => {
@@ -111,32 +143,30 @@ export const PortfolioDashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with Add Button */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between"
+        className="flex flex-col md:flex-row md:items-end justify-between gap-4"
       >
         <div>
           <h2 className="font-display text-3xl text-[var(--primary)]">Portfolio</h2>
           <p className="text-sm text-[var(--primary)]/50 mt-1">{portfolio.length} projects</p>
         </div>
-        <div className="flex items-center gap-3">
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="relative"
-            onClick={() => fileRef.current?.click()}
-          >
-            <UploadCloud size={20} className="text-[var(--accent)]" />
-            <span className="sr-only">Add new project</span>
-          </motion.div>
-        </div>
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => { setEditingId(null); setForm(INITIAL_FORM); setMediaFiles([]); setMediaPreviews([]); setShowForm(true) }}
+          className="btn-luxury-primary flex items-center gap-2 whitespace-nowrap"
+        >
+          <Plus size={18} strokeWidth={2} />
+          Add Portfolio Project
+        </motion.button>
       </motion.div>
 
-      {/* Upload Form - Hidden by default, slides down when adding/editing */}
+      {/* Upload Form - Slides down when adding/editing */}
       <AnimatePresence>
-        {(editingId || mediaPreview) && (
+        {showForm && (
           <motion.form
             initial={{ opacity: 0, height: 0, y: -20 }}
             animate={{ opacity: 1, height: 'auto', y: 0 }}
@@ -151,19 +181,14 @@ export const PortfolioDashboard = () => {
                   {editingId ? 'Edit' : 'Add'} Portfolio Project
                 </h3>
                 <p className="text-[10px] text-[var(--primary)]/50 mt-1">
-                  {editingId ? 'Update project details' : 'Upload a new portfolio project'}
+                  {editingId ? 'Update project details' : 'Create a new portfolio project'}
                 </p>
               </div>
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
                 type="button"
-                onClick={() => {
-                  setEditingId(null)
-                  setForm(INITIAL_FORM)
-                  setMediaFile(null)
-                  setMediaPreview(null)
-                }}
+                onClick={resetForm}
                 className="p-2 rounded-xl text-[var(--primary)]/50 hover:bg-[var(--secondary)]/30 hover:text-[var(--primary)] transition"
               >
                 <X size={20} strokeWidth={1.5} />
@@ -171,7 +196,7 @@ export const PortfolioDashboard = () => {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Title</label>
+              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Project Title</label>
               <input
                 value={form.title}
                 onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
@@ -203,6 +228,27 @@ export const PortfolioDashboard = () => {
               />
             </div>
 
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Location</label>
+                <input
+                  value={form.location}
+                  onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
+                  placeholder="City, Country"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Completion Date</label>
+                <input
+                  value={form.completionDate}
+                  onChange={(e) => setForm((f) => ({ ...f, completionDate: e.target.value }))}
+                  type="date"
+                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
+                />
+              </div>
+            </div>
+
             <div className="space-y-1">
               <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Display Order</label>
               <input
@@ -214,7 +260,7 @@ export const PortfolioDashboard = () => {
               />
             </div>
 
-            <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+            <input ref={fileRef} type="file" accept="image/*" multiple onChange={(e) => handleFiles(e.target.files)} className="hidden" />
             <motion.div
               whileHover={{ scale: 1.01 }}
               onDrop={handleDrop}
@@ -225,26 +271,48 @@ export const PortfolioDashboard = () => {
                 isDragOver ? 'border-[var(--accent)] bg-[var(--accent)]/5' : 'border-[var(--border)] bg-[var(--bg)]/30'
               }`}
             >
-              {mediaPreview ? (
-                <div className="relative rounded-xl overflow-hidden">
-                  <img
-                    src={mediaPreview}
-                    alt="preview"
-                    className="h-48 w-full object-cover"
-                  />
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setMediaFile(null)
-                      setMediaPreview(null)
-                    }}
-                    className="absolute top-3 right-3 bg-[var(--primary)]/90 backdrop-blur-sm text-white p-2 rounded-full hover:bg-[var(--primary)] shadow-lg"
-                  >
-                    <X size={14} />
-                  </motion.button>
+              {mediaPreviews.length > 0 ? (
+                <div className="p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-[var(--primary)]">Project Images ({mediaPreviews.length}/10)</p>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      type="button"
+                      onClick={() => fileRef.current?.click()}
+                      className="text-xs text-[var(--accent)] hover:text-[var(--primary)] font-medium"
+                    >
+                      Add More
+                    </motion.button>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {mediaPreviews.map((preview, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="relative rounded-xl overflow-hidden group"
+                      >
+                        <img
+                          src={preview}
+                          alt={`Preview ${index + 1}`}
+                          className="h-40 w-full object-cover"
+                        />
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); removeMedia(index) }}
+                          className="absolute top-2 right-2 bg-[var(--primary)]/90 backdrop-blur-sm text-white p-2 rounded-full hover:bg-[var(--primary)] shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X size={14} />
+                        </motion.button>
+                        <div className="absolute bottom-2 left-2 text-[10px] font-medium text-white bg-black/50 px-1.5 py-0.5 rounded">
+                          {index + 1}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-3 py-8">
@@ -256,8 +324,8 @@ export const PortfolioDashboard = () => {
                     <UploadCloud size={28} />
                   </motion.div>
                   <div>
-                    <p className="text-sm font-medium text-[var(--primary)]">Drop image here or click to browse</p>
-                    <p className="text-[10px] text-[var(--primary)]/50 mt-1">PNG, JPG up to 10MB</p>
+                    <p className="text-sm font-medium text-[var(--primary)]">Drop images here or click to browse</p>
+                    <p className="text-[10px] text-[var(--primary)]/50 mt-1">PNG, JPG up to 10MB each (max 10 images)</p>
                   </div>
                 </div>
               )}
@@ -268,12 +336,7 @@ export const PortfolioDashboard = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 type="button"
-                onClick={() => {
-                  setEditingId(null)
-                  setForm(INITIAL_FORM)
-                  setMediaFile(null)
-                  setMediaPreview(null)
-                }}
+                onClick={resetForm}
                 className="flex-1 rounded-full border border-[var(--border)] bg-white px-6 py-3 text-[11px] font-semibold uppercase tracking-widest text-[var(--primary)]/70 transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
               >
                 Cancel
@@ -378,6 +441,17 @@ export const PortfolioDashboard = () => {
               >
                 {item.title}
               </motion.h3>
+              {item.location && (
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.15 }}
+                  className="text-sm text-[var(--primary)]/50 mt-2"
+                >
+                  {item.location}
+                </motion.p>
+              )}
             </div>
           </motion.article>
         ))}
@@ -392,7 +466,7 @@ export const PortfolioDashboard = () => {
               <Images size={32} />
             </div>
             <p className="font-display text-xl text-[var(--primary)]/30">No portfolio projects yet</p>
-            <p className="text-sm text-[var(--primary)]/40 mt-2">Click the upload icon to add your first project</p>
+            <p className="text-sm text-[var(--primary)]/40 mt-2">Click "Add Portfolio Project" to get started</p>
           </motion.div>
         )}
       </motion.div>

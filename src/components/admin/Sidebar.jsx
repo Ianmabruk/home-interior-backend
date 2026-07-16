@@ -1,4 +1,5 @@
 import { useAuth } from '../../context/AuthContext'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard,
@@ -28,6 +29,16 @@ const tabs = [
 
 export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onCloseMobile }) => {
   const { user, logout } = useAuth()
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('adminSidebarCollapsed') === 'true'
+    }
+    return false
+  })
+
+  useEffect(() => {
+    localStorage.setItem('adminSidebarCollapsed', isCollapsed)
+  }, [isCollapsed])
 
   const handleLogout = () => {
     logout?.()
@@ -47,10 +58,10 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
         )}
       </AnimatePresence>
 
-      <motion.aside
+<motion.aside
         initial={false}
         animate={{
-          width: sidebarOpen ? 300 : 88,
+          width: sidebarOpen ? (isCollapsed ? 88 : 300) : (mobileOpen ? 300 : 0),
         }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         className="fixed inset-y-0 left-0 z-40 flex flex-col bg-[#1B1714] text-white border-r border-white/10 shadow-2xl"
@@ -64,7 +75,7 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
             <Sparkles size={20} className="text-white" />
           </motion.div>
           <AnimatePresence mode="wait">
-            {sidebarOpen && (
+            {sidebarOpen && !isCollapsed && (
               <motion.div
                 initial={{ opacity: 0, x: -10, width: 0 }}
                 animate={{ opacity: 1, x: 0, width: 'auto' }}
@@ -78,6 +89,30 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
             )}
           </AnimatePresence>
         </div>
+
+        {/* Collapse Toggle Button */}
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="mx-3 mt-2 mb-4 p-2 rounded-xl hover:bg-white/5 transition-colors text-white/70 hover:text-white"
+          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`}
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </motion.button>
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-hide">
@@ -94,12 +129,12 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
                   onTabChange(item.id)
                   onCloseMobile()
                 }}
-                className={`relative w-full flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center px-2'} py-3 text-sm font-medium transition-all duration-200 rounded-xl ${
+                className={`relative w-full flex items-center ${sidebarOpen && !isCollapsed ? 'gap-3 px-4' : 'justify-center px-2'} py-3 text-sm font-medium transition-all duration-200 rounded-xl ${
                   isActive
                     ? 'text-[var(--accent)] bg-white/10 rounded-xl shadow-sm font-semibold'
                     : 'text-white/75 hover:bg-white/5 hover:text-white'
                 }`}
-                title={!sidebarOpen ? item.label : undefined}
+                title={!sidebarOpen || isCollapsed ? item.label : undefined}
               >
                 {isActive && (
                   <motion.div
@@ -112,7 +147,7 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
                   <Icon size={18} className="flex-shrink-0" />
                 </span>
                 <AnimatePresence>
-                  {sidebarOpen && (
+                  {sidebarOpen && !isCollapsed && (
                     <motion.span
                       initial={{ opacity: 0, x: -5 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -131,7 +166,7 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
 
         {/* User Section */}
         <div className="p-3 border-t border-white/10">
-          {sidebarOpen ? (
+          {sidebarOpen && !isCollapsed ? (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}

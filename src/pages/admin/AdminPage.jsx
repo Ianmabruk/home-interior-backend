@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search,
@@ -20,6 +20,8 @@ import {
   Sparkles,
   LogOut,
   Star,
+  Camera,
+  UploadCloud,
 } from 'lucide-react'
 import { api } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
@@ -46,9 +48,10 @@ const tabs = [
 ]
 
 export const AdminPage = () => {
-  const { user } = useAuth()
+  const { user, logout, updateProfile } = useAuth()
   const [activeTab, setActiveTab] = useState('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [isCollapsed, setIsCollapsed] = useState(false)
   const [mobileSidebar, setMobileSidebar] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [overview, setOverview] = useState(null)
@@ -65,6 +68,14 @@ export const AdminPage = () => {
     returnPolicy: '',
     socialLinks: '',
   })
+  const [profileForm, setProfileForm] = useState({
+    fullName: '',
+    email: '',
+  })
+  const [profileImage, setProfileImage] = useState(null)
+  const [profilePreview, setProfilePreview] = useState(null)
+  const [savingProfile, setSavingProfile] = useState(false)
+  const fileRef = useRef(null)
 
   const fetchAll = useCallback(() => {
     Promise.all([
@@ -97,6 +108,19 @@ export const AdminPage = () => {
     return () => window.removeEventListener('admin:data-changed', handler)
   }, [fetchAll])
 
+  // Load user profile on mount
+  useEffect(() => {
+    if (user) {
+      setProfileForm({
+        fullName: user.fullName || '',
+        email: user.email || '',
+      })
+      if (user.profileImage) {
+        setProfilePreview(user.profileImage)
+      }
+    }
+  }, [user])
+
   const submitSettings = async (e) => {
     e.preventDefault()
     try {
@@ -109,6 +133,56 @@ export const AdminPage = () => {
     }
   }
 
+  const submitProfile = async (e) => {
+    e.preventDefault()
+    setSavingProfile(true)
+    try {
+      const payload = new FormData()
+      payload.append('fullName', profileForm.fullName)
+      payload.append('email', profileForm.email)
+      if (profileImage) payload.append('profileImage', profileImage)
+      
+      await api.put('/admin/profile', payload)
+      if (updateProfile) {
+        await updateProfile({ fullName: profileForm.fullName, email: profileForm.email, profileImage: profilePreview })
+      }
+      setStatus('Profile updated successfully.')
+      setTimeout(() => setStatus(''), 3000)
+    } catch {
+      setStatus('Profile update failed. Please try again.')
+    } finally {
+      setSavingProfile(false)
+    }
+  }
+
+  const handleProfileImage = (e) => {
+    const f = e.target.files?.[0] || null
+    if (f?.type?.startsWith('image/')) {
+      setProfileImage(f)
+      setProfilePreview(URL.createObjectURL(f))
+    }
+  }
+
+  const handleProfileDrop = (e) => {
+    e.preventDefault()
+    const f = e.dataTransfer.files?.[0] || null
+    if (f?.type?.startsWith('image/')) {
+      setProfileImage(f)
+      setProfilePreview(URL.createObjectURL(f))
+    }
+  }
+
+  const handleProfileDragOver = (e) => {
+    e.preventDefault()
+  }
+
+  const handleProfileDragLeave = () => {}
+
+  const removeProfileImage = () => {
+    setProfileImage(null)
+    setProfilePreview(null)
+  }
+
   const markNotificationsRead = () => setUnreadOrders(0)
 
   const currentTab = tabs.find((t) => t.id === activeTab)
@@ -119,11 +193,13 @@ export const AdminPage = () => {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         sidebarOpen={sidebarOpen}
+        isCollapsed={isCollapsed}
+        setIsCollapsed={setIsCollapsed}
         mobileOpen={mobileSidebar}
         onCloseMobile={() => setMobileSidebar(false)}
       />
 
-      <div className="flex flex-1 flex-col lg:pl-[280px]">
+      <div className={`flex flex-1 flex-col lg:pl-[${isCollapsed ? 88 : 280}px]`}>
         <header className="sticky top-4 z-30 mx-4 lg:mx-6">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -134,16 +210,16 @@ export const AdminPage = () => {
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => setSidebarOpen((s) => !s)}
+                onClick={() => setIsCollapsed((c) => !c)}
                 className="hidden lg:flex p-2 rounded-xl hover:bg-[var(--secondary)]/60 transition-colors text-[var(--primary)]"
               >
-                {sidebarOpen ? (
+                {isCollapsed ? (
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M15 18l-6-6 6-6" />
+                    <path d="M9 18l6-6-6-6" />
                   </svg>
                 ) : (
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 18l6-6-6-6" />
+                    <path d="M15 18l-6-6 6-6" />
                   </svg>
                 )}
               </motion.button>
@@ -414,6 +490,114 @@ export const AdminPage = () => {
                     </motion.button>
                   </motion.form>
                 </div>
+              )}
+
+              {/* Profile Settings */}
+              {activeTab === 'settings' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-6 max-w-2xl"
+                >
+                  <motion.form
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    onSubmit={submitProfile}
+                    className="bg-white/80 backdrop-blur-xl border border-[var(--border)]/60 rounded-2xl p-5 shadow-[0_10px_40px_rgba(42,36,31,0.06)] space-y-5"
+                  >
+                    <div>
+                      <h2 className="font-display text-2xl text-[var(--primary)]">Profile Settings</h2>
+                      <p className="text-xs text-[var(--primary)]/50 mt-1">Manage your profile information and avatar</p>
+                    </div>
+
+                    {/* Profile Image */}
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/60">Profile Image</label>
+                      <div className="flex items-center gap-6">
+                        <div className="relative">
+                          {profilePreview ? (
+                            <img
+                              src={profilePreview}
+                              alt="Profile preview"
+                              className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+                            />
+                          ) : (
+                            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent)] flex items-center justify-center text-white text-3xl font-semibold shadow-lg">
+                              {(profileForm.fullName || user?.fullName || 'A').charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            type="button"
+                            onClick={() => fileRef.current?.click()}
+                            className="absolute bottom-0 right-0 w-8 h-8 bg-[var(--primary)] text-white rounded-full flex items-center justify-center shadow-lg hover:bg-[var(--accent)] transition"
+                          >
+                            <UploadCloud size={16} />
+                          </motion.button>
+                          <input ref={fileRef} type="file" accept="image/*" onChange={handleProfileImage} className="hidden" />
+                        </div>
+                        <div className="space-y-2">
+                          <motion.div
+                            whileHover={{ scale: 1.01 }}
+                            onDrop={handleProfileDrop}
+                            onDragOver={handleProfileDragOver}
+                            onDragLeave={handleProfileDragLeave}
+                            className="border-2 border-dashed rounded-2xl p-6 text-center transition-all duration-300 border-[var(--border)] bg-[var(--bg)]/30 hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 cursor-pointer"
+                          >
+                            <UploadCloud size={24} className="mx-auto text-[var(--accent)] mb-2" />
+                            <p className="text-sm font-medium text-[var(--primary)]">Drag & drop image here or click to browse</p>
+                            <p className="text-[10px] text-[var(--primary)]/50 mt-1">PNG, JPG up to 5MB</p>
+                          </motion.div>
+                          {profilePreview && (
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              type="button"
+                              onClick={removeProfileImage}
+                              className="w-full rounded-full border border-[var(--error)]/50 bg-[var(--error)]/5 text-[var(--error)] text-[11px] font-semibold uppercase tracking-widest py-2.5 transition"
+                            >
+                              Remove Profile Image
+                            </motion.button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Name & Email */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/60">Full Name</label>
+                        <input
+                          value={profileForm.fullName}
+                          onChange={(e) => setProfileForm((s) => ({ ...s, fullName: e.target.value }))}
+                          className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
+                          placeholder="Your full name"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/60">Email</label>
+                        <input
+                          value={profileForm.email}
+                          onChange={(e) => setProfileForm((s) => ({ ...s, email: e.target.value }))}
+                          type="email"
+                          className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
+                          placeholder="your@email.com"
+                        />
+                      </div>
+                    </div>
+
+                    <motion.button
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.98 }}
+                      type="submit"
+                      disabled={savingProfile}
+                      className="bg-[var(--primary)] text-white w-full py-3 rounded-xl text-[11px] font-semibold uppercase tracking-wider transition-all duration-300 hover:bg-[var(--primary)]/90 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {savingProfile ? 'Saving…' : 'Update Profile'}
+                    </motion.button>
+                  </motion.form>
+                </motion.div>
               )}
             </motion.div>
           </AnimatePresence>
