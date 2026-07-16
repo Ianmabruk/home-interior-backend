@@ -515,6 +515,15 @@ export const VirtualInteriorDashboard = () => {
                       alt={item.title}
                       className="h-44 w-full object-cover"
                     />
+                  ) : (item.images && item.images.length > 0) ? (
+                    <img
+                      src={getOptimizedUrl(
+                        typeof item.images[0] === 'string' ? item.images[0] : item.images[0]?.url,
+                        { width: 480 }
+                      )}
+                      alt={item.title}
+                      className="h-44 w-full object-cover"
+                    />
                   ) : (
                     <div className="h-44 w-full bg-[var(--secondary)]/60 flex items-center justify-center text-[var(--primary)]/30">
                       <Video size={40} />
