@@ -88,9 +88,9 @@ export const ShopPage = () => {
   const heroImage = 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=2000&q=80'
 
   return (
-    <div className="min-h-screen bg-warm-ivory">
+    <div className="min-h-screen bg-[var(--bg)]">
       {/* Page Header with Luxury Interior Background */}
-      <section className="relative section-pad overflow-hidden">
+      <section className="relative overflow-hidden">
         <div className="absolute inset-0">
           <img
             src={getOptimizedUrl(heroImage, { width: 2000, crop: 'limit' })}
@@ -99,12 +99,12 @@ export const ShopPage = () => {
             loading="eager"
             decoding="async"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-luxury-text/65 via-luxury-text/75 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[var(--primary)]/65 via-[var(--primary)]/75 to-transparent" />
         </div>
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(214,178,122,0.15),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(232,154,67,0.15),transparent_50%)]" />
         <div className="relative z-10 container-wide px-6 md:px-12 lg:px-20">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-cream/80 mb-4">Curated Collection</p>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--bg)]/80 mb-4">Curated Collection</p>
             <h1 className="font-display text-5xl font-normal leading-tight text-white md:text-7xl lg:text-8xl">
               Shop
             </h1>
@@ -116,13 +116,13 @@ export const ShopPage = () => {
       </section>
 
       {/* Sticky Premium Header - Filters only, no permanent search */}
-      <div className="sticky top-0 z-30 border-b border-linen/20 bg-warm-ivory/80 backdrop-blur-xl shadow-sm md:top-[72px]">
+      <div className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--bg)]/80 backdrop-blur-xl shadow-sm md:top-[72px]">
         <div className="container-wide px-4 py-3 md:px-12 md:py-4">
           {/* Mobile Row */}
           <div className="flex items-center gap-2 md:hidden">
             <button
               onClick={() => setMobileMenuOpen((p) => !p)}
-              className="flex items-center gap-1.5 rounded-full border border-linen/40 bg-white px-3 py-2.5 text-2xs font-semibold uppercase tracking-widest text-luxury-text/70"
+              className="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-white px-3 py-2.5 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/70"
             >
               <Filter size={14} strokeWidth={1.5} />
               {hasFilters ? 'Filters' : 'Menu'}
@@ -135,7 +135,7 @@ export const ShopPage = () => {
               <div className="relative">
                 <button
                   onClick={() => setCurrencyOpen((p) => !p)}
-                  className="flex items-center gap-2 rounded-full border border-linen/40 bg-white px-4 py-2 text-2xs font-semibold uppercase tracking-widest text-luxury-text/70 hover:border-bronze transition"
+                  className="flex items-center gap-2 rounded-full border border-[var(--border)] bg-white px-4 py-2 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/70 hover:border-[var(--accent)] transition"
                 >
                   {currency} <ChevronDown size={12} strokeWidth={2} className={`transition-transform ${currencyOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -145,14 +145,14 @@ export const ShopPage = () => {
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 4 }}
-                      className="absolute right-0 mt-2 w-40 border border-linen/40 bg-white rounded-2xl shadow-lift z-10 overflow-hidden"
+                      className="absolute right-0 mt-2 w-40 border border-[var(--border)] bg-white rounded-2xl shadow-[0_20px_40px_rgba(42,36,31,0.15)] z-10 overflow-hidden"
                     >
                       {CURRENCIES.map((c) => (
                         <button
                           key={c.code}
                           onClick={() => { changeCurrency(c.code); setCurrencyOpen(false) }}
                           className={`w-full px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-widest transition ${
-                            currency === c.code ? 'bg-warm-ivory text-bronze' : 'text-luxury-text hover:bg-warm-ivory/50'
+                            currency === c.code ? 'bg-[var(--bg)] text-[var(--accent)]' : 'text-[var(--primary)] hover:bg-[var(--bg)]/50'
                           }`}
                         >
                           {c.code} ({c.symbol})
@@ -166,7 +166,7 @@ export const ShopPage = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="rounded-full border border-linen/40 bg-white px-4 py-2 text-2xs font-semibold uppercase tracking-widest text-luxury-text/70 focus:outline-none focus:ring-2 focus:ring-bronze/20 transition cursor-pointer"
+                className="rounded-full border border-[var(--border)] bg-white px-4 py-2 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/70 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20 transition cursor-pointer"
               >
                 <option value="newest">Newest</option>
                 <option value="price-low">Price: Low to High</option>
@@ -176,7 +176,7 @@ export const ShopPage = () => {
 
               <button
                 onClick={() => setFiltersOpen((p) => !p)}
-                className="flex items-center gap-2 rounded-full border border-linen/40 bg-white px-4 py-2 text-2xs font-semibold uppercase tracking-widest text-luxury-text/60 transition hover:border-bronze hover:text-bronze"
+                className="flex items-center gap-2 rounded-full border border-[var(--border)] bg-white px-4 py-2 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/60 transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
               >
                 <SlidersHorizontal size={13} strokeWidth={1.5} />
                 Filters
@@ -185,13 +185,13 @@ export const ShopPage = () => {
               {hasFilters && (
                 <button
                   onClick={clearFilters}
-                  className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-widest text-luxury-text/40 transition hover:text-bronze"
+                  className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/40 transition hover:text-[var(--accent)]"
                 >
                   <X size={12} strokeWidth={1.5} /> Clear
                 </button>
               )}
 
-              <span className="text-2xs text-luxury-text/40 font-medium">{products.length} items</span>
+              <span className="text-2xs text-[var(--primary)]/40 font-medium">{products.length} items</span>
             </div>
           </div>
 
@@ -201,7 +201,7 @@ export const ShopPage = () => {
               <button
                 onClick={() => setCategory('')}
                 className={`px-5 py-2 text-2xs font-semibold uppercase tracking-widest transition rounded-full ${
-                  !category ? 'bg-luxury-text text-white shadow-md' : 'text-luxury-text/50 hover:text-luxury-text bg-warm-ivory border border-linen/40'
+                  !category ? 'bg-[var(--primary)] text-white shadow-md' : 'text-[var(--primary)]/50 hover:text-[var(--primary)] bg-[var(--bg)] border border-[var(--border)]'
                 }`}
               >
                 All
@@ -213,7 +213,7 @@ export const ShopPage = () => {
                     key={cat}
                     onClick={() => setCategory(cat === category ? '' : cat)}
                     className={`flex items-center gap-1.5 px-5 py-2 text-2xs font-semibold uppercase tracking-widest transition rounded-full ${
-                      category === cat ? 'bg-luxury-text text-white shadow-md' : 'text-luxury-text/50 hover:text-luxury-text bg-warm-ivory border border-linen/40'
+                      category === cat ? 'bg-[var(--primary)] text-white shadow-md' : 'text-[var(--primary)]/50 hover:text-[var(--primary)] bg-[var(--bg)] border border-[var(--border)]'
                     }`}
                   >
                     <Icon size={12} strokeWidth={1.5} />
@@ -227,7 +227,7 @@ export const ShopPage = () => {
       </div>
 
       {/* Desktop Expandable Filters */}
-      <div className="hidden md:block border-b border-linen/20 bg-warm-ivory/50">
+      <div className="hidden md:block border-b border-[var(--border)] bg-[var(--bg)]/50">
         <div className="container-wide px-6 md:px-12 lg:px-20">
           <AnimatePresence>
             {filtersOpen && (
@@ -239,23 +239,23 @@ export const ShopPage = () => {
                 className="flex flex-col lg:flex-row gap-6 py-6 overflow-hidden"
               >
                 <div className="flex-1 max-w-xs">
-                  <label className="block text-2xs font-semibold uppercase tracking-widest text-luxury-text/50 mb-2">Min Price ({CURRENCIES.find(c => c.code === currency)?.symbol || currency})</label>
+                  <label className="block text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/50 mb-2">Min Price ({CURRENCIES.find(c => c.code === currency)?.symbol || currency})</label>
                   <input
                     value={minPrice}
                     onChange={(e) => setMinPrice(e.target.value)}
                     placeholder="0"
                     type="number"
-                    className="w-full rounded-full border border-linen/40 bg-warm-ivory px-4 py-2.5 text-sm outline-none placeholder:text-luxury-text/35 focus:border-bronze focus:ring-2 focus:ring-bronze/20 transition"
+                    className="w-full rounded-full border border-[var(--border)] bg-[var(--bg)] px-4 py-2.5 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition"
                   />
                 </div>
                 <div className="flex-1 max-w-xs">
-                  <label className="block text-2xs font-semibold uppercase tracking-widest text-luxury-text/50 mb-2">Max Price ({CURRENCIES.find(c => c.code === currency)?.symbol || currency})</label>
+                  <label className="block text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/50 mb-2">Max Price ({CURRENCIES.find(c => c.code === currency)?.symbol || currency})</label>
                   <input
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(e.target.value)}
                     placeholder="Any"
                     type="number"
-                    className="w-full rounded-full border border-linen/40 bg-warm-ivory px-4 py-2.5 text-sm outline-none placeholder:text-luxury-text/35 focus:border-bronze focus:ring-2 focus:ring-bronze/20 transition"
+                    className="w-full rounded-full border border-[var(--border)] bg-[var(--bg)] px-4 py-2.5 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition"
                   />
                 </div>
               </motion.div>
@@ -272,7 +272,7 @@ export const ShopPage = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-luxury-text/50 md:hidden"
+              className="fixed inset-0 z-40 bg-[var(--primary)]/50 backdrop-blur-sm md:hidden"
               onClick={() => setMobileMenuOpen(false)}
             />
             <motion.div
@@ -282,21 +282,21 @@ export const ShopPage = () => {
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="fixed bottom-0 left-0 right-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-[2rem] bg-white shadow-2xl md:hidden"
             >
-              <div className="flex items-center justify-between border-b border-linen/20 p-5">
-                <p className="font-display text-xl text-luxury-text">Filters & Categories</p>
-                <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-luxury-text/50 hover:text-luxury-text transition">
+              <div className="flex items-center justify-between border-b border-[var(--border)] p-5">
+                <p className="font-display text-xl text-[var(--primary)]">Filters & Categories</p>
+                <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-[var(--primary)]/50 hover:text-[var(--primary)] transition">
                   <X size={20} strokeWidth={1.5} />
                 </button>
               </div>
 
               <div className="p-5 space-y-6">
                 <div>
-                  <p className="text-2xs font-semibold uppercase tracking-widest text-luxury-text/50 mb-3">Categories</p>
+                  <p className="text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/50 mb-3">Categories</p>
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => { setCategory(''); setMobileMenuOpen(false) }}
                       className={`px-4 py-2 text-2xs font-semibold uppercase tracking-widest transition rounded-full ${
-                        !category ? 'bg-luxury-text text-white' : 'text-luxury-text/50 hover:text-luxury-text bg-warm-ivory border border-linen/40'
+                        !category ? 'bg-[var(--primary)] text-white' : 'text-[var(--primary)]/50 hover:text-[var(--primary)] bg-[var(--bg)] border border-[var(--border)]'
                       }`}
                     >
                       All
@@ -308,7 +308,7 @@ export const ShopPage = () => {
                           key={cat}
                           onClick={() => { setCategory(cat === category ? '' : cat); setMobileMenuOpen(false) }}
                           className={`flex items-center gap-1.5 px-4 py-2 text-2xs font-semibold uppercase tracking-widest transition rounded-full ${
-                            category === cat ? 'bg-luxury-text text-white' : 'text-luxury-text/50 hover:text-luxury-text bg-warm-ivory border border-linen/40'
+                            category === cat ? 'bg-[var(--primary)] text-white' : 'text-[var(--primary)]/50 hover:text-[var(--primary)] bg-[var(--bg)] border border-[var(--border)]'
                           }`}
                         >
                           <Icon size={12} strokeWidth={1.5} />
@@ -320,14 +320,14 @@ export const ShopPage = () => {
                 </div>
 
                 <div>
-                  <p className="text-2xs font-semibold uppercase tracking-widest text-luxury-text/50 mb-3">Currency</p>
+                  <p className="text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/50 mb-3">Currency</p>
                   <div className="flex flex-wrap gap-2">
                     {CURRENCIES.map((c) => (
                       <button
                         key={c.code}
                         onClick={() => { changeCurrency(c.code); setCurrencyOpen(false) }}
                         className={`px-4 py-2 text-2xs font-semibold uppercase tracking-widest transition rounded-full ${
-                          currency === c.code ? 'bg-luxury-text text-white' : 'text-luxury-text/50 hover:text-luxury-text bg-warm-ivory border border-linen/40'
+                          currency === c.code ? 'bg-[var(--primary)] text-white' : 'text-[var(--primary)]/50 hover:text-[var(--primary)] bg-[var(--bg)] border border-[var(--border)]'
                         }`}
                       >
                         {c.code} ({c.symbol})
@@ -337,11 +337,11 @@ export const ShopPage = () => {
                 </div>
 
                 <div>
-                  <p className="text-2xs font-semibold uppercase tracking-widest text-luxury-text/50 mb-3">Sort By</p>
+                  <p className="text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/50 mb-3">Sort By</p>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full rounded-2xl border border-linen/40 bg-warm-ivory px-4 py-3 text-sm outline-none focus:border-bronze transition"
+                    className="w-full rounded-2xl border border-[var(--border)] bg-[var(--bg)] px-4 py-3 text-sm outline-none focus:border-[var(--accent)] transition"
                   >
                     <option value="newest">Newest</option>
                     <option value="price-low">Price: Low to High</option>
@@ -351,21 +351,21 @@ export const ShopPage = () => {
                 </div>
 
                 <div>
-                  <p className="text-2xs font-semibold uppercase tracking-widest text-luxury-text/50 mb-3">Price Range</p>
+                  <p className="text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/50 mb-3">Price Range</p>
                   <div className="flex gap-3">
                     <input
                       value={minPrice}
                       onChange={(e) => setMinPrice(e.target.value)}
                       placeholder="Min"
                       type="number"
-                      className="flex-1 rounded-2xl border border-linen/40 bg-warm-ivory px-4 py-3 text-sm outline-none placeholder:text-luxury-text/35 focus:border-bronze transition"
+                      className="flex-1 rounded-2xl border border-[var(--border)] bg-[var(--bg)] px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] transition"
                     />
                     <input
                       value={maxPrice}
                       onChange={(e) => setMaxPrice(e.target.value)}
                       placeholder="Max"
                       type="number"
-                      className="flex-1 rounded-2xl border border-linen/40 bg-warm-ivory px-4 py-3 text-sm outline-none placeholder:text-luxury-text/35 focus:border-bronze transition"
+                      className="flex-1 rounded-2xl border border-[var(--border)] bg-[var(--bg)] px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] transition"
                     />
                   </div>
                 </div>
@@ -373,7 +373,7 @@ export const ShopPage = () => {
                 {hasFilters && (
                   <button
                     onClick={() => { clearFilters(); setMobileMenuOpen(false) }}
-                    className="w-full rounded-full border border-linen/40 bg-white py-3 text-2xs font-semibold uppercase tracking-widest text-luxury-text/50 hover:text-bronze hover:border-bronze transition"
+                    className="w-full rounded-full border border-[var(--border)] bg-white py-3 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/50 hover:text-[var(--accent)] hover:border-[var(--accent)] transition"
                   >
                     Clear All Filters
                   </button>
@@ -385,7 +385,7 @@ export const ShopPage = () => {
       </AnimatePresence>
 
       {/* Product Grid */}
-      <section className="section-pad bg-warm-ivory pt-8 md:pt-12">
+      <section className="section-pad bg-[var(--bg)] pt-8 md:pt-12">
         <div className="container-wide px-4 md:px-12 lg:px-20">
           {loading && (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -404,13 +404,13 @@ export const ShopPage = () => {
 
           {!loading && products.length === 0 && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="py-24 text-center">
-              <Sparkles size={48} strokeWidth={1} className="mx-auto text-linen mb-4" />
-              <p className="font-display text-3xl text-luxury-text/30">
+              <Sparkles size={48} strokeWidth={1} className="mx-auto text-[var(--secondary)] mb-4" />
+              <p className="font-display text-3xl text-[var(--primary)]/30">
                 {allProducts.length === 0 ? 'No products yet.' : 'No products found'}
               </p>
-              <p className="mt-2 text-sm text-luxury-text/35">Try adjusting your filters</p>
+              <p className="mt-2 text-sm text-[var(--primary)]/35">Try adjusting your filters</p>
               {hasFilters && (
-                <button onClick={clearFilters} className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 text-2xs font-semibold uppercase tracking-widest border border-bronze text-bronze hover:bg-bronze hover:text-white hover:border-bronze rounded-full transition">
+                <button onClick={clearFilters} className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 text-2xs font-semibold uppercase tracking-widest border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white hover:border-[var(--accent)] rounded-full transition">
                   <X size={12} strokeWidth={1.5} /> Clear Filters
                 </button>
               )}

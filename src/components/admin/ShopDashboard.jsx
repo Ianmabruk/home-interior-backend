@@ -228,14 +228,14 @@ export const ShopDashboard = () => {
         className="flex flex-col md:flex-row md:items-center justify-between gap-4"
       >
         <div>
-          <h2 className="font-['Playfair_Display'] text-3xl text-[#241711]">Shop</h2>
-          <p className="text-sm text-[#6D5647] mt-1">{filtered.length} products</p>
+          <h2 className="font-display text-3xl text-[var(--primary)]">Shop</h2>
+          <p className="text-sm text-[var(--primary)]/50 mt-1">{filtered.length} products</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <motion.div whileHover={{ scale: 1.02 }} className="relative">
             <Search
               size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6D5647]/50"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--primary)]/50"
             />
             <input
               value={search}
@@ -243,7 +243,7 @@ export const ShopDashboard = () => {
                 setSearch(e.target.value)
                 setPage(1)
               }}
-              className="input pl-9 max-w-xs"
+              className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition pl-9 max-w-xs"
               placeholder="Search products..."
             />
           </motion.div>
@@ -254,7 +254,7 @@ export const ShopDashboard = () => {
                 setCategoryFilter(e.target.value)
                 setPage(1)
               }}
-              className="select"
+              className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition cursor-pointer"
             >
               <option value="">All Categories</option>
               {CATEGORIES.map((c) => (
@@ -268,7 +268,7 @@ export const ShopDashboard = () => {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={exportCsv}
-            className="btn-secondary text-2xs flex items-center gap-1.5"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/70 transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
           >
             <FileText size={12} />
             Export
@@ -282,39 +282,39 @@ export const ShopDashboard = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
           onSubmit={submit}
-          className="admin-card-glass space-y-5 self-start"
+          className="bg-white/80 backdrop-blur-xl border border-[var(--border)]/60 rounded-2xl p-5 shadow-[0_10px_40px_rgba(42,36,31,0.06)] space-y-5 self-start"
         >
           <div>
-            <h3 className="font-['Playfair_Display'] text-xl text-[#241711]">
+            <h3 className="font-display text-xl text-[var(--primary)]">
               {editingId ? 'Edit Product' : 'Add Product'}
             </h3>
-            <p className="text-[10px] text-[#6D5647] mt-1">
+            <p className="text-[10px] text-[var(--primary)]/50 mt-1">
               {editingId ? 'Update product details' : 'Add a new product to your shop'}
             </p>
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70 flex items-center gap-1.5">
+            <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70 flex items-center gap-1.5">
               <Box size={12} />
               Product Name
             </label>
             <input
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="input"
+              className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
               placeholder="Product name"
               required
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">
+            <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">
               Description
             </label>
             <textarea
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              className="textarea"
+              className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition resize-none"
               placeholder="Product description..."
               required
               rows={3}
@@ -323,7 +323,7 @@ export const ShopDashboard = () => {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">
+              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">
                 Price ($)
               </label>
               <input
@@ -331,13 +331,13 @@ export const ShopDashboard = () => {
                 onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
                 type="number"
                 step="0.01"
-                className="input"
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
                 placeholder="0.00"
                 required
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">
+              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">
                 Discount Price ($)
               </label>
               <input
@@ -345,7 +345,7 @@ export const ShopDashboard = () => {
                 onChange={(e) => setForm((f) => ({ ...f, discountPrice: e.target.value }))}
                 type="number"
                 step="0.01"
-                className="input"
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
                 placeholder="0.00"
               />
             </div>
@@ -353,13 +353,13 @@ export const ShopDashboard = () => {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">
+              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">
                 Category
               </label>
               <select
                 value={form.category}
                 onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                className="select"
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12 cursor-pointer"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>
@@ -369,14 +369,14 @@ export const ShopDashboard = () => {
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">
+              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">
                 Stock
               </label>
               <input
                 value={form.stock}
                 onChange={(e) => setForm((f) => ({ ...f, stock: Number(e.target.value) || 0 }))}
                 type="number"
-                className="input"
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
                 placeholder="0"
               />
             </div>
@@ -384,38 +384,38 @@ export const ShopDashboard = () => {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">
+              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">
                 SKU
               </label>
               <input
                 value={form.sku}
                 onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
-                className="input"
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
                 placeholder="SKU-001"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">
+              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">
                 Vendor
               </label>
               <input
                 value={form.vendor}
                 onChange={(e) => setForm((f) => ({ ...f, vendor: e.target.value }))}
-                className="input"
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
                 placeholder="Vendor name"
               />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70 flex items-center gap-1.5">
+            <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70 flex items-center gap-1.5">
               <Tag size={12} />
               Tags
             </label>
             <input
               value={form.tags}
               onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
-              className="input"
+              className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
               placeholder="luxury, modern, handmade"
             />
           </div>
@@ -426,18 +426,18 @@ export const ShopDashboard = () => {
                 type="checkbox"
                 checked={form.isFeatured}
                 onChange={(e) => setForm((f) => ({ ...f, isFeatured: e.target.checked }))}
-                className="w-4 h-4 rounded border-border text-[#C69B6D] focus:ring-[#C69B6D]/20"
+                className="w-4 h-4 rounded border-[var(--border)] text-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
               />
-              <span className="text-sm text-[#241711]">Featured</span>
+              <span className="text-sm text-[var(--primary)]">Featured</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
                 checked={form.isPublished}
                 onChange={(e) => setForm((f) => ({ ...f, isPublished: e.target.checked }))}
-                className="w-4 h-4 rounded border-border text-[#C69B6D] focus:ring-[#C69B6D]/20"
+                className="w-4 h-4 rounded border-[var(--border)] text-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
               />
-              <span className="text-sm text-[#241711]">Published</span>
+              <span className="text-sm text-[var(--primary)]">Published</span>
             </label>
           </div>
 
@@ -458,8 +458,8 @@ export const ShopDashboard = () => {
             }}
             onDragLeave={() => setIsDragOver(false)}
             onClick={() => fileRef.current?.click()}
-            className={`upload-zone rounded-2xl transition-all duration-300 ${
-              isDragOver ? 'drag-active border-[#C69B6D] bg-[#C69B6D]/5' : ''
+            className={`relative border-2 border-dashed rounded-2xl transition-all duration-300 ${
+              isDragOver ? 'border-[var(--accent)] bg-[var(--accent)]/5' : 'border-[var(--border)] bg-[var(--bg)]/30'
             }`}
           >
             {imagePreviews.length > 0 ? (
@@ -476,7 +476,7 @@ export const ShopDashboard = () => {
                         setImageFiles((f) => f.filter((_, idx) => idx !== i))
                         setImagePreviews((p) => p.filter((_, idx) => idx !== i))
                       }}
-                      className="absolute -top-1 -right-1 bg-[#241711] text-white p-1 rounded-full shadow-lg"
+                      className="absolute -top-1 -right-1 bg-[var(--primary)] text-white p-1 rounded-full shadow-lg"
                     >
                       <X size={10} />
                     </motion.button>
@@ -484,23 +484,23 @@ export const ShopDashboard = () => {
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-2 py-4">
+              <div className="flex flex-col items-center gap-2 py-8">
                 <motion.div
                   animate={{ y: [0, -5, 0] }}
                   transition={{ duration: 2, repeat: Infinity }}
-                  className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#C69B6D]/10 to-[#E8D3BE]/10 flex items-center justify-center text-[#C69B6D]"
+                  className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--accent)]/10 to-[var(--secondary)]/10 flex items-center justify-center text-[var(--accent)]"
                 >
                   <UploadCloud size={24} />
                 </motion.div>
-                <p className="text-sm text-[#241711]">Drop images here or click to browse</p>
-                <p className="text-[10px] text-[#6D5647]">PNG, JPG up to 10MB</p>
+                <p className="text-sm text-[var(--primary)]">Drop images here or click to browse</p>
+                <p className="text-[10px] text-[var(--primary)]/50">PNG, JPG up to 10MB</p>
               </div>
             )}
           </motion.div>
 
           <div>
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70 flex items-center gap-1.5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70 flex items-center gap-1.5">
                 <Palette size={12} />
                 Color Variants
               </p>
@@ -509,7 +509,7 @@ export const ShopDashboard = () => {
                 whileTap={{ scale: 0.95 }}
                 type="button"
                 onClick={addColorVariant}
-                className="text-[10px] text-[#C69B6D] hover:text-[#241711] transition-colors font-medium flex items-center gap-1"
+                className="text-[10px] text-[var(--accent)] hover:text-[var(--primary)] transition-colors font-medium flex items-center gap-1"
               >
                 <Plus size={12} />
                 Add
@@ -521,18 +521,18 @@ export const ShopDashboard = () => {
                   key={i}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex gap-2 items-center bg-gradient-to-r from-[#F8F4EF] to-[#E8D3BE]/20 p-2.5 rounded-xl"
+                  className="flex gap-2 items-center bg-gradient-to-r from-[var(--bg)] to-[var(--secondary)]/20 p-2.5 rounded-xl"
                 >
                   <input
                     value={v.colorName}
                     onChange={(e) => updateVariant(i, 'colorName', e.target.value)}
-                    className="input !h-9 text-xs flex-1"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-xs outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition flex-1"
                     placeholder="Color"
                   />
                   <input
                     value={v.colorHex}
                     onChange={(e) => updateVariant(i, 'colorHex', e.target.value)}
-                    className="input !h-9 text-xs w-16"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-xs outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition w-16"
                     placeholder="#000"
                   />
                   <input
@@ -541,7 +541,7 @@ export const ShopDashboard = () => {
                       updateVariant(i, 'stockQuantity', Number(e.target.value) || 0)
                     }
                     type="number"
-                    className="input !h-9 text-xs w-16"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-xs outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition w-16"
                     placeholder="Qty"
                   />
                   <input
@@ -549,13 +549,13 @@ export const ShopDashboard = () => {
                     onChange={(e) => updateVariant(i, 'priceOverride', e.target.value)}
                     type="number"
                     step="0.01"
-                    className="input !h-9 text-xs w-20"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-xs outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition w-20"
                     placeholder="Price"
                   />
                   <input
                     value={v.sku}
                     onChange={(e) => updateVariant(i, 'sku', e.target.value)}
-                    className="input !h-9 text-xs w-20"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-xs outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition w-20"
                     placeholder="SKU"
                   />
                   <motion.button
@@ -563,7 +563,7 @@ export const ShopDashboard = () => {
                     whileTap={{ scale: 0.9 }}
                     type="button"
                     onClick={() => removeVariant(i)}
-                    className="text-[#C62828] hover:bg-[#C62828]/10 p-1.5 rounded-lg"
+                    className="text-[var(--error)] hover:bg-[var(--error)]/10 p-1.5 rounded-lg"
                   >
                     <Trash2 size={12} />
                   </motion.button>
@@ -575,7 +575,7 @@ export const ShopDashboard = () => {
           {/* Style Variants */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70 flex items-center gap-1.5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70 flex items-center gap-1.5">
                 <Sparkles size={12} />
                 Style Variants
               </p>
@@ -584,7 +584,7 @@ export const ShopDashboard = () => {
                 whileTap={{ scale: 0.95 }}
                 type="button"
                 onClick={() => setForm(f => ({ ...f, styleVariants: [...f.styleVariants, { styleName: '', images: [], description: '', specifications: {} }] }))}
-                className="text-[10px] text-[#C69B6D] hover:text-[#241711] transition-colors font-medium flex items-center gap-1"
+                className="text-[10px] text-[var(--accent)] hover:text-[var(--primary)] transition-colors font-medium flex items-center gap-1"
               >
                 <Plus size={12} />
                 Add
@@ -596,16 +596,16 @@ export const ShopDashboard = () => {
                   key={i}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-gradient-to-r from-[#F8F4EF] to-[#E8D3BE]/20 p-3 rounded-xl"
+                  className="bg-gradient-to-r from-[var(--bg)] to-[var(--secondary)]/20 p-3 rounded-xl"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-gold">Style {i + 1}</p>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-[var(--accent)]">Style {i + 1}</p>
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       type="button"
                       onClick={() => setForm(f => ({ ...f, styleVariants: f.styleVariants.filter((_, idx) => idx !== i) }))}
-                      className="text-[#C62828] hover:bg-[#C62828]/10 p-1 rounded-lg"
+                      className="text-[var(--error)] hover:bg-[var(--error)]/10 p-1 rounded-lg"
                     >
                       <Trash2 size={12} />
                     </motion.button>
@@ -614,52 +614,52 @@ export const ShopDashboard = () => {
                     <input
                       value={s.styleName}
                       onChange={(e) => setForm(f => ({ ...f, styleVariants: f.styleVariants.map((sv, idx) => idx === i ? { ...sv, styleName: e.target.value } : sv) }))}
-                      className="input !h-9 text-xs"
+                      className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-xs outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition"
                       placeholder="Style name (e.g., Modern, Classic, Luxury)"
                     />
                     <textarea
                       value={s.description || ''}
                       onChange={(e) => setForm(f => ({ ...f, styleVariants: f.styleVariants.map((sv, idx) => idx === i ? { ...sv, description: e.target.value } : sv) }))}
-                      className="textarea"
+                      className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-xs outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition resize-none"
                       placeholder="Style description..."
                       rows={2}
                     />
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">Materials</label>
+                        <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Materials</label>
                         <input
                           value={s.specifications?.materials || ''}
                           onChange={(e) => setForm(f => ({ ...f, styleVariants: f.styleVariants.map((sv, idx) => idx === i ? { ...sv, specifications: { ...sv.specifications, materials: e.target.value } } : sv) }))}
-                          className="input"
+                          className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-xs outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition"
                           placeholder="Materials"
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">Dimensions</label>
+                        <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Dimensions</label>
                         <input
                           value={s.specifications?.dimensions || ''}
                           onChange={(e) => setForm(f => ({ ...f, styleVariants: f.styleVariants.map((sv, idx) => idx === i ? { ...sv, specifications: { ...sv.specifications, dimensions: e.target.value } } : sv) }))}
-                          className="input"
+                          className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-xs outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition"
                           placeholder="Dimensions"
                         />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">Available Colors</label>
+                        <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Available Colors</label>
                         <input
                           value={s.availableColors?.join(', ') || ''}
                           onChange={(e) => setForm(f => ({ ...f, styleVariants: f.styleVariants.map((sv, idx) => idx === i ? { ...sv, availableColors: e.target.value.split(',').map(c => c.trim()) } : sv) }))}
-                          className="input"
+                          className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-xs outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition"
                           placeholder="White, Beige, Brown"
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">Images</label>
+                        <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Images</label>
                         <input
                           value={s.images?.join(', ') || ''}
                           onChange={(e) => setForm(f => ({ ...f, styleVariants: f.styleVariants.map((sv, idx) => idx === i ? { ...sv, images: e.target.value.split(',').map(c => c.trim()) } : sv) }))}
-                          className="input"
+                          className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-xs outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition"
                           placeholder="Image URLs (comma separated)"
                         />
                       </div>
@@ -672,7 +672,7 @@ export const ShopDashboard = () => {
                 whileTap={{ scale: 0.98 }}
                 type="button"
                 onClick={() => setForm(f => ({ ...f, styleVariants: [...f.styleVariants, { styleName: '', images: [], description: '', specifications: {}, availableColors: [] }] }))}
-                className="w-full mt-2 btn-secondary text-2xs flex items-center justify-center gap-1.5"
+                className="w-full mt-2 inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/70 transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
               >
                 <Plus size={14} /> Add Another Style
               </motion.button>
@@ -682,7 +682,7 @@ export const ShopDashboard = () => {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="btn-accent w-full"
+            className="w-full rounded-full bg-[var(--accent)] text-white py-3 text-[11px] font-semibold uppercase tracking-wider transition-all duration-300 hover:bg-[var(--accent)] hover:shadow-lg disabled:opacity-50"
             disabled={loading}
           >
             {loading ? 'Saving…' : editingId ? 'Update Product' : 'Add Product'}
@@ -697,7 +697,7 @@ export const ShopDashboard = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className="admin-card-glass overflow-hidden group"
+              className="bg-white/80 backdrop-blur-xl border border-[var(--border)]/60 rounded-2xl p-5 shadow-[0_10px_40px_rgba(42,36,31,0.06)] overflow-hidden group"
             >
               <div className="relative overflow-hidden">
                 {item.images?.[0]?.url ? (
@@ -707,28 +707,28 @@ export const ShopDashboard = () => {
                     className="h-44 w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 ) : (
-                  <div className="h-44 w-full bg-gradient-to-br from-[#F8F4EF] to-[#E8D3BE]/30 flex items-center justify-center text-[#6D5647]/30">
+                  <div className="h-44 w-full bg-gradient-to-br from-[var(--bg)] to-[var(--secondary)]/30 flex items-center justify-center text-[var(--primary)]/30">
                     <ImageIcon size={40} />
                   </div>
                 )}
                 {item.discountPrice && (
-                  <span className="absolute top-3 left-3 bg-gradient-to-r from-[#C69B6D] to-[#B68A68] text-white text-[10px] font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                  <span className="absolute top-3 left-3 bg-gradient-to-r from-[var(--accent)] to-[var(--accent)] text-white text-[10px] font-semibold px-2.5 py-1 rounded-full shadow-lg">
                     {Math.round(((item.price - item.discountPrice) / item.price) * 100)}%
                     OFF
                   </span>
                 )}
                 {item.stock === 0 && (
-                  <span className="absolute top-3 right-3 bg-[#241711] text-white text-[10px] font-semibold px-2.5 py-1 rounded-full">
+                  <span className="absolute top-3 right-3 bg-[var(--primary)] text-white text-[10px] font-semibold px-2.5 py-1 rounded-full">
                     Out of Stock
                   </span>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#241711]/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[var(--primary)]/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="absolute bottom-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => setViewItem(item)}
-                    className="p-2 bg-white/90 backdrop-blur-sm rounded-xl text-[#241711] hover:bg-white shadow-lg"
+                    className="p-2 bg-white/90 backdrop-blur-sm rounded-xl text-[var(--primary)] hover:bg-white shadow-lg"
                   >
                     <Eye size={14} />
                   </motion.button>
@@ -736,7 +736,7 @@ export const ShopDashboard = () => {
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => startEdit(item)}
-                    className="p-2 bg-white/90 backdrop-blur-sm rounded-xl text-[#241711] hover:bg-white shadow-lg"
+                    className="p-2 bg-white/90 backdrop-blur-sm rounded-xl text-[var(--primary)] hover:bg-white shadow-lg"
                   >
                     <Edit size={14} />
                   </motion.button>
@@ -744,28 +744,28 @@ export const ShopDashboard = () => {
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => setDeleteId(item._id || item.id)}
-                    className="p-2 bg-[#C62828]/90 backdrop-blur-sm rounded-xl text-white hover:bg-[#C62828] shadow-lg"
+                    className="p-2 bg-[var(--error)]/90 backdrop-blur-sm rounded-xl text-white hover:bg-[var(--error)] shadow-lg"
                   >
                     <Trash2 size={14} />
                   </motion.button>
                 </div>
               </div>
               <div className="p-5">
-                <p className="font-['Playfair_Display'] text-lg text-[#241711] line-clamp-1">
+                <p className="font-display text-lg text-[var(--primary)] line-clamp-1">
                   {item.name}
                 </p>
-                <p className="text-[10px] uppercase tracking-[0.15em] text-[#C69B6D] mt-1 font-medium">
+                <p className="text-[10px] uppercase tracking-[0.15em] text-[var(--accent)] mt-1 font-medium">
                   {item.category}
                 </p>
                 <div className="flex items-center gap-2 mt-3">
-                  <p className="font-semibold text-[#241711]">
+                  <p className="font-semibold text-[var(--primary)]">
                     ${item.discountPrice || item.price}
                   </p>
                   {item.discountPrice && (
-                    <p className="text-sm text-[#6D5647]/50 line-through">${item.price}</p>
+                    <p className="text-sm text-[var(--primary)]/50 line-through">${item.price}</p>
                   )}
                 </div>
-                <p className="text-[10px] text-[#6D5647] mt-1.5">
+                <p className="text-[10px] text-[var(--primary)]/50 mt-1.5">
                   SKU: {item.sku} | Stock: {item.stock}
                 </p>
               </div>
@@ -777,10 +777,10 @@ export const ShopDashboard = () => {
               animate={{ opacity: 1 }}
               className="col-span-full py-20 text-center"
             >
-              <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-[#E8D3BE]/30 to-[#C69B6D]/10 flex items-center justify-center mb-4 text-[#6D5647]/30">
+              <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-[var(--secondary)]/30 to-[var(--accent)]/10 flex items-center justify-center mb-4 text-[var(--primary)]/30">
                 <ImageIcon size={32} />
               </div>
-              <p className="font-['Playfair_Display'] text-xl text-[#241711]/30">
+              <p className="font-display text-xl text-[var(--primary)]/30">
                 No products found
               </p>
             </motion.div>
@@ -799,11 +799,11 @@ export const ShopDashboard = () => {
             whileTap={{ scale: 0.95 }}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="btn-secondary text-2xs px-4 py-2.5 disabled:opacity-30"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/70 transition hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-30"
           >
             <ChevronLeft size={16} />
           </motion.button>
-          <span className="text-sm text-[#6D5647] font-medium">
+          <span className="text-sm text-[var(--primary)]/50 font-medium">
             Page {page} of {totalPages}
           </span>
           <motion.button
@@ -811,7 +811,7 @@ export const ShopDashboard = () => {
             whileTap={{ scale: 0.95 }}
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
-            className="btn-secondary text-2xs px-4 py-2.5 disabled:opacity-30"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/70 transition hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-30"
           >
             <ChevronRight size={16} />
           </motion.button>
@@ -827,7 +827,7 @@ export const ShopDashboard = () => {
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
             <div
-              className="absolute inset-0 bg-[#241711]/40 backdrop-blur-sm"
+              className="absolute inset-0 bg-[var(--primary)]/40 backdrop-blur-sm"
               onClick={() => setDeleteId(null)}
             />
             <motion.div
@@ -836,13 +836,13 @@ export const ShopDashboard = () => {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="relative bg-white rounded-3xl p-8 max-w-sm w-full shadow-[0_30px_80px_rgba(0,0,0,0.2)]"
             >
-              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[#C62828]/10 flex items-center justify-center text-[#C62828]">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[var(--error)]/10 flex items-center justify-center text-[var(--error)]">
                 <Trash2 size={24} />
               </div>
-              <h3 className="font-['Playfair_Display'] text-xl text-[#241711] text-center mb-2">
+              <h3 className="font-display text-xl text-[var(--primary)] text-center mb-2">
                 Confirm Delete
               </h3>
-              <p className="text-sm text-[#6D5647] text-center mb-6">
+              <p className="text-sm text-[var(--primary)]/50 text-center mb-6">
                 Are you sure? This action cannot be undone.
               </p>
               <div className="flex gap-3 justify-end">
@@ -850,7 +850,7 @@ export const ShopDashboard = () => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setDeleteId(null)}
-                  className="btn-secondary"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/70 transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
                 >
                   Cancel
                 </motion.button>
@@ -858,7 +858,7 @@ export const ShopDashboard = () => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={deleteItem}
-                  className="btn-danger"
+                  className="rounded-full bg-[var(--error)] px-4 py-2.5 text-2xs font-semibold uppercase tracking-widest text-white transition hover:bg-[var(--error)] hover:shadow-lg"
                 >
                   Delete
                 </motion.button>
@@ -877,7 +877,7 @@ export const ShopDashboard = () => {
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
             <div
-              className="absolute inset-0 bg-[#241711]/40 backdrop-blur-sm"
+              className="absolute inset-0 bg-[var(--primary)]/40 backdrop-blur-sm"
               onClick={() => setViewItem(null)}
             />
             <motion.div
@@ -887,14 +887,14 @@ export const ShopDashboard = () => {
               className="relative bg-white rounded-3xl p-8 max-w-lg w-full shadow-[0_30px_80px_rgba(0,0,0,0.2)]"
             >
               <div className="flex justify-between items-start mb-5">
-                <h3 className="font-['Playfair_Display'] text-2xl text-[#241711]">
+                <h3 className="font-display text-2xl text-[var(--primary)]">
                   {viewItem.name}
                 </h3>
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setViewItem(null)}
-                  className="p-2 rounded-full hover:bg-[#F8F4EF] transition-colors"
+                  className="p-2 rounded-full hover:bg-[var(--bg)] transition-colors"
                 >
                   <X size={18} />
                 </motion.button>
@@ -917,20 +917,20 @@ export const ShopDashboard = () => {
                 ].map((field, i) => (
                   <div
                     key={i}
-                    className="bg-gradient-to-r from-[#F8F4EF] to-[#E8D3BE]/10 rounded-xl p-3"
+                    className="bg-gradient-to-r from-[var(--bg)] to-[var(--secondary)]/10 rounded-xl p-3"
                   >
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">
                       {field.label}
                     </p>
-                    <p className="text-sm text-[#241711] mt-0.5 font-medium">{field.value}</p>
+                    <p className="text-sm text-[var(--primary)] mt-0.5 font-medium">{field.value}</p>
                   </div>
                 ))}
               </div>
-              <div className="mt-4 bg-gradient-to-r from-[#F8F4EF] to-[#E8D3BE]/10 rounded-xl p-4">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70 mb-1">
+              <div className="mt-4 bg-gradient-to-r from-[var(--bg)] to-[var(--secondary)]/10 rounded-xl p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70 mb-1">
                   Description
                 </p>
-                <p className="text-sm text-[#241711] leading-relaxed">{viewItem.description}</p>
+                <p className="text-sm text-[var(--primary)] leading-relaxed">{viewItem.description}</p>
               </div>
             </motion.div>
           </motion.div>

@@ -41,15 +41,15 @@ export const LoginPage = () => {
       className="space-y-8"
     >
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-orange-accent mb-3">Welcome back</p>
-        <h1 className="font-display text-5xl font-normal text-luxury-text">Sign In</h1>
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--accent)] mb-3">Welcome back</p>
+        <h1 className="font-display text-5xl font-normal text-[var(--primary)]">Sign In</h1>
       </div>
 
       {error && (
         <motion.p
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-sm text-error bg-error/5 border border-error/20 px-4 py-3 rounded-xl"
+          className="text-sm text-[var(--error)] bg-[var(--error)]/5 border border-[var(--error)]/20 px-4 py-3 rounded-xl"
         >
           {error}
         </motion.p>
@@ -57,7 +57,7 @@ export const LoginPage = () => {
 
       <div className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-luxury-text mb-1.5">Email Address</label>
+          <label className="block text-sm font-medium text-[var(--primary)] mb-1.5">Email Address</label>
           <input
             className="input-luxury"
             type="email"
@@ -70,8 +70,8 @@ export const LoginPage = () => {
         </div>
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <label className="block text-sm font-medium text-luxury-text mb-0">Password</label>
-            <Link to="/forgot-password" className="text-2xs font-medium uppercase tracking-widest text-luxury-text/40 transition hover:text-bronze">
+            <label className="block text-sm font-medium text-[var(--primary)] mb-0">Password</label>
+            <Link to="/forgot-password" className="text-2xs font-medium uppercase tracking-widest text-[var(--primary)]/40 transition hover:text-[var(--accent)]">
               Forgot?
             </Link>
           </div>
@@ -96,9 +96,9 @@ export const LoginPage = () => {
         >
           {loading ? 'Signing in…' : <>Sign In <ArrowRight size={14} strokeWidth={1.5} /></>}
         </button>
-        <p className="text-center text-sm text-luxury-text/45">
+        <p className="text-center text-sm text-[var(--primary)]/45">
           No account?{' '}
-          <Link to="/register" className="font-medium text-luxury-text transition hover:text-bronze">
+          <Link to="/register" className="font-medium text-[var(--primary)] transition hover:text-[var(--accent)]">
             Create one
           </Link>
         </p>

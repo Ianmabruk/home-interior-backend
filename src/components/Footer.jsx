@@ -36,9 +36,9 @@ export const Footer = () => {
   }
 
   return (
-    <footer className="relative bg-footer-bg text-footer-text" role="contentinfo">
+    <footer className="relative bg-[var(--footer-bg)] text-[var(--footer-text)]" role="contentinfo">
       {/* Subtle ambient glow at top */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_center,rgba(214,178,122,0.06),transparent_60%)]" aria-hidden="true" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_center,rgba(232,154,67,0.06),transparent_60%)]" aria-hidden="true" />
       <div className="relative z-10 container-wide px-6 md:px-12 lg:px-20 py-16 md:py-24 lg:py-32">
         <motion.div
           initial="hidden"
@@ -49,16 +49,21 @@ export const Footer = () => {
         >
           {/* Logo */}
           <motion.div variants={itemVariants} className="mb-12 md:mb-16 text-center">
-            <Link to="/" className="inline-block group" aria-label="HOK INTERIORS - Home">
-              <p className="font-display text-3xl md:text-4xl font-normal tracking-luxury text-footer-text transition-colors duration-300 group-hover:text-bronze">
-                HOK INTERIORS
-              </p>
+            <Link to="/" className="inline-block group" aria-label="HQK INTERIORS - Home">
+              <div className="flex flex-col items-center">
+                <p className="font-display text-3xl md:text-4xl font-medium tracking-[0.25em] leading-tight text-[var(--footer-text)] transition-colors duration-300 group-hover:text-[var(--accent)]">
+                  HQK
+                </p>
+                <p className="font-sans text-[11px] font-medium uppercase tracking-[0.35em] leading-none text-[var(--accent)] -mt-1">
+                  INTERIORS
+                </p>
+              </div>
             </Link>
           </motion.div>
 
           {/* Brand Statement */}
           <motion.div variants={itemVariants} className="mb-16 md:mb-20 text-center max-w-2xl mx-auto">
-            <p className="font-display text-lg md:text-xl leading-relaxed text-footer-text/60">
+            <p className="font-display text-lg md:text-xl leading-relaxed text-[var(--footer-text)]/60">
               Designing beautiful spaces that feel like home.
             </p>
           </motion.div>
@@ -76,16 +81,16 @@ export const Footer = () => {
                 transition={{ delay: 0.2 + index * 0.08 }}
                 whileHover={{ scale: 1.1, rotate: 3 }}
                 whileTap={{ scale: 0.95 }}
-                className="social-icon group relative flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full border border-footer-text/20 transition-all duration-500 hover:border-bronze hover:bg-bronze/10 hover:text-bronze"
+                className="social-icon group relative flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full border border-[var(--footer-text)]/20 transition-all duration-500 hover:border-[var(--accent)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
                 role="listitem"
               >
                 {typeof social.icon === 'function' ? (
-                  <social.icon className="w-5 h-5 md:w-6 md:h-6 transition-colors duration-300 group-hover:text-bronze" aria-hidden="true" />
+                  <social.icon className="w-5 h-5 md:w-6 md:h-6 transition-colors duration-300 group-hover:text-[var(--accent)]" aria-hidden="true" />
                 ) : (
-                  <social.icon size={22} md={24} strokeWidth={1.5} className="transition-colors duration-300 group-hover:text-bronze" aria-hidden="true" />
+                  <social.icon size={22} md={24} strokeWidth={1.5} className="transition-colors duration-300 group-hover:text-[var(--accent)]" aria-hidden="true" />
                 )}
                 {/* Circular outline hover effect */}
-                <span className="absolute inset-0 rounded-full border border-transparent transition-all duration-300 group-hover:border-bronze group-hover:scale-110" aria-hidden="true" />
+                <span className="absolute inset-0 rounded-full border border-transparent transition-all duration-300 group-hover:border-[var(--accent)] group-hover:scale-110" aria-hidden="true" />
               </motion.a>
             ))}
           </motion.div>
@@ -98,8 +103,8 @@ export const Footer = () => {
             transition={{ delay: 0.5, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             className="mt-16 md:mt-24 pt-8 md:pt-12 border-t border-white/10 text-center"
           >
-            <p className="text-[11px] uppercase tracking-widest text-footer-text/30">
-              &copy; {new Date().getFullYear()} HOK INTERIORS. All rights reserved.
+            <p className="text-[11px] uppercase tracking-widest text-[var(--footer-text)]/30">
+              &copy; {new Date().getFullYear()} HQK INTERIORS. All rights reserved.
             </p>
           </motion.div>
         </motion.div>

@@ -39,7 +39,7 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-charcoal/40 backdrop-blur-sm z-30 lg:hidden"
+            className="fixed inset-0 bg-[var(--primary)]/40 backdrop-blur-sm z-30 lg:hidden"
             onClick={onCloseMobile}
           />
         )}
@@ -51,12 +51,12 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
           width: sidebarOpen ? 280 : 72,
         }}
         transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-        className="fixed inset-y-0 left-0 z-40 flex flex-col bg-forest text-white border-r border-white/5 shadow-2xl"
+        className="fixed inset-y-0 left-0 z-40 flex flex-col bg-[var(--primary)] text-white border-r border-white/5 shadow-2xl"
       >
         <div className="flex items-center gap-3 h-20 px-5 border-b border-white/10">
           <motion.div
             whileHover={{ scale: 1.05 }}
-            className="w-11 h-11 rounded-2xl bg-gradient-to-br from-bronze to-bronzeDark flex items-center justify-center flex-shrink-0 shadow-lg shadow-bronze/20"
+            className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent)] flex items-center justify-center flex-shrink-0 shadow-lg shadow-[var(--accent)]/20"
           >
             <Sparkles size={20} className="text-white" />
           </motion.div>
@@ -70,9 +70,7 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
                 className="overflow-hidden"
               >
                 <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-medium">Admin Panel</p>
-                <p className="text-base font-semibold whitespace-nowrap font-['Playfair_Display'] text-white">
-                  HOK Studio
-                </p>
+                <p className="text-base font-semibold whitespace-nowrap font-display text-white">HQK Studio</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -92,7 +90,7 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
                   onTabChange(item.id)
                   onCloseMobile()
                 }}
-                className={`relative w-full flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center px-2'} py-2.5 text-sm font-medium transition-all duration-200 hover:bg-white/10 hover:text-white ${isActive ? 'text-forest bg-white rounded-xl shadow-sm font-semibold' : 'text-white/75'}`}
+                className={`relative w-full flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center px-2'} py-2.5 text-sm font-medium transition-all duration-200 hover:bg-white/10 hover:text-white ${isActive ? 'text-[var(--primary)] bg-white rounded-xl shadow-sm font-semibold' : 'text-white/75'}`}
                 title={!sidebarOpen ? item.label : undefined}
               >
                 {isActive && (
@@ -102,7 +100,7 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
                     transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
                   />
                 )}
-                <span className={`relative z-10 ${isActive ? 'text-forest' : ''}`}>
+                <span className={`relative z-10 ${isActive ? 'text-[var(--primary)]' : ''}`}>
                   <Icon size={18} className="flex-shrink-0" />
                 </span>
                 <AnimatePresence>
@@ -112,7 +110,7 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -5 }}
                       transition={{ duration: 0.2 }}
-                      className={`relative z-10 font-medium whitespace-nowrap ${isActive ? 'text-forest' : 'text-white/75'}`}
+                      className={`relative z-10 font-medium whitespace-nowrap ${isActive ? 'text-[var(--primary)]' : 'text-white/75'}`}
                     >
                       {item.label}
                     </motion.span>
@@ -131,7 +129,7 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
               exit={{ opacity: 0, y: 10 }}
               className="rounded-2xl p-3 flex items-center gap-3 bg-white/5 border border-white/10"
             >
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-bronze to-bronzeDark flex items-center justify-center text-white text-sm font-semibold flex-shrink-0 shadow-lg shadow-bronze/20">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent)] flex items-center justify-center text-white text-sm font-semibold flex-shrink-0 shadow-lg shadow-[var(--accent)]/20">
                 {(user?.fullName || user?.email || 'A').charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">

@@ -22,10 +22,10 @@ import { emitAdminDataChanged } from '../../utils/adminEvents'
 const STATUSES = ['new', 'read', 'archived', 'completed']
 
 const STATUS_CONFIG = {
-  new: { label: 'New', class: 'badge-neutral', color: '#6D5647' },
-  read: { label: 'Read', class: 'badge-warning', color: '#C69B6D' },
-  archived: { label: 'Archived', class: 'badge-error', color: '#C62828' },
-  completed: { label: 'Completed', class: 'badge-success', color: '#2E7D32' },
+  new: { label: 'New', class: 'badge-neutral', color: 'text-[var(--primary)]/50 bg-[var(--primary)]/5 border-[var(--primary)]/10' },
+  read: { label: 'Read', class: 'badge-warning', color: 'text-[var(--accent)] bg-[var(--accent)]/5 border-[var(--accent)]/10' },
+  archived: { label: 'Archived', class: 'badge-error', color: 'text-[var(--error)] bg-[var(--error)]/5 border-[var(--error)]/10' },
+  completed: { label: 'Completed', class: 'badge-success', color: 'text-[var(--success)] bg-[var(--success)]/5 border-[var(--success)]/10' },
 }
 
 export const ConsultationDashboard = () => {
@@ -131,7 +131,9 @@ export const ConsultationDashboard = () => {
   const statusBadge = (status) => {
     const config = STATUS_CONFIG[status] || STATUS_CONFIG.new
     return (
-      <span className={config.class}>{config.label}</span>
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider border ${config.color}`}>
+        {config.label}
+      </span>
     )
   }
 
@@ -143,14 +145,14 @@ export const ConsultationDashboard = () => {
         className="flex flex-col md:flex-row md:items-center justify-between gap-4"
       >
         <div>
-          <h2 className="font-['Playfair_Display'] text-3xl text-[#241711]">Consultations</h2>
-          <p className="text-sm text-[#6D5647] mt-1">{total} records</p>
+          <h2 className="font-display text-3xl text-[var(--primary)]">Consultations</h2>
+          <p className="text-sm text-[var(--primary)]/50 mt-1">{total} records</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <motion.div whileHover={{ scale: 1.02 }} className="relative">
             <Search
               size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6D5647]/50"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--primary)]/50"
             />
             <input
               value={search}
@@ -158,7 +160,7 @@ export const ConsultationDashboard = () => {
                 setSearch(e.target.value)
                 setPage(1)
               }}
-              className="input pl-9 max-w-xs"
+              className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition pl-9 max-w-xs"
               placeholder="Search consultations..."
             />
           </motion.div>
@@ -169,7 +171,7 @@ export const ConsultationDashboard = () => {
                 setFilter(e.target.value)
                 setPage(1)
               }}
-              className="select"
+              className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition cursor-pointer"
             >
               <option value="all">All Statuses</option>
               {STATUSES.map((s) => (
@@ -183,7 +185,7 @@ export const ConsultationDashboard = () => {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={exportCsv}
-            className="btn-secondary text-2xs flex items-center gap-1.5"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/70 transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
           >
             <Download size={12} />
             Export
@@ -195,30 +197,28 @@ export const ConsultationDashboard = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="admin-card-glass overflow-hidden"
+        className="bg-white/80 backdrop-blur-xl border border-[var(--border)]/60 rounded-2xl p-5 shadow-[0_10px_40px_rgba(42,36,31,0.06)] overflow-hidden"
       >
         {consultations.length === 0 ? (
           <div className="py-20 text-center">
-            <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-[#E8D3BE]/30 to-[#C69B6D]/10 flex items-center justify-center mb-4 text-[#6D5647]/30">
+            <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-[var(--secondary)]/30 to-[var(--accent)]/10 flex items-center justify-center mb-4 text-[var(--primary)]/30">
               <MessageSquare size={32} />
             </div>
-            <p className="font-['Playfair_Display'] text-xl text-[#241711]/30">
-              No consultations
-            </p>
+            <p className="font-display text-xl text-[var(--primary)]/30">No consultations</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="premium-table">
+            <table className="w-full text-sm">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Message</th>
-                  <th>Date</th>
-                  <th>Time</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th className="text-left px-4 py-3 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/50">Name</th>
+                  <th className="text-left px-4 py-3 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/50">Email</th>
+                  <th className="text-left px-4 py-3 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/50">Phone</th>
+                  <th className="text-left px-4 py-3 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/50">Message</th>
+                  <th className="text-left px-4 py-3 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/50">Date</th>
+                  <th className="text-left px-4 py-3 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/50">Time</th>
+                  <th className="text-left px-4 py-3 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/50">Status</th>
+                  <th className="text-left px-4 py-3 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/50">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -228,35 +228,35 @@ export const ConsultationDashboard = () => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
-                    className="group"
+                    className="group border-b border-[var(--border)]/50 transition-colors duration-150 hover:bg-[var(--bg)]/40"
                   >
-                    <td>
+                    <td className="px-4 py-3.5 text-[var(--primary)]">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C69B6D]/10 to-[#E8D3BE]/10 flex items-center justify-center text-[#C69B6D] text-xs font-semibold">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--accent)]/10 to-[var(--secondary)]/40 flex items-center justify-center text-[var(--accent)] text-xs font-semibold">
                           {(c.name || 'U').charAt(0).toUpperCase()}
                         </div>
                         <span className="font-medium">{c.name}</span>
                       </div>
                     </td>
-                    <td className="text-[#6D5647]">{c.email}</td>
-                    <td className="text-[#6D5647]">{c.phone || '—'}</td>
-                    <td className="text-[#6D5647] max-w-xs truncate">{c.message}</td>
-                    <td className="text-[#6D5647]">
+                    <td className="px-4 py-3.5 text-[var(--primary)]/50">{c.email}</td>
+                    <td className="px-4 py-3.5 text-[var(--primary)]/50">{c.phone || '—'}</td>
+                    <td className="px-4 py-3.5 text-[var(--primary)]/50 max-w-xs truncate">{c.message}</td>
+                    <td className="px-4 py-3.5 text-[var(--primary)]/50">
                       {c.preferredDate
                         ? new Date(c.preferredDate).toLocaleDateString()
                         : c.createdAt
                         ? new Date(c.createdAt).toLocaleDateString()
                         : '—'}
                     </td>
-                    <td className="text-[#6D5647]">{c.preferredTime || '—'}</td>
-                    <td>{statusBadge(c.status || 'new')}</td>
-                    <td>
+                    <td className="px-4 py-3.5 text-[var(--primary)]/50">{c.preferredTime || '—'}</td>
+                    <td className="px-4 py-3.5">{statusBadge(c.status || 'new')}</td>
+                    <td className="px-4 py-3.5">
                       <div className="flex gap-1.5">
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => setViewItem(c)}
-                          className="btn-ghost text-2xs flex items-center gap-1"
+                          className="inline-flex items-center gap-1 rounded-xl border border-[var(--border)] bg-white px-3 py-1.5 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/70 transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
                         >
                           <Eye size={12} />
                           View
@@ -265,16 +265,16 @@ export const ConsultationDashboard = () => {
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => updateStatus(c._id || c.id, 'completed')}
-                          className="text-[10px] font-medium text-[#2E7D32] hover:text-[#1B5E20] hover:bg-[#2E7D32]/10 px-2 py-1.5 rounded-lg transition-all flex items-center gap-1"
+                          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-medium text-[var(--success)] hover:bg-[var(--success)]/10 transition"
                         >
                           <CheckCircle2 size={12} />
-                          Archive
+                          Complete
                         </motion.button>
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => setDeleteId(c._id || c.id)}
-                          className="btn-danger text-2xs flex items-center gap-1"
+                          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-medium text-[var(--error)] hover:bg-[var(--error)]/10 transition"
                         >
                           <Trash2 size={12} />
                           Delete
@@ -300,19 +300,17 @@ export const ConsultationDashboard = () => {
             whileTap={{ scale: 0.95 }}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="btn-secondary text-2xs px-4 py-2.5 disabled:opacity-30"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/70 transition hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-30"
           >
             <ChevronLeft size={16} />
           </motion.button>
-          <span className="text-sm text-[#6D5647] font-medium">
-            Page {page} of {totalPages}
-          </span>
+          <span className="text-sm text-[var(--primary)]/50 font-medium">Page {page} of {totalPages}</span>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
-            className="btn-secondary text-2xs px-4 py-2.5 disabled:opacity-30"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/70 transition hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-30"
           >
             <ChevronRight size={16} />
           </motion.button>
@@ -328,7 +326,7 @@ export const ConsultationDashboard = () => {
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
             <div
-              className="absolute inset-0 bg-[#241711]/40 backdrop-blur-sm"
+              className="absolute inset-0 bg-[var(--primary)]/40 backdrop-blur-sm"
               onClick={() => {
                 setViewItem(null)
                 setReplyText('')
@@ -341,9 +339,7 @@ export const ConsultationDashboard = () => {
               className="relative bg-white rounded-3xl p-8 max-w-lg w-full shadow-[0_30px_80px_rgba(0,0,0,0.2)]"
             >
               <div className="flex justify-between items-start mb-5">
-                <h3 className="font-['Playfair_Display'] text-2xl text-[#241711]">
-                  Consultation Details
-                </h3>
+                <h3 className="font-display text-2xl text-[var(--primary)]">Consultation Details</h3>
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
@@ -351,7 +347,7 @@ export const ConsultationDashboard = () => {
                     setViewItem(null)
                     setReplyText('')
                   }}
-                  className="p-2 rounded-full hover:bg-[#F8F4EF] transition-colors"
+                  className="p-2 rounded-full hover:bg-[var(--bg)] transition-colors"
                 >
                   <X size={18} />
                 </motion.button>
@@ -368,36 +364,32 @@ export const ConsultationDashboard = () => {
                 ].map((field, i) => (
                   <div
                     key={i}
-                    className="flex items-start gap-3 bg-gradient-to-r from-[#F8F4EF] to-[#E8D3BE]/10 rounded-xl p-3"
+                    className="flex items-start gap-3 bg-gradient-to-r from-[var(--bg)] to-[var(--secondary)]/10 rounded-xl p-3"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-[#C69B6D]/10 flex items-center justify-center text-[#C69B6D] flex-shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] flex-shrink-0">
                       <field.icon size={14} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70">
-                        {field.label}
-                      </p>
-                      <p className="text-sm text-[#241711] mt-0.5 font-medium">{field.value}</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">{field.label}</p>
+                      <p className="text-sm text-[var(--primary)] mt-0.5 font-medium">{field.value}</p>
                     </div>
                   </div>
                 ))}
-                <div className="border-t border-border pt-4 mt-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70 mb-2 flex items-center gap-1.5">
+                <div className="border-t border-[var(--border)] pt-4 mt-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70 mb-2 flex items-center gap-1.5">
                     <MessageSquare size={12} />
                     Message
                   </p>
-                  <p className="text-sm leading-relaxed text-[#241711] bg-gradient-to-r from-[#F8F4EF] to-[#E8D3BE]/10 rounded-xl p-4">
+                  <p className="text-sm leading-relaxed text-[var(--primary)] bg-gradient-to-r from-[var(--bg)] to-[var(--secondary)]/10 rounded-xl p-4">
                     {viewItem.message}
                   </p>
                 </div>
-                <div className="border-t border-border pt-4 mt-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6D5647]/70 mb-2">
-                    Reply
-                  </p>
+                <div className="border-t border-[var(--border)] pt-4 mt-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70 mb-2">Reply</p>
                   <textarea
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
-                    className="textarea"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition resize-none"
                     placeholder="Type your reply..."
                     rows={3}
                   />
@@ -405,7 +397,7 @@ export const ConsultationDashboard = () => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleReply}
-                    className="btn-accent mt-3"
+                    className="mt-3 rounded-full bg-[var(--primary)] text-white py-3 text-[11px] font-semibold uppercase tracking-wider transition-all duration-300 hover:bg-[var(--primary)]/90 hover:shadow-lg"
                     disabled={!replyText.trim()}
                   >
                     Send Reply
@@ -426,7 +418,7 @@ export const ConsultationDashboard = () => {
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
             <div
-              className="absolute inset-0 bg-[#241711]/40 backdrop-blur-sm"
+              className="absolute inset-0 bg-[var(--primary)]/40 backdrop-blur-sm"
               onClick={() => setDeleteId(null)}
             />
             <motion.div
@@ -435,21 +427,17 @@ export const ConsultationDashboard = () => {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="relative bg-white rounded-3xl p-8 max-w-sm w-full shadow-[0_30px_80px_rgba(0,0,0,0.2)]"
             >
-              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[#C62828]/10 flex items-center justify-center text-[#C62828]">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[var(--error)]/10 flex items-center justify-center text-[var(--error)]">
                 <Trash2 size={24} />
               </div>
-              <h3 className="font-['Playfair_Display'] text-xl text-[#241711] text-center mb-2">
-                Confirm Delete
-              </h3>
-              <p className="text-sm text-[#6D5647] text-center mb-6">
-                Are you sure? This action cannot be undone.
-              </p>
+              <h3 className="font-display text-xl text-[var(--primary)] text-center mb-2">Confirm Delete</h3>
+              <p className="text-sm text-[var(--primary)]/50 text-center mb-6">Are you sure? This action cannot be undone.</p>
               <div className="flex gap-3 justify-end">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setDeleteId(null)}
-                  className="btn-secondary"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/70 transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
                 >
                   Cancel
                 </motion.button>
@@ -457,7 +445,7 @@ export const ConsultationDashboard = () => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={deleteItem}
-                  className="btn-danger"
+                  className="rounded-full bg-[var(--error)] px-4 py-2.5 text-2xs font-semibold uppercase tracking-widest text-white transition hover:bg-[var(--error)] hover:shadow-lg"
                 >
                   Delete
                 </motion.button>

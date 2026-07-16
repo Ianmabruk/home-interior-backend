@@ -37,15 +37,15 @@ export const RegisterPage = () => {
       className="space-y-8"
     >
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-orange-accent mb-3">Join HOK</p>
-        <h1 className="font-display text-5xl font-normal text-luxury-text">Create Account</h1>
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--accent)] mb-3">Join HQK</p>
+        <h1 className="font-display text-5xl font-normal text-[var(--primary)]">Create Account</h1>
       </div>
 
       {error && (
         <motion.p
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-sm text-error bg-error/5 border border-error/20 px-4 py-3 rounded-xl"
+          className="text-sm text-[var(--error)] bg-[var(--error)]/5 border border-[var(--error)]/20 px-4 py-3 rounded-xl"
         >
           {error}
         </motion.p>
@@ -53,7 +53,7 @@ export const RegisterPage = () => {
 
       <div className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-luxury-text mb-1.5">Full Name</label>
+          <label className="block text-sm font-medium text-[var(--primary)] mb-1.5">Full Name</label>
           <input
             className="input-luxury"
             required
@@ -65,7 +65,7 @@ export const RegisterPage = () => {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-luxury-text mb-1.5">Email Address</label>
+          <label className="block text-sm font-medium text-[var(--primary)] mb-1.5">Email Address</label>
           <input
             className="input-luxury"
             type="email"
@@ -77,7 +77,7 @@ export const RegisterPage = () => {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-luxury-text mb-1.5">Password</label>
+          <label className="block text-sm font-medium text-[var(--primary)] mb-1.5">Password</label>
           <input
             className="input-luxury"
             type="password"
@@ -88,10 +88,10 @@ export const RegisterPage = () => {
             autoComplete="new-password"
             placeholder="••••••••"
           />
-          <p className="mt-1.5 text-2xs text-luxury-text/35">Min 8 characters, at least 1 number.</p>
+          <p className="mt-1.5 text-2xs text-[var(--primary)]/35">Min 8 characters, at least 1 number.</p>
         </div>
         <div>
-          <label className="block text-sm font-medium text-luxury-text mb-1.5">Confirm Password</label>
+          <label className="block text-sm font-medium text-[var(--primary)] mb-1.5">Confirm Password</label>
           <input
             className="input-luxury"
             type="password"
@@ -113,9 +113,9 @@ export const RegisterPage = () => {
         >
           {loading ? 'Creating account…' : <>Create Account <ArrowRight size={14} strokeWidth={1.5} /></>}
         </button>
-        <p className="text-center text-sm text-luxury-text/45">
+        <p className="text-center text-sm text-[var(--primary)]/45">
           Already have an account?{' '}
-          <Link to="/login" className="font-medium text-luxury-text transition hover:text-bronze">
+          <Link to="/login" className="font-medium text-[var(--primary)] transition hover:text-[var(--accent)]">
             Sign in
           </Link>
         </p>

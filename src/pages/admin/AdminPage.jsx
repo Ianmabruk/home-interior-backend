@@ -10,6 +10,20 @@ import {
   User,
   Settings2,
   Menu,
+  LayoutDashboard,
+  Images,
+  ShoppingBag,
+  Brush,
+  Info,
+  MessageSquare,
+  Newspaper,
+  Sparkles,
+  LogOut,
+  TrendingUp,
+  Package,
+  DollarSign,
+  Users,
+  Clock,
 } from 'lucide-react'
 import { api } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
@@ -23,14 +37,14 @@ import { ConsultationDashboard } from '../../components/admin/ConsultationDashbo
 import { NewsletterDashboard } from '../../components/admin/NewsletterDashboard'
 
 const tabs = [
-  { id: 'dashboard', label: 'Dashboard', icon: Shield },
-  { id: 'portfolio', label: 'Portfolio', icon: Shield },
-  { id: 'shop', label: 'Shop', icon: Settings2 },
-  { id: 'virtual', label: 'Virtual Interior Design', icon: User },
-  { id: 'about', label: 'About', icon: Shield },
-  { id: 'consultations', label: 'Consultations', icon: Mail },
-  { id: 'newsletter', label: 'Newsletter', icon: Shield },
-  { id: 'settings', label: 'Settings', icon: Shield },
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'portfolio', label: 'Portfolio', icon: Images },
+  { id: 'shop', label: 'Shop', icon: ShoppingBag },
+  { id: 'virtual', label: 'Virtual Interior Design', icon: Brush },
+  { id: 'about', label: 'About', icon: Info },
+  { id: 'consultations', label: 'Consultations', icon: MessageSquare },
+  { id: 'newsletter', label: 'Newsletter', icon: Newspaper },
+  { id: 'settings', label: 'Settings', icon: Settings2 },
 ]
 
 export const AdminPage = () => {
@@ -102,7 +116,7 @@ export const AdminPage = () => {
   const currentTab = tabs.find((t) => t.id === activeTab)
 
   return (
-    <div className="min-h-screen bg-primary-bg">
+    <div className="min-h-screen bg-[var(--bg)]">
       <Sidebar
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -116,36 +130,41 @@ export const AdminPage = () => {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="admin-card-glass"
+            className="bg-white/80 backdrop-blur-xl border border-[var(--border)]/60 rounded-2xl shadow-[0_8px_32px_rgba(42,36,31,0.06)]"
           >
             <div className="flex items-center gap-4 px-5 h-16">
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setSidebarOpen((s) => !s)}
-                className="hidden lg:flex p-2 rounded-xl hover:bg-secondary/60 transition-colors text-charcoal"
+                className="hidden lg:flex p-2 rounded-xl hover:bg-[var(--secondary)]/60 transition-colors text-[var(--primary)]"
               >
-                {sidebarOpen ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg> : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>}
+                {sidebarOpen ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M15 18l-6-6 6-6" />
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                )}
               </motion.button>
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setMobileSidebar(true)}
-                className="lg:hidden p-2 rounded-xl hover:bg-secondary/60 transition-colors text-charcoal"
+                className="lg:hidden p-2 rounded-xl hover:bg-[var(--secondary)]/60 transition-colors text-[var(--primary)]"
               >
                 <Menu size={18} />
               </motion.button>
 
               <div className="relative flex-1 max-w-md">
-                <Search
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-charcoal/40"
-                />
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--primary)]/40" />
                 <input
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search..."
-                  className="w-full pl-10 pr-4 py-2.5 text-sm rounded-full border border-border bg-white focus:ring-2 focus:ring-bronze/20 outline-none text-charcoal placeholder:text-charcoal/40 transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 text-sm rounded-full border border-[var(--border)] bg-white focus:ring-2 focus:ring-[var(--accent)]/20 outline-none text-[var(--primary)] placeholder:text-[var(--primary)]/40 transition-all"
                 />
               </div>
 
@@ -158,7 +177,7 @@ export const AdminPage = () => {
                       setShowNotif((s) => !s)
                       if (!showNotif) markNotificationsRead()
                     }}
-                    className="relative p-2.5 rounded-full hover:bg-secondary/60 transition-colors text-charcoal/60"
+                    className="relative p-2.5 rounded-full hover:bg-[var(--secondary)]/60 transition-colors text-[var(--primary)]/60"
                     title="Order notifications"
                   >
                     <Bell size={18} />
@@ -166,7 +185,7 @@ export const AdminPage = () => {
                       <motion.span
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-error text-white text-[10px] flex items-center justify-center font-medium shadow-lg"
+                        className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-[var(--error)] text-white text-[10px] flex items-center justify-center font-medium shadow-lg"
                       >
                         {unreadOrders > 99 ? '99+' : unreadOrders}
                       </motion.span>
@@ -179,12 +198,10 @@ export const AdminPage = () => {
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-[0_10px_40px_rgba(31,77,58,0.1)] border border-border/60 p-4 z-50"
+                        className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-[0_10px_40px_rgba(42,36,31,0.1)] border border-[var(--border)]/60 p-4 z-50"
                       >
-                        <h4 className="text-sm font-semibold text-charcoal mb-2">
-                          Notifications
-                        </h4>
-                        <p className="text-xs text-textSecondary">
+                        <h4 className="text-sm font-semibold text-[var(--primary)] mb-2">Notifications</h4>
+                        <p className="text-xs text-[var(--primary)]/50">
                           {unreadOrders > 0
                             ? `You have ${unreadOrders} unread orders`
                             : 'No new notifications'}
@@ -197,32 +214,32 @@ export const AdminPage = () => {
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="relative p-2.5 rounded-full hover:bg-secondary/60 transition-colors text-charcoal/60"
+                  className="relative p-2.5 rounded-full hover:bg-[var(--secondary)]/60 transition-colors text-[var(--primary)]/60"
                 >
                   <Mail size={18} />
                   {messages.length > 0 && (
                     <motion.span
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-error text-white text-[10px] flex items-center justify-center font-medium shadow-lg"
+                      className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-[var(--error)] text-white text-[10px] flex items-center justify-center font-medium shadow-lg"
                     >
                       {messages.length}
                     </motion.span>
                   )}
                 </motion.button>
 
-                <div className="flex items-center gap-2 pl-2 border-l border-border/50 ml-1">
+                <div className="flex items-center gap-2 pl-2 border-l border-[var(--border)]/50 ml-1">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
-                    className="w-9 h-9 rounded-full bg-gradient-to-br from-bronze to-bronzeDark flex items-center justify-center text-white text-sm font-semibold shadow-lg shadow-bronze/20"
+                    className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent)] flex items-center justify-center text-white text-sm font-semibold shadow-lg shadow-[var(--accent)]/20"
                   >
                     {(user?.fullName || user?.email || 'A').charAt(0).toUpperCase()}
                   </motion.div>
                   <div className="hidden sm:block">
-                    <p className="text-sm font-medium text-charcoal leading-tight">
+                    <p className="text-sm font-medium text-[var(--primary)] leading-tight">
                       {user?.fullName || 'Admin'}
                     </p>
-                    <p className="text-[10px] text-textSecondary capitalize">
+                    <p className="text-[10px] text-[var(--primary)]/50 capitalize">
                       {user?.role || 'admin'}
                     </p>
                   </div>
@@ -238,10 +255,10 @@ export const AdminPage = () => {
             animate={{ opacity: 1, y: 0 }}
             className="mb-6"
           >
-            <h1 className="font-['Playfair_Display'] text-3xl md:text-4xl capitalize text-charcoal">
+            <h1 className="font-display text-3xl md:text-4xl capitalize text-[var(--primary)]">
               {currentTab?.label || activeTab}
             </h1>
-            <p className="text-sm text-textSecondary mt-1">
+            <p className="text-sm text-[var(--primary)]/50 mt-1">
               Manage your {activeTab.replace('-', ' ')}
             </p>
           </motion.div>
@@ -252,7 +269,7 @@ export const AdminPage = () => {
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="toast mb-5 toast-success flex items-center gap-2"
+                className="toast toast-success flex items-center gap-2 mb-5 bg-[var(--success)]/10 text-[var(--success)] border-[var(--success)]/20 rounded-xl px-4 py-3 text-sm shadow-lg border"
               >
                 <CheckCircle2 size={16} />
                 <span className="flex-1">{status}</span>
@@ -291,56 +308,40 @@ export const AdminPage = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     onSubmit={submitSettings}
-                    className="admin-card-glass space-y-5"
+                    className="bg-white/80 backdrop-blur-xl border border-[var(--border)]/60 rounded-2xl p-5 shadow-[0_10px_40px_rgba(42,36,31,0.06)] space-y-5"
                   >
                     <div>
-                      <h2 className="font-['Playfair_Display'] text-2xl text-charcoal">
-                        Website Settings
-                      </h2>
-                      <p className="text-xs text-textSecondary mt-1">
-                        Configure your website preferences
-                      </p>
+                      <h2 className="font-display text-2xl text-[var(--primary)]">Website Settings</h2>
+                      <p className="text-xs text-[var(--primary)]/50 mt-1">Configure your website preferences</p>
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-charcoal/60">
-                        Site Name
-                      </label>
+                      <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/60">Site Name</label>
                       <input
                         value={settingsForm.siteName}
-                        onChange={(e) =>
-                          setSettingsForm((s) => ({ ...s, siteName: e.target.value }))
-                        }
-                        className="input"
-                        placeholder="HOK Interior Designs"
+                        onChange={(e) => setSettingsForm((s) => ({ ...s, siteName: e.target.value }))}
+                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
+                        placeholder="HQK Interior Designs"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-charcoal/60">
-                        Support Email
-                      </label>
+                      <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/60">Support Email</label>
                       <input
                         value={settingsForm.supportEmail}
-                        onChange={(e) =>
-                          setSettingsForm((s) => ({ ...s, supportEmail: e.target.value }))
-                        }
+                        onChange={(e) => setSettingsForm((s) => ({ ...s, supportEmail: e.target.value }))}
                         type="email"
-                        className="input"
-                        placeholder="info@hokinterior.com"
+                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
+                        placeholder="info@hqkinteriors.com"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-charcoal/60">
-                        Default Currency
-                      </label>
+                      <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/60">Default Currency</label>
                       <select
                         value={settingsForm.currency}
-                        onChange={(e) =>
-                          setSettingsForm((s) => ({ ...s, currency: e.target.value }))
-                        }
-                        className="select"
+                        onChange={(e) => setSettingsForm((s) => ({ ...s, currency: e.target.value }))}
+                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
                       >
                         <option value="USD">USD - US Dollar</option>
                         <option value="KES">KES - Kenyan Shilling</option>
@@ -348,23 +349,19 @@ export const AdminPage = () => {
                       </select>
                     </div>
 
-                    <div className="flex items-center justify-between rounded-2xl border border-border bg-white px-5 py-4">
+                    <div className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-white px-5 py-4">
                       <div>
-                        <p className="text-sm font-medium text-charcoal">Maintenance Mode</p>
-                        <p className="text-[10px] text-charcoal/50 mt-0.5">
-                          Temporarily disable public storefront
-                        </p>
+                        <p className="text-sm font-medium text-[var(--primary)]">Maintenance Mode</p>
+                        <p className="text-[10px] text-[var(--primary)]/50 mt-0.5">Temporarily disable public storefront</p>
                       </div>
                       <motion.button
                         whileTap={{ scale: 0.95 }}
                         type="button"
                         role="switch"
                         aria-checked={settingsForm.maintenanceMode}
-                        onClick={() =>
-                          setSettingsForm((s) => ({ ...s, maintenanceMode: !s.maintenanceMode }))
-                        }
+                        onClick={() => setSettingsForm((s) => ({ ...s, maintenanceMode: !s.maintenanceMode }))}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          settingsForm.maintenanceMode ? 'bg-bronze' : 'bg-border'
+                          settingsForm.maintenanceMode ? 'bg-[var(--accent)]' : 'bg-[var(--border)]'
                         }`}
                       >
                         <motion.span
@@ -376,45 +373,33 @@ export const AdminPage = () => {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-charcoal/60">
-                        Shipping Policy
-                      </label>
+                      <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/60">Shipping Policy</label>
                       <textarea
                         value={settingsForm.shippingPolicy}
-                        onChange={(e) =>
-                          setSettingsForm((s) => ({ ...s, shippingPolicy: e.target.value }))
-                        }
-                        className="textarea"
+                        onChange={(e) => setSettingsForm((s) => ({ ...s, shippingPolicy: e.target.value }))}
+                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition resize-none"
                         rows={3}
                         placeholder="Enter shipping policy..."
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-charcoal/60">
-                        Return Policy
-                      </label>
+                      <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/60">Return Policy</label>
                       <textarea
                         value={settingsForm.returnPolicy}
-                        onChange={(e) =>
-                          setSettingsForm((s) => ({ ...s, returnPolicy: e.target.value }))
-                        }
-                        className="textarea"
+                        onChange={(e) => setSettingsForm((s) => ({ ...s, returnPolicy: e.target.value }))}
+                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition resize-none"
                         rows={3}
                         placeholder="Enter return policy..."
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-charcoal/60">
-                        Social Links (JSON format)
-                      </label>
+                      <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/60">Social Links (JSON format)</label>
                       <textarea
                         value={settingsForm.socialLinks}
-                        onChange={(e) =>
-                          setSettingsForm((s) => ({ ...s, socialLinks: e.target.value }))
-                        }
-                        className="textarea font-mono text-xs"
+                        onChange={(e) => setSettingsForm((s) => ({ ...s, socialLinks: e.target.value }))}
+                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition font-mono text-xs resize-none"
                         placeholder='{"instagram": "url", "facebook": "url"}'
                         rows={2}
                       />
@@ -424,7 +409,7 @@ export const AdminPage = () => {
                       whileHover={{ scale: 1.01 }}
                       whileTap={{ scale: 0.98 }}
                       type="submit"
-                      className="bg-forest text-white w-full py-3 rounded-xl text-[11px] font-semibold uppercase tracking-wider transition-all duration-300 hover:bg-forestDark hover:shadow-lg"
+                      className="bg-[var(--accent)] text-white w-full py-3 rounded-xl text-[11px] font-semibold uppercase tracking-wider transition-all duration-300 hover:bg-[var(--accent)] hover:shadow-lg"
                     >
                       Save Settings
                     </motion.button>
