@@ -1,9 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { X, ArrowRight, Grid3X3 } from 'lucide-react'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
 import PositionedImage from '../../components/common/PositionedImage'
+import { getOptimizedUrl } from '../../utils/cloudinaryHelpers'
 
 const PAGE_SIZE = 12
 
@@ -56,23 +57,36 @@ export const PortfolioPage = () => {
     show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } },
   }
 
+  // Use first portfolio item image as hero background
+  const heroImage = items[0]?.imageUrl || 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1920&h=1080&fit=crop'
+
   return (
     <div className="min-h-screen bg-[var(--bg)]">
-      {/* Page Header */}
-      <div className="relative section-pad bg-[var(--primary)] overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(232,154,67,0.12),transparent_50%)]" aria-hidden="true" />
-        <div className="relative z-10 container-wide px-6 md:px-12 lg:px-20">
+      {/* Portfolio Hero Banner - Using Portfolio Image as Background */}
+      <section className="relative h-[60vh] min-h-[400px] overflow-hidden">
+        <div className="absolute inset-0">
+          <img
+            src={getOptimizedUrl(heroImage, { width: 1920, crop: 'limit' })}
+            alt="Portfolio showcase"
+            className="h-full w-full object-cover"
+            loading="eager"
+          />
+          {/* Dark translucent overlay for readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[var(--primary)]/85 via-[var(--primary)]/50 to-[var(--primary)]/30" />
+        </div>
+        <div className="relative z-10 flex h-full items-center justify-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            className="text-center px-6"
           >
-            <h1 className="font-display text-5xl font-normal leading-tight text-white md:text-7xl lg:text-8xl">
-              Portfolio
+            <h1 className="font-display text-5xl font-normal leading-tight text-white md:text-7xl lg:text-8xl tracking-wide">
+              PORTFOLIO
             </h1>
           </motion.div>
         </div>
-      </div>
+      </section>
 
       {/* Portfolio Grid */}
       <section className="section-pad bg-[var(--bg)] pt-12">
@@ -80,7 +94,7 @@ export const PortfolioPage = () => {
           {loading && (
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <div key={i}>
+                <div key={i} className="group">
                   <div className="skeleton aspect-[3/4] w-full rounded-3xl" />
                   <div className="mt-4 space-y-2">
                     <div className="skeleton h-3 w-20" />
@@ -119,58 +133,66 @@ export const PortfolioPage = () => {
                 whileInView="show"
                 viewport={{ once: true, margin: '-40px' }}
                 transition={{ delay: index * 0.05, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                className="group mb-6 break-inside-avoid overflow-hidden rounded-3xl bg-white shadow-[0_2px_16px_rgba(42,36,31,0.04)] hover:shadow-[0_20px_60px_rgba(42,36,31,0.08)] transition-all duration-500 cursor-pointer"
-                style={{ aspectRatio: '3/4' }}
+                className="group cursor-pointer"
               >
-                <div className="relative overflow-hidden">
-                  <PositionedImage
-                    src={item.imageUrl}
-                    alt={item.title}
-                    settings={item.mediaSettings}
-                    className="w-full transition duration-700 group-hover:scale-105"
-                    loading="lazy"
-                    sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[var(--primary)]/85 via-[var(--primary)]/40 to-transparent opacity-100" />
-                </div>
+                <div className="bg-white rounded-3xl overflow-hidden shadow-[0_2px_16px_rgba(42,36,31,0.04)] hover:shadow-[0_20px_60px_rgba(42,36,31,0.08)] transition-all duration-500">
+                  {/* Project Image - Clean, no text overlay */}
+                  <div className="relative aspect-[3/4] overflow-hidden">
+                    <PositionedImage
+                      src={item.imageUrl}
+                      alt={item.title}
+                      settings={item.mediaSettings}
+                      className="w-full h-full transition duration-700 group-hover:scale-105"
+                      loading="lazy"
+                      sizes="(min-width:1280px) 25vw, (min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
+                    />
+                  </div>
 
-                <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
-                  {item.category && (
-                    <motion.p
+                  {/* Luxury Information Card at Bottom */}
+                  <div className="p-5 md:p-6 border-t border-[var(--border)]/40 bg-white">
+                    {item.category && (
+                      <motion.p
+                        initial={{ opacity: 0, y: 10 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="text-[10px] font-semibold uppercase tracking-widest text-[var(--accent)] mb-2"
+                      >
+                        {item.category}
+                      </motion.p>
+                    )}
+                    <motion.h3
+                      initial={{ opacity: 0, y: 10 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 }}
+                      className="font-display text-xl md:text-2xl font-normal text-[var(--primary)] leading-tight mb-3"
+                    >
+                      {item.title}
+                    </motion.h3>
+                    {item.description && (
+                      <motion.p
+                        initial={{ opacity: 0, y: 10 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.15 }}
+                        className="text-sm leading-relaxed text-[var(--primary)]/60 mb-4 line-clamp-3"
+                      >
+                        {item.description}
+                      </motion.p>
+                    )}
+                    <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
-                      className="text-[11px] font-semibold uppercase tracking-widest text-[var(--accent)] mb-2"
+                      className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest"
                     >
-                      {item.category}
-                    </motion.p>
-                  )}
-                  <motion.h3
-                    initial={{ opacity: 0, y: 10 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="font-display text-2xl md:text-3xl font-normal text-white leading-tight"
-                  >
-                    {item.title}
-                  </motion.h3>
-                  {item.description && (
-                    <motion.p
-                      initial={{ opacity: 0, y: 10 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.15 }}
-                      className="mt-3 text-sm leading-relaxed text-white/70 line-clamp-2 hidden md:block"
-                    >
-                      {item.description}
-                    </motion.p>
-                  )}
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="mt-5 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-[var(--accent)] opacity-0 translate-y-2 transition-all duration-500 group-hover:opacity-100 group-hover:translate-y-0"
-                  >
-                    View Project <ArrowRight size={12} strokeWidth={1.5} />
-                  </motion.div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setSelected(item) }}
+                        className="btn-luxury-primary group px-5 py-2.5 text-[10px] rounded-full"
+                      >
+                        VIEW PROJECT
+                        <ArrowRight size={12} strokeWidth={1.5} className="transition-transform duration-300 group-hover:translate-x-1" />
+                      </button>
+                    </motion.div>
+                  </div>
                 </div>
               </motion.figure>
             ))}

@@ -185,6 +185,19 @@ export const Hero = ({ onBookConsultation }) => {
         ))}
       </div>
 
+      {/* Luxury Statement Text - Far Left of Fading Overlay (Desktop/Tablet Only) */}
+      <div className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 px-6 md:px-12 lg:px-20 pointer-events-none">
+        <motion.p
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 1.2, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="font-display text-3xl md:text-4xl lg:text-5xl font-normal leading-tight text-white/80 tracking-tight max-w-xl"
+          style={{ textShadow: '0 2px 20px rgba(0,0,0,0.3)' }}
+        >
+          Designing Luxurious Functional Spaces
+        </motion.p>
+      </div>
+
       {/* Buttons Only - Lower Position */}
       <div className="relative z-10 flex h-full items-end justify-center px-6 md:px-12 lg:px-20 pb-20 md:pb-28">
         <motion.div
@@ -235,26 +248,6 @@ export const Hero = ({ onBookConsultation }) => {
           ))}
         </div>
       )}
-
-      {/* Scroll Indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.5 }}
-        className="scroll-indicator"
-      >
-        <span className="text-[10px] uppercase tracking-widest font-medium">Scroll</span>
-        <motion.div
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-          className="flex flex-col items-center gap-2"
-        >
-          <div className="h-10 w-px bg-white/30" />
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/60">
-            <path d="M6 9l6 6 6-6" />
-          </svg>
-        </motion.div>
-      </motion.div>
     </section>
   )
 }
