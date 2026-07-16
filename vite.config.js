@@ -8,17 +8,37 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      // Precache the built app shell so repeat visits render instantly and
-      // the site works offline. The SW updates itself in the background.
+      // IMPORTANT: do NOT precache the app shell (index.html) and do NOT use a
+      // navigateFallback. Previously the SW precached index.html and served it
+      // from cache on every repeat visit, so even after Netlify redeployed with
+      // a new JS bundle the browser kept loading the OLD html -> OLD js. That is
+      // why navbar/footer fixes "never appeared" in production. Now only static
+      // assets (hashed js/css/svg/woff2) are precached; navigations are fetched
+      // fresh from the network every time (NetworkFirst below), so a new deploy
+      // is picked up on the very next page load. clientsClaim + skipWaiting still
+      // swap the SW itself immediately on deploy.
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,woff2}'],
+        globPatterns: ['**/*.{js,css,svg,woff2}'],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
-        navigateFallback: '/index.html',
         // Never let the SW cache/handle API calls as navigations.
         navigateFallbackDenylist: [/^\/api/, /\/api\//],
         runtimeCaching: [
+          {
+            // App shell navigations (index.html) — always fetch from the network
+            // first so a redeploy is reflected immediately. Falls back to cache
+            // only when offline. This was the root cause of stale production.
+            urlPattern: ({ request, url }) =>
+              request.mode === 'navigate' && url.origin === self.location.origin,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'pages',
+              networkTimeoutSeconds: 10,
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
           {
             // Cloudinary images — cache-first, they are immutable per URL.
             urlPattern: /^https:\/\/res\.cloudinary\.com\/.*\/image\/upload\/.*/i,
