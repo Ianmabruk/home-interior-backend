@@ -118,22 +118,21 @@ export const Navbar = () => {
               {NAV_ITEMS.map((item) => {
                 const isActive = location.pathname === item.to
                 return (
-                  <motion.Link
+                  <Link
                     key={item.to}
                     to={item.to}
-                    variants={{
-                      hidden: { opacity: 0, y: -10 },
-                      visible: { opacity: 1, y: 0 },
-                    }}
-                    className={`relative flex items-center rounded-full px-4 py-2.5 md:px-5 md:py-3 text-[10px] md:text-[11px] font-medium uppercase tracking-[0.15em] transition-all duration-300 nav-link-underline ${
-                      isActive ? 'text-[#E89A43]' : 'text-[#2A241F]/70 hover:text-[#2A241F]'
-                    }`}
+                    className={`relative flex items-center rounded-full px-4 py-2.5 md:px-5 md:py-3 text-[10px] md:text-[11px] font-medium uppercase tracking-[0.15em] transition-all duration-300 nav-link-underline ${isActive ? 'text-[#E89A43]' : 'text-[#2A241F]/70 hover:text-[#2A241F]'} focus:outline-none focus:ring-2 focus:ring-[#E89A43]/20`}
                     aria-current={isActive ? 'page' : undefined}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
                   >
-                    <span>{item.label}</span>
-                  </motion.Link>
+                    <motion.span
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {item.label}
+                    </motion.span>
+                  </Link>
                 )
               })}
 
