@@ -28,7 +28,7 @@ export const Layout = () => {
     <ErrorBoundary>
       <div className="min-h-screen bg-cream text-espresso flex flex-col">
         <Navbar />
-        <main className="flex-1 flex flex-col pt-[106px] md:pt-[112px]">
+        <main className="flex-1 flex flex-col">
           <Suspense fallback={<PageLoader />}>
             <ErrorBoundary>
               <Outlet />

@@ -1,24 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Instagram, Facebook, Mail, ArrowRight, Star, ChevronLeft, ChevronRight } from 'lucide-react'
+import { FaTiktok, FaPinterest } from 'react-icons/fa'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '../services/api'
 import { useAuth } from '../context/AuthContext'
-
-const TikTokIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
-    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4-4 4-4 1.5-1.5a2.12 2.12 0 0 1 3 0Z" />
-    <path d="M16.5 3.5c.205.18.407.367.601.557A10.045 10.045 0 0 1 23.4 12c0 .52-.039 1.04-.11 1.55a13.978 13.978 0 0 1-1.97 5.07 2.127 2.127 0 0 1-2.79 1.04 17.323 17.323 0 0 1-5.37-1.97 2.131 2.131 0 0 1-.64-2.51c.163-.18.33-.356.5-.53" />
-    <path d="M12 12c.53-.24 1.04-.5 1.5-.76" />
-  </svg>
-)
-
-const PinterestIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
-    <path d="M9 19c-5 0-7.5-7-7.5-7a5.5 5.5 0 0 1 11.24-3.1" />
-    <circle cx="12" cy="19" r="3" />
-  </svg>
-)
 
 export const Footer = () => {
   const { user } = useAuth()
@@ -75,10 +61,10 @@ export const Footer = () => {
   }
 
   const socialLinks = [
-    { icon: TikTokIcon, href: 'https://www.tiktok.com/@hokinteriors', label: 'TikTok', ariaLabel: 'Follow us on TikTok' },
+    { icon: FaTiktok, href: 'https://www.tiktok.com/@hokinteriors', label: 'TikTok', ariaLabel: 'Follow us on TikTok' },
     { icon: Instagram, href: 'https://www.instagram.com/hokinteriors', label: 'Instagram', ariaLabel: 'Follow us on Instagram' },
     { icon: Facebook, href: 'https://www.facebook.com/share/14i3V8Sw7uo', label: 'Facebook', ariaLabel: 'Follow us on Facebook' },
-    { icon: PinterestIcon, href: 'https://www.pinterest.com/hokinterior', label: 'Pinterest', ariaLabel: 'Follow us on Pinterest' },
+    { icon: FaPinterest, href: 'https://www.pinterest.com/hokinterior', label: 'Pinterest', ariaLabel: 'Follow us on Pinterest' },
   ]
 
   const quickLinks = [

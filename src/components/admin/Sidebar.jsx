@@ -51,7 +51,7 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
           width: sidebarOpen ? 280 : 72,
         }}
         transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-        className="fixed inset-y-0 left-0 z-40 flex flex-col bg-[var(--primary)] text-white border-r border-white/5 shadow-2xl"
+        className="fixed inset-y-0 left-0 z-40 flex flex-col bg-[var(--sidebar)] text-white border-r border-white/5 shadow-2xl"
       >
         <div className="flex items-center gap-3 h-20 px-5 border-b border-white/10">
           <motion.div
@@ -90,7 +90,7 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
                   onTabChange(item.id)
                   onCloseMobile()
                 }}
-                className={`relative w-full flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center px-2'} py-2.5 text-sm font-medium transition-all duration-200 hover:bg-white/10 hover:text-white ${isActive ? 'text-[var(--primary)] bg-white rounded-xl shadow-sm font-semibold' : 'text-white/75'}`}
+                className={`relative w-full flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center px-2'} py-2.5 text-sm font-medium transition-all duration-200 ${isActive ? 'text-[var(--primary)] bg-white rounded-xl shadow-sm font-semibold' : 'text-white/75 hover:bg-white/10 hover:text-white'}`}
                 title={!sidebarOpen ? item.label : undefined}
               >
                 {isActive && (
