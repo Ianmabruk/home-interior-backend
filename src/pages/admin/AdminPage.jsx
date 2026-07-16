@@ -111,9 +111,7 @@ export const AdminPage = () => {
         onCloseMobile={() => setMobileSidebar(false)}
       />
 
-      <div
-        className={`transition-all duration-300 ${sidebarOpen ? 'lg:pl-[280px]' : 'lg:pl-[72px]'}`}
-      >
+      <div className="flex flex-1 flex-col lg:pl-[280px]">
         <header className="sticky top-4 z-30 mx-4 lg:mx-6">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -234,7 +232,7 @@ export const AdminPage = () => {
           </motion.div>
         </header>
 
-        <main className="p-4 md:p-8 pb-24 md:pb-8">
+        <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8">
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}

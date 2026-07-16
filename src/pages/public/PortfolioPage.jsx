@@ -1,9 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useMemo, useState, useCallback } from 'react'
-import { X, ArrowRight, GitCompare, Search, Grid3X3 } from 'lucide-react'
+import { X, ArrowRight, Grid3X3, Search } from 'lucide-react'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
 import PositionedImage from '../../components/common/PositionedImage'
+import { getOptimizedUrl } from '../../utils/cloudinaryHelpers'
 
 const PAGE_SIZE = 12
 
@@ -19,7 +20,6 @@ export const PortfolioPage = () => {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
   const [page, setPage] = useState(1)
-  const [beforeAfterView, setBeforeAfterView] = useState(false)
 
   const loadPortfolio = () => {
     api.get('/content/portfolio')
@@ -63,97 +63,129 @@ export const PortfolioPage = () => {
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
-  const toggleBeforeAfter = useCallback(() => setBeforeAfterView((v) => !v), [])
+  const containerVariants = {
+    hidden: {},
+    show: { transition: { staggerChildren: 0.05 } },
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 30 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } },
+  }
 
   return (
-    <div className="min-h-screen bg-primary-bg">
+    <div className="min-h-screen bg-warm-ivory">
       {/* Page Header */}
-      <div className="relative section-pad bg-dark-luxury overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(198,155,109,0.12),transparent_50%)]" />
+      <div className="relative section-pad bg-luxury-text overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(232,154,67,0.12),transparent_50%)]" aria-hidden="true" />
         <div className="relative z-10 container-wide px-6 md:px-12 lg:px-20">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}>
-            <p className="eyebrow mb-4 text-champagne/70">Our Work</p>
-            <h1 className="font-display text-5xl font-medium leading-tight text-white md:text-7xl lg:text-8xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-orange-accent/70 mb-4">Our Work</p>
+            <h1 className="font-display text-5xl font-normal leading-tight text-white md:text-7xl lg:text-8xl">
               Portfolio
             </h1>
             <p className="mt-6 max-w-xl text-base text-white/50 leading-relaxed">
-              A curated selection of premium interiors crafted by HOK Interior Designs. Each project tells a unique story of luxury and refinement.
+              A curated selection of premium interiors crafted by HOK INTERIORS. Each project tells a unique story of luxury and refinement.
             </p>
           </motion.div>
         </div>
       </div>
 
-      {/* Sticky Filter Bar with Glassmorphism */}
-      <div className="sticky top-[88px] z-30 border-b border-champagne/20 bg-white/70 backdrop-blur-xl shadow-sm md:top-[108px]">
-        <div className="container-wide px-6 py-4 md:px-12 lg:px-20">
-          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-            <div className="relative flex-1 max-w-md">
-              <Search size={16} strokeWidth={1.5} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/35" />
-              <input
-                value={query}
-                onChange={(e) => { setQuery(e.target.value); setPage(1) }}
-                placeholder="Search portfolio..."
-                className="w-full rounded-full border border-champagne/40 bg-white/80 pl-10 pr-4 py-2.5 text-sm outline-none placeholder:text-ink/35 focus:border-warm-gold focus:ring-2 focus:ring-warm-gold/20 transition"
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={() => { setCategory(''); setPage(1) }}
-                className={`px-4 py-2 text-2xs font-medium uppercase tracking-widest transition rounded-full ${
-                  !category ? 'bg-dark-luxury text-white shadow-md' : 'bg-white text-ink/60 hover:bg-linen border border-champagne/40'
-                }`}
-              >
-                All
-              </button>
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => { setCategory(cat); setPage(1) }}
-                  className={`px-4 py-2 text-2xs font-medium uppercase tracking-widest transition rounded-full ${
-                    category === cat ? 'bg-dark-luxury text-white shadow-md' : 'bg-white text-ink/60 hover:bg-linen border border-champagne/40'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-            <span className="hidden lg:block text-2xs text-ink/40 ml-auto">{filtered.length} projects</span>
-          </div>
-        </div>
-      </div>
-
       {/* Masonry Grid */}
-      <section className="section-pad bg-primary-bg pt-12">
+      <section className="section-pad bg-warm-ivory pt-12">
         <div className="container-wide px-6 md:px-12 lg:px-20">
           {loading && (
-            <div className="columns-1 gap-5 sm:columns-2 lg:columns-3">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className={`skeleton mb-5 break-inside-avoid rounded-2xl ${i % 3 === 0 ? 'h-96' : i % 2 === 0 ? 'h-72' : 'h-80'}`} />
+            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <div key={i}>
+                  <div className="skeleton aspect-[3/4] w-full rounded-3xl" />
+                  <div className="mt-4 space-y-2">
+                    <div className="skeleton h-3 w-20" />
+                    <div className="skeleton h-5 w-40" />
+                    <div className="skeleton h-4 w-16" />
+                  </div>
+                </div>
               ))}
             </div>
           )}
 
           {!loading && paginated.length === 0 && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="py-24 text-center">
-              <Grid3X3 size={48} strokeWidth={1} className="mx-auto text-champagne mb-4" />
-              <p className="font-display text-3xl text-ink/30">No projects found</p>
-              <p className="mt-2 text-sm text-ink/35">Try adjusting your search or filters</p>
-              <button onClick={() => { setQuery(''); setCategory(''); setPage(1) }} className="btn-outline border-warm-gold text-warm-gold mt-6 hover:bg-warm-gold hover:text-white hover:border-warm-gold">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="py-24 text-center"
+            >
+              <Grid3X3 size={48} strokeWidth={1} className="mx-auto text-linen mb-4" />
+              <p className="font-display text-3xl text-luxury-text/30">No projects found</p>
+              <p className="mt-2 text-sm text-luxury-text/35">Try adjusting your search or filters</p>
+              <button
+                onClick={() => { setQuery(''); setCategory(''); setPage(1) }}
+                className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 text-2xs font-semibold uppercase tracking-widest border border-bronze text-bronze hover:bg-bronze hover:text-warm-ivory hover:border-bronze rounded-full transition"
+              >
                 Clear Filters
               </button>
             </motion.div>
           )}
 
-          <div className="columns-1 gap-5 sm:columns-2 lg:columns-3">
+          {/* Search & Filter */}
+          <div className="mb-10 md:mb-16">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="relative flex-1 max-w-md">
+                <Search size={16} strokeWidth={1.5} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-luxury-text/35" />
+                <input
+                  value={query}
+                  onChange={(e) => { setQuery(e.target.value); setPage(1) }}
+                  placeholder="Search portfolio..."
+                  className="w-full rounded-full border border-linen/40 bg-soft-cream pl-10 pr-4 py-2.5 text-sm outline-none placeholder:text-luxury-text/35 focus:border-bronze focus:ring-2 focus:ring-bronze/20 transition"
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => { setCategory(''); setPage(1) }}
+                  className={`px-4 py-2 text-2xs font-medium uppercase tracking-widest transition rounded-full ${
+                    !category ? 'bg-luxury-text text-warm-ivory shadow-md' : 'bg-soft-cream text-luxury-text/60 hover:bg-linen/30 border border-linen/40'
+                  }`}
+                >
+                  All
+                </button>
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => { setCategory(cat === category ? '' : cat); setPage(1) }}
+                    className={`px-4 py-2 text-2xs font-medium uppercase tracking-widest transition rounded-full ${
+                      category === cat ? 'bg-luxury-text text-warm-ivory shadow-md' : 'bg-soft-cream text-luxury-text/60 hover:bg-linen/30 border border-linen/40'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+              <span className="hidden lg:block text-2xs text-luxury-text/40 font-medium ml-auto">{filtered.length} projects</span>
+            </div>
+          </div>
+
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: '-50px' }}
+            className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4"
+          >
             {paginated.map((item, index) => (
               <motion.figure
                 key={item._id}
-                onClick={() => { setSelected(item); setBeforeAfterView(false) }}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                onClick={() => setSelected(item)}
+                variants={itemVariants}
+                initial="hidden"
+                whileInView="show"
                 viewport={{ once: true, margin: '-40px' }}
                 transition={{ delay: index * 0.05, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                className="group mb-5 break-inside-avoid overflow-hidden rounded-2xl bg-white shadow-card hover:shadow-lift transition-all duration-500 cursor-pointer"
+                className="group mb-6 break-inside-avoid overflow-hidden rounded-3xl bg-white shadow-soft hover:shadow-lift transition-all duration-500 cursor-pointer"
+                style={{ aspectRatio: '3/4' }}
               >
                 <div className="relative overflow-hidden">
                   <PositionedImage
@@ -162,144 +194,182 @@ export const PortfolioPage = () => {
                     settings={item.mediaSettings}
                     className="w-full transition duration-700 group-hover:scale-105"
                     loading="lazy"
-                    sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
+                    sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-dark-luxury/70 via-dark-luxury/20 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                  {item.beforeAfterImages?.length > 0 && (
-                    <span className="absolute left-3 top-3 bg-warm-gold px-3 py-1 text-2xs font-semibold uppercase tracking-widest text-white rounded-full shadow-lg">
-                      Before/After
-                    </span>
+                  <div className="absolute inset-0 bg-gradient-to-t from-luxury-text/70 via-luxury-text/20 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                </div>
+
+                <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
+                  {item.category && (
+                    <motion.p
+                      initial={{ opacity: 0, y: 10 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="text-[11px] font-semibold uppercase tracking-widest text-orange-accent mb-2"
+                    >
+                      {item.category}
+                    </motion.p>
                   )}
-                  <div className="absolute inset-0 flex items-end p-5 opacity-0 transition-opacity duration-400 group-hover:opacity-100">
-                    <div>
-                      <p className="font-display text-2xl font-medium text-white">{item.title}</p>
-                      {item.category && <p className="text-2xs font-medium uppercase tracking-widest text-champagne/80 mt-1">{item.category}</p>}
-                    </div>
-                  </div>
+                  <motion.h3
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="font-display text-2xl md:text-3xl font-normal text-white leading-tight"
+                  >
+                    {item.title}
+                  </motion.h3>
+                  {item.description && (
+                    <motion.p
+                      initial={{ opacity: 0, y: 10 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.15 }}
+                      className="mt-3 text-sm leading-relaxed text-white/70 line-clamp-2 hidden md:block"
+                    >
+                      {item.description}
+                    </motion.p>
+                  )}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="mt-5 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-orange-accent opacity-0 translate-y-2 transition-all duration-500 group-hover:opacity-100 group-hover:translate-y-0"
+                  >
+                    View Project <ArrowRight size={12} strokeWidth={1.5} />
+                  </motion.div>
                 </div>
               </motion.figure>
             ))}
-          </div>
+          </motion.div>
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mt-16 flex items-center justify-center gap-2">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-16 flex items-center justify-center gap-2"
+            >
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="rounded-full border border-champagne/40 px-5 py-2.5 text-2xs font-medium uppercase tracking-widest text-ink/50 transition hover:border-warm-gold hover:text-warm-gold disabled:opacity-30"
+                className="p-2 rounded-full text-luxury-text/60 hover:text-bronze transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                aria-label="Previous page"
               >
-                Prev
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
               </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPage(p)}
-                  className={`h-10 w-10 rounded-full text-2xs font-medium transition ${
-                    p === page ? 'bg-dark-luxury text-white shadow-lg' : 'border border-champagne/40 text-ink/50 hover:border-warm-gold hover:text-warm-gold'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                let pageNum
+                if (totalPages <= 5) pageNum = i + 1
+                else if (page <= 3) pageNum = i + 1
+                else if (page >= totalPages - 2) pageNum = totalPages - 4 + i
+                else pageNum = page - 2 + i
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setPage(pageNum)}
+                    className={`w-10 h-10 rounded-full text-sm font-medium transition-all duration-300 ${
+                      page === pageNum
+                        ? 'bg-luxury-text text-warm-ivory shadow-md'
+                        : 'text-luxury-text/60 hover:bg-linen/50 hover:text-bronze'
+                    }`}
+                    aria-label={`Page ${pageNum}`}
+                    aria-current={page === pageNum ? 'page' : undefined}
+                  >
+                    {pageNum}
+                  </button>
+                )
+              })}
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="rounded-full border border-champagne/40 px-5 py-2.5 text-2xs font-medium uppercase tracking-widest text-ink/50 transition hover:border-warm-gold hover:text-warm-gold disabled:opacity-30"
+                className="p-2 rounded-full text-luxury-text/60 hover:text-bronze transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                aria-label="Next page"
               >
-                Next
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
               </button>
             </motion.div>
           )}
         </div>
       </section>
 
-      {/* Luxury Lightbox */}
+      {/* Modal Detail View */}
       <AnimatePresence>
         {selected && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-dark-luxury/98 p-4 md:p-8 backdrop-blur-sm"
-            onClick={() => { setSelected(null); setBeforeAfterView(false) }}
-          >
+          <>
             <motion.div
-              initial={{ scale: 0.96, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.96, opacity: 0 }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="relative max-h-[90vh] max-w-6xl w-full overflow-hidden bg-white rounded-3xl shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-luxury-text/90 backdrop-blur-sm z-50"
+              onClick={() => setSelected(null)}
+              aria-hidden="true"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed inset-4 md:inset-10 lg:inset-20 z-50 bg-white rounded-3xl overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.3)]"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="project-title"
             >
               <button
-                onClick={() => { setSelected(null); setBeforeAfterView(false) }}
-                className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center bg-white/90 text-ink transition hover:bg-white rounded-full shadow-lg"
-                aria-label="Close"
+                onClick={() => setSelected(null)}
+                className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/90 backdrop-blur text-luxury-text hover:bg-bronze/10 hover:text-bronze transition-all duration-300"
+                aria-label="Close project"
               >
-                <X size={18} strokeWidth={1.5} />
+                <X size={20} strokeWidth={2} />
               </button>
-
-              {selected.beforeAfterImages?.length > 0 && (
-                <button
-                  onClick={toggleBeforeAfter}
-                  className="absolute left-4 top-4 z-20 flex items-center gap-2 bg-warm-gold text-white px-4 py-2 text-2xs font-semibold uppercase tracking-widest rounded-full shadow-lg hover:bg-warm-gold/90 transition"
-                >
-                  <GitCompare size={14} strokeWidth={1.5} />
-                  {beforeAfterView ? 'View Image' : 'Compare Before/After'}
-                </button>
-              )}
-
-              <div className="max-h-[75vh] overflow-y-auto">
-                {beforeAfterView && selected.beforeAfterImages?.length > 0 ? (
-                  <div className="grid gap-6 p-6 md:grid-cols-2">
-                    <div className="overflow-hidden rounded-2xl">
-                      <p className="text-2xs font-semibold uppercase tracking-widest text-warm-gold mb-3 px-1">Before</p>
-                      <img src={selected.beforeAfterImages[0]?.url} alt="Before" className="w-full object-contain rounded-xl bg-linen" />
-                    </div>
-                    <div className="overflow-hidden rounded-2xl">
-                      <p className="text-2xs font-semibold uppercase tracking-widest text-warm-gold mb-3 px-1">After</p>
-                      <img src={selected.imageUrl} alt="After" className="w-full object-contain rounded-xl bg-linen" />
-                    </div>
+              <div className="relative h-full flex">
+                <div className="relative w-full md:w-1/2 overflow-hidden">
+                  <PositionedImage
+                    src={selected.imageUrl}
+                    alt={selected.title}
+                    settings={selected.mediaSettings}
+                    className="h-full w-full object-cover"
+                    loading="eager"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-luxury-text/60 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+                    {selected.category && (
+                      <p className="text-[11px] font-semibold uppercase tracking-widest text-orange-accent mb-2">{selected.category}</p>
+                    )}
+                    <h2 id="project-title" className="font-display text-3xl md:text-4xl font-normal leading-tight">{selected.title}</h2>
                   </div>
-                ) : (
-                  <div className="overflow-hidden">
-                    <PositionedImage
-                      src={selected.imageUrl}
-                      alt={selected.title}
-                      settings={selected.mediaSettings}
-                      className="max-h-[65vh] w-full"
-                      loading="eager"
-                    />
-                  </div>
-                )}
-
-                {selected.beforeAfterImages?.length > 2 && !beforeAfterView && (
-                  <div className="px-6 pb-4">
-                    <p className="text-2xs font-semibold uppercase tracking-widest text-warm-gold mb-3">Project Gallery</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {selected.beforeAfterImages.map((img, idx) => (
-                        <div key={idx} className="overflow-hidden rounded-xl">
-                          <img src={img.url} alt={img.label || `View ${idx + 1}`} className="w-full object-cover aspect-[4/3] hover:scale-105 transition duration-500" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between p-6 border-t border-champagne/30 bg-linen/50">
-                <div>
-                  <h2 className="font-display text-2xl md:text-3xl font-medium text-ink">{selected.title}</h2>
-                  {selected.category && <p className="text-2xs font-semibold uppercase tracking-widest text-warm-gold mt-1">{selected.category}</p>}
                 </div>
-                <button onClick={() => { setSelected(null); setBeforeAfterView(false) }} className="btn-ghost text-ink/40 hover:text-warm-gold">
-                  Close <ArrowRight size={13} strokeWidth={1.5} className="rotate-180" />
-                </button>
+                <div className="w-full md:w-1/2 p-8 md:p-12 overflow-y-auto">
+                  {selected.description && (
+                    <p className="text-base leading-relaxed text-luxury-text/70 mb-8">{selected.description}</p>
+                  )}
+                  {selected.location && (
+                    <div className="mb-6 flex items-center gap-3 text-sm text-luxury-text/60">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="text-orange-accent">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
+                      <span>{selected.location}</span>
+                    </div>
+                  )}
+                  {selected.year && (
+                    <div className="mb-6 flex items-center gap-3 text-sm text-luxury-text/60">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="text-orange-accent">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                      </svg>
+                      <span>Completed: {selected.year}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
-          </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>

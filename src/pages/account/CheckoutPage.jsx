@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Check, Loader2 } from 'lucide-react'
+import { ArrowLeft, Check, Loader2, Smartphone, CreditCard } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useShop } from '../../context/ShopContext'
 import { useCurrency } from '../../context/CurrencyContext'
@@ -22,6 +22,12 @@ export const CheckoutPage = () => {
     state: '',
     postalCode: '',
     country: '',
+  })
+  const [paymentMethod, setPaymentMethod] = useState('card')
+  const [cardForm, setCardForm] = useState({
+    number: '',
+    expiry: '',
+    cvv: '',
   })
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
@@ -48,6 +54,7 @@ export const CheckoutPage = () => {
   }
 
   const update = (key, value) => setForm((f) => ({ ...f, [key]: value }))
+  const updateCard = (key, value) => setCardForm((c) => ({ ...c, [key]: value }))
 
   const submit = async (e) => {
     e.preventDefault()
@@ -56,12 +63,9 @@ export const CheckoutPage = () => {
 
     try {
       const shippingAddress = {
-        line1: form.address,
-        line2: '',
-        city: form.city,
-        state: form.state,
-        postalCode: form.postalCode,
-        country: form.country,
+        fullName: form.fullName,
+        email: form.email,
+        phone: form.phone,
       }
 
       await api.post('/orders', {
@@ -85,10 +89,37 @@ export const CheckoutPage = () => {
     }
   }
 
+  const formatCardNumber = (value) => {
+    const digits = value.replace(/\D/g, '').slice(0, 16)
+    const groups = digits.match(/.{1,4}/g) || []
+    return groups.join(' ')
+  }
+
+  const formatExpiry = (value) => {
+    const digits = value.replace(/\D/g, '').slice(0, 4)
+    if (digits.length >= 3) {
+      return `${digits.slice(0, 2)}/${digits.slice(2)}`
+    }
+    return digits
+  }
+
+  const formatCvv = (value) => {
+    return value.replace(/\D/g, '').slice(0, 3)
+  }
+
+  const formatPhone = (value) => {
+    const digits = value.replace(/\D/g, '').slice(0, 15)
+    return digits
+  }
+
   if (done) {
     return (
       <div className="section-pad container-narrow px-6 text-center">
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-lg rounded-3xl border border-sand bg-white p-10 shadow-card">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mx-auto max-w-lg rounded-3xl border border-sand bg-white p-10 shadow-card"
+        >
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
             <Check size={28} />
           </div>
@@ -123,86 +154,232 @@ export const CheckoutPage = () => {
         <div className="container-wide px-6 md:px-12 lg:px-20">
           <form onSubmit={submit} className="grid gap-10 lg:grid-cols-[1fr_400px]">
             <div className="space-y-6">
+              {/* Customer Information */}
               <div className="rounded-3xl border border-sand/60 bg-white p-6 shadow-card">
-                <h2 className="font-display text-2xl text-ink mb-4">Contact</h2>
+                <h2 className="font-display text-2xl text-ink mb-4">Contact Information</h2>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="sm:col-span-2">
                     <label className="label">Full Name</label>
-                    <input value={form.fullName} onChange={(e) => update('fullName', e.target.value)} className="w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm outline-none" required />
+                    <input
+                      value={form.fullName}
+                      onChange={(e) => update('fullName', e.target.value)}
+                      className="w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm outline-none"
+                      placeholder="John Doe"
+                      required
+                    />
                   </div>
                   <div>
-                    <label className="label">Email</label>
-                    <input type="email" value={form.email} onChange={(e) => update('email', e.target.value)} className="w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm outline-none" required />
+                    <label className="label">Email Address</label>
+                    <input
+                      type="email"
+                      value={form.email}
+                      onChange={(e) => update('email', e.target.value)}
+                      className="w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm outline-none"
+                      placeholder="john@example.com"
+                      required
+                    />
                   </div>
                   <div>
                     <label className="label">Phone Number</label>
-                    <input value={form.phone} onChange={(e) => update('phone', e.target.value)} className="w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm outline-none" />
+                    <input
+                      value={form.phone}
+                      onChange={(e) => update('phone', formatPhone(e.target.value))}
+                      className="w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm outline-none"
+                      placeholder="+254 7XX XXX XXX"
+                    />
                   </div>
                 </div>
               </div>
 
+              {/* Shipping Address */}
               <div className="rounded-3xl border border-sand/60 bg-white p-6 shadow-card">
                 <h2 className="font-display text-2xl text-ink mb-4">Shipping Address</h2>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="sm:col-span-2">
                     <label className="label">Address</label>
-                    <input value={form.address} onChange={(e) => update('address', e.target.value)} className="w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm outline-none" placeholder="Street address" required />
+                    <input
+                      value={form.address}
+                      onChange={(e) => update('address', e.target.value)}
+                      className="w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm outline-none"
+                      placeholder="Street address, apartment, suite, etc."
+                    />
                   </div>
-                  <div>
-                    <label className="label">City</label>
-                    <input value={form.city} onChange={(e) => update('city', e.target.value)} className="w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm outline-none" required />
-                  </div>
-                  <div>
-                    <label className="label">State / Region</label>
-                    <input value={form.state} onChange={(e) => update('state', e.target.value)} className="w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm outline-none" />
-                  </div>
-                  <div>
-                    <label className="label">Postal Code</label>
-                    <input value={form.postalCode} onChange={(e) => update('postalCode', e.target.value)} className="w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm outline-none" required />
+<div>
+                      <label className="label">City</label>
+                      <input
+                        value={form.city}
+                        onChange={(e) => update('city', e.target.value)}
+                        className="w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="label">State / Region</label>
+                      <input
+                        value={form.state}
+                        onChange={(e) => update('state', e.target.value)}
+                        className="w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="label">Postal Code</label>
+                      <input
+                        value={form.postalCode}
+                        onChange={(e) => update('postalCode', e.target.value)}
+                        className="w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm outline-none"
+                      />
                   </div>
                   <div>
                     <label className="label">Country</label>
-                    <input value={form.country} onChange={(e) => update('country', e.target.value)} className="w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm outline-none" required />
+                    <input
+                      value={form.country}
+                      onChange={(e) => update('country', e.target.value)}
+                      className="w-full rounded-xl border border-sand bg-white px-4 py-2.5 text-sm outline-none"
+                    />
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="h-fit rounded-3xl border border-sand/60 bg-white p-7 shadow-card">
-              <h3 className="font-display text-2xl font-medium text-ink">Order Summary</h3>
-              <div className="mt-6 space-y-4">
-                {cart.map((item) => (
-                  <div key={item._id} className="flex items-center justify-between gap-4 text-sm">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-ink truncate">{item.name}</p>
-                      <p className="text-ink/50">Qty: {item.quantity}</p>
+            {/* Payment Section */}
+            <div className="space-y-6">
+              <div className="rounded-3xl border border-sand/60 bg-white p-6 shadow-card">
+                <h2 className="font-display text-2xl text-ink mb-4">Payment Method</h2>
+
+                <div className="flex gap-4 mb-6">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('card')}
+                    className={`flex-1 flex items-center justify-center gap-2 rounded-xl border-2 px-6 py-3 text-sm font-medium transition-all ${
+                      paymentMethod === 'card'
+                        ? 'border-forest bg-forest/5 text-forest'
+                        : 'border-sand/60 text-ink hover:border-bronze'
+                    }`}
+                  >
+                    <CreditCard size={20} strokeWidth={1.5} />
+                    <span>Card</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('mobile')}
+                    className={`flex-1 flex items-center justify-center gap-2 rounded-xl border-2 px-6 py-3 text-sm font-medium transition-all ${
+                      paymentMethod === 'mobile'
+                        ? 'border-forest bg-forest/5 text-forest'
+                        : 'border-sand/60 text-ink hover:border-bronze'
+                    }`}
+                  >
+                    <Smartphone size={20} strokeWidth={1.5} />
+                    <span>Mobile</span>
+                  </button>
+                </div>
+
+                {paymentMethod === 'card' && (
+                  <div className="space-y-4" id="card-payment">
+                    <div>
+                      <label className="label">Card Number</label>
+                      <input
+                        type="text"
+                        value={cardForm.number}
+                        onChange={(e) => updateCard('number', formatCardNumber(e.target.value))}
+                        className="input w-full font-mono text-lg"
+                        placeholder="1234 5678 9012 3456"
+                        maxLength={19}
+                        autoComplete="cc-number"
+                        required
+                      />
                     </div>
-                    <span className="text-ink font-medium">{formatPrice((item.discountPrice || item.price) * item.quantity)}</span>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="label">Expiry Date</label>
+                        <input
+                          type="text"
+                          value={cardForm.expiry}
+                          onChange={(e) => updateCard('expiry', formatExpiry(e.target.value))}
+                          className="input"
+                          placeholder="MM/YY"
+                          maxLength={5}
+                          autoComplete="cc-exp"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="label">CVV</label>
+                        <input
+                          type="text"
+                          value={cardForm.cvv}
+                          onChange={(e) => updateCard('cvv', formatCvv(e.target.value))}
+                          className="input"
+                          placeholder="123"
+                          maxLength={3}
+                          autoComplete="cc-csc"
+                          required
+                        />
+                      </div>
+                    </div>
                   </div>
-                ))}
-              </div>
-              <div className="mt-6 space-y-3 border-t border-sand pt-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-ink/55">Subtotal</span>
-                  <span className="font-medium text-ink">{formatPrice(cartTotal)}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-ink/55">Shipping</span>
-                  <span className="font-medium text-ink">Free</span>
-                </div>
-                <div className="flex items-center justify-between text-lg font-semibold text-ink pt-3 border-t border-sand">
-                  <span>Total</span>
-                  <span>{formatPrice(cartTotal)}</span>
-                </div>
+                )}
+
+                {paymentMethod === 'mobile' && (
+                  <div className="space-y-4" id="mobile-payment">
+                    <div className="rounded-xl border border-sand/60 bg-sand/30 p-4">
+                      <p className="text-sm text-ink/60">Enter your mobile money number (M-Pesa, Airtel Money, etc.)</p>
+                    </div>
+                    <div>
+                      <label className="label">Phone Number</label>
+                      <input
+                        type="tel"
+                        value={form.phone}
+                        onChange={(e) => update('phone', formatPhone(e.target.value))}
+                        className="input"
+                        placeholder="+254 7XX XXX XXX"
+                        required
+                      />
+                    </div>
+                    <p className="text-xs text-ink/40">You will receive a prompt on your phone to complete the payment.</p>
+                  </div>
+                )}
               </div>
 
-              {error && <p className="mt-4 text-xs text-red-600">{error}</p>}
+              {/* Order Summary */}
+              <div className="h-fit rounded-3xl border border-sand/60 bg-white p-7 shadow-card">
+                <h3 className="font-display text-2xl font-medium text-ink">Order Summary</h3>
+                <div className="mt-6 space-y-4">
+                  {cart.map((item) => (
+                    <div key={item._id} className="flex items-center justify-between gap-4 text-sm">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-ink truncate">{item.name}</p>
+                        <p className="text-ink/50">Qty: {item.quantity}</p>
+                      </div>
+                      <span className="text-ink font-medium">{formatPrice((item.discountPrice || item.price) * item.quantity)}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-6 space-y-3 border-t border-sand pt-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-ink/55">Subtotal</span>
+                    <span className="font-medium text-ink">{formatPrice(cartTotal)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-ink/55">Shipping</span>
+                    <span className="font-medium text-ink">Free</span>
+                  </div>
+                  <div className="flex items-center justify-between text-lg font-semibold text-ink pt-3 border-t border-sand">
+                    <span>Total</span>
+                    <span>{formatPrice(cartTotal)}</span>
+                  </div>
+                </div>
 
-              <button type="submit" disabled={submitting} className="mt-8 w-full rounded-full bg-ink px-6 py-3.5 text-xs font-medium uppercase tracking-widest text-white transition hover:bg-ink/80 flex items-center justify-center gap-2 disabled:opacity-50">
-                {submitting && <Loader2 size={16} className="animate-spin" />}
-                {submitting ? 'Processing...' : 'Complete Payment'}
-              </button>
-              <p className="mt-3 text-center text-xs text-ink/40">Payment integration coming soon. This is a demo checkout.</p>
+                {error && <p className="mt-4 text-xs text-red-600">{error}</p>}
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="mt-8 w-full rounded-full bg-ink px-6 py-3.5 text-xs font-medium uppercase tracking-widest text-white transition hover:bg-ink/80 flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {submitting && <Loader2 size={16} className="animate-spin" />}
+                  {submitting ? 'Processing...' : 'Complete Payment'}
+                </button>
+                <p className="mt-3 text-center text-xs text-ink/40">Payment integration coming soon. This is a demo checkout.</p>
+              </div>
             </div>
           </form>
         </div>

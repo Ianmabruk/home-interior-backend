@@ -4,83 +4,70 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#F7F2EA" />
-    <meta name="description" content="HOK Interior Designs — luxury interior design, curated furniture, and premium virtual design services." />
+    <meta name="theme-color" content="#1E1713" />
+    <meta name="description" content="HOK INTERIORS — Timeless luxury interior design, curated furniture, and premium virtual design services." />
     <meta name="robots" content="index,follow" />
 
-    <!-- Open Graph / Twitter cards (sharing + social SEO) -->
+    <!-- Open Graph / Twitter cards -->
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="HOK Interior Designs" />
-    <meta property="og:title" content="HOK Interior Designs" />
+    <meta property="og:site_name" content="HOK INTERIORS" />
+    <meta property="og:title" content="HOK INTERIORS — Timeless Interiors, Designed for a Life Well Lived" />
     <meta property="og:description" content="Luxury interior design, curated furniture, and premium virtual design services." />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="HOK Interior Designs" />
-    <meta name="twitter:description" content="Luxury interior design, curated furniture, and premium virtual design services." />
+    <meta name="twitter:title" content="HOK INTERIORS" />
+    <meta name="twitter:description" content="Timeless interiors, designed for a life well lived." />
 
-    <!-- Structured data: helps SEO rich results and agentic/LLM browsing.
-         Replace the placeholder URL with the production domain. -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "HomeAndConstructionBusiness",
-        "name": "HOK Interior Designs",
+        "name": "HOK INTERIORS",
         "url": "https://homy-comfy.netlify.app/",
         "description": "Luxury interior design, curated furniture, and premium virtual design services.",
         "sameAs": [
           "https://www.instagram.com/hokinteriors",
           "https://www.facebook.com/share/14i3V8Sw7uo",
-          "https://www.pinterest.com/hokinterior"
+          "https://www.pinterest.com/hokinterior",
+          "https://www.tiktok.com/@hokinteriors"
         ]
       }
     </script>
 
-    <!-- Warm up connections to external hosts so hero media and fonts start
-         downloading sooner (cuts mobile LCP). gstatic serves the actual font
-         files, so it needs its own preconnect in addition to googleapis. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
     <link rel="dns-prefetch" href="https://res.cloudinary.com" />
     <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
 
-    <!-- Warm up the Render backend (homepage feed + every API call) so the
-         hero data/auth round-trips start sooner and don't delay LCP. The API
-         uses cross-origin credentials, so crossorigin is required. -->
     <link rel="preconnect" href="https://home-interior-backend.onrender.com" crossorigin />
     <link rel="dns-prefetch" href="https://home-interior-backend.onrender.com" />
 
-    <!-- Preload the default hero poster so the LCP element is discoverable in
-         the initial document and paints at first paint, instead of waiting for
-         the homepage API response. Swapped for the CMS hero once data arrives. -->
     <link
       rel="preload"
       as="image"
-      href="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=960&q=70"
+      href="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1920&h=1080&fit=crop"
     />
 
-    <!-- Load Google Fonts without blocking first paint: preload the stylesheet
-         and apply it asynchronously via the print-media swap trick. With
-         display=swap the browser renders text in the fallback font immediately
-         and swaps to the web font once ready, so FCP/LCP are not delayed. -->
+    <!-- Luxury Typography: Cormorant Garamond (Display/Logo) + Plus Jakarta Sans (UI/Body) -->
     <link
       rel="preload"
       as="style"
-      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
     />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
       media="print"
       onload="this.media='all'"
     />
     <noscript>
       <link
         rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
       />
     </noscript>
 
-    <title>HOK Interior Designs</title>
+    <title>HOK INTERIORS</title>
   </head>
   <body>
     <div id="root"></div>

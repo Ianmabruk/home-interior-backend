@@ -12,7 +12,7 @@ const PageLoader = () => (
 
 const ErrorFallback = () => (
   <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
-    <p className="font-display text-2xl text-charcoal">Something went wrong</p>
+    <p className="font-display text-2xl text-espresso">Something went wrong</p>
     <p className="mt-2 text-sm text-stone">Failed to load this page.</p>
     <button
       onClick={() => window.location.reload()}
@@ -26,9 +26,9 @@ const ErrorFallback = () => (
 export const Layout = () => {
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-primary-bg text-charcoal">
+      <div className="min-h-screen bg-cream text-espresso flex flex-col">
         <Navbar />
-        <main className="min-h-screen">
+        <main className="flex-1 flex flex-col pt-16 md:pt-18">
           <Suspense fallback={<PageLoader />}>
             <ErrorBoundary>
               <Outlet />

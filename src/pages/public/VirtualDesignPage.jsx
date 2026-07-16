@@ -1,4 +1,4 @@
-import { Maximize2, X, Play, Sparkles, Video, ArrowRight, CheckCircle, Zap, Layers } from 'lucide-react'
+import { Maximize2, X, Play, Sparkles, Video, ArrowRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -16,47 +16,6 @@ const staggerContainer = {
   hidden: {},
   show: { transition: { staggerChildren: 0.06 } },
 }
-
-const consultationPackages = [
-  {
-    name: 'Essentials',
-    price: '$299',
-    description: 'Perfect for single rooms',
-    features: [
-      '1-hour video consultation',
-      'Mood board & color palette',
-      'Layout suggestions',
-      'Product recommendations',
-      'Follow-up email summary',
-    ],
-  },
-  {
-    name: 'Complete',
-    price: '$599',
-    description: 'Full home transformation',
-    features: [
-      '2-hour video consultation',
-      'Detailed mood boards per room',
-      'Space plans & furniture layouts',
-      'Curated shopping list',
-      '2 revisions included',
-    ],
-    popular: true,
-  },
-  {
-    name: 'Premium',
-    price: '$1,299',
-    description: 'Luxury full-service design',
-    features: [
-      '3+ hour consultation',
-      'Photorealistic 3D renders',
-      'Custom furniture sourcing',
-      'Contractor coordination',
-      'Unlimited revisions',
-      'Project management',
-    ],
-  },
-]
 
 export const VirtualDesignPage = () => {
   const [items, setItems] = useState([])
@@ -109,7 +68,7 @@ export const VirtualDesignPage = () => {
 
   return (
     <div className="min-h-screen bg-cream">
-      {/* Hero Section - Different from Shop */}
+      {/* Hero Section */}
       <section className="relative h-[80vh] min-h-[600px] overflow-hidden">
         <div className="absolute inset-0">
           <img
@@ -118,8 +77,8 @@ export const VirtualDesignPage = () => {
             className="h-full w-full object-cover"
             loading="eager"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-espresso/95 via-espresso/70 to-espresso/40" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(184,138,90,0.18),transparent_50%)]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-luxury-text/95 via-luxury-text/70 to-luxury-text/40" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(214,178,122,0.18),transparent_50%)]" />
         </div>
         <div className="relative z-10 flex h-full items-center justify-center">
           <motion.div
@@ -128,8 +87,8 @@ export const VirtualDesignPage = () => {
             transition={{ duration: 1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="text-center px-6"
           >
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-bronze mb-4">Immersive Experience</p>
-            <h1 className="font-['Playfair_Display'] text-5xl font-medium text-cream md:text-7xl lg:text-8xl leading-[0.95]">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-orange-accent mb-4">Immersive Experience</p>
+            <h1 className="font-display text-5xl font-normal text-warm-ivory md:text-7xl lg:text-8xl leading-[0.95]">
               Virtual Interiors
             </h1>
           </motion.div>
@@ -146,55 +105,50 @@ export const VirtualDesignPage = () => {
             transition={{ duration: 0.7 }}
             className="mb-16 md:mb-24 text-center"
           >
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-bronze mb-4">Portfolio</p>
-            <h2 className="font-['Playfair_Display'] text-4xl font-medium leading-tight text-espresso md:text-5xl lg:text-6xl">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-orange-accent mb-4">Portfolio</p>
+            <h2 className="font-display text-4xl font-normal leading-tight text-luxury-text md:text-5xl lg:text-6xl">
               Featured Projects
             </h2>
           </motion.div>
 
-          {/* Sticky Filter Bar */}
-          <div className="sticky top-[88px] z-30 border-b border-linen/20 bg-cream/70 backdrop-blur-xl shadow-sm md:top-[108px]">
-            <div className="container-wide px-6 py-4 md:px-12 lg:px-20">
-              <div className="flex flex-col sm:flex-row items-center gap-4">
-                <div className="relative flex-1 max-w-sm w-full">
-                  <Sparkles size={16} strokeWidth={1.5} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-espresso/35" />
-                  <input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search projects..."
-                    className="w-full rounded-full border border-linen/40 bg-cream pl-10 pr-4 py-2.5 text-sm outline-none placeholder:text-espresso/35 focus:border-bronze focus:ring-2 focus:ring-bronze/20 transition"
-                  />
-                </div>
-                {categories.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setCategoryFilter('')}
-                      className={`px-4 py-1.5 text-2xs font-semibold uppercase tracking-widest rounded-full transition ${
-                        !categoryFilter ? 'bg-espresso text-cream shadow-md' : 'bg-cream text-espresso/60 hover:bg-linen/30 border border-linen/40'
-                      }`}
-                    >
-                      All
-                    </button>
-                    {categories.map((cat) => (
-                      <button
-                        key={cat}
-                        onClick={() => setCategoryFilter(cat === categoryFilter ? '' : cat)}
-                        className={`px-4 py-1.5 text-2xs font-semibold uppercase tracking-widest rounded-full transition ${
-                          categoryFilter === cat ? 'bg-espresso text-cream shadow-md' : 'bg-cream text-espresso/60 hover:bg-linen/30 border border-linen/40'
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <span className="text-2xs text-espresso/40 font-medium">{filtered.length} projects</span>
-              </div>
+          {/* Search & Filter */}
+          <div className="mb-12">
+            <div className="relative max-w-xl mx-auto">
+              <Sparkles size={16} strokeWidth={1.5} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-luxury-text/35" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search projects..."
+                className="w-full rounded-full border border-linen/40 bg-warm-ivory pl-10 pr-4 py-2.5 text-sm outline-none placeholder:text-luxury-text/35 focus:border-bronze focus:ring-2 focus:ring-bronze/20 transition"
+              />
             </div>
+            {categories.length > 0 && (
+              <div className="flex flex-wrap justify-center gap-2 mt-6">
+                <button
+                  onClick={() => setCategoryFilter('')}
+                  className={`px-4 py-1.5 text-2xs font-semibold uppercase tracking-widest rounded-full transition ${
+                    !categoryFilter ? 'bg-luxury-text text-warm-ivory shadow-md' : 'bg-warm-ivory text-luxury-text/60 hover:bg-linen/30 border border-linen/40'
+                  }`}
+                >
+                  All
+                </button>
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setCategoryFilter(cat === categoryFilter ? '' : cat)}
+                    className={`px-4 py-1.5 text-2xs font-semibold uppercase tracking-widest rounded-full transition ${
+                      categoryFilter === cat ? 'bg-luxury-text text-warm-ivory shadow-md' : 'bg-warm-ivory text-luxury-text/60 hover:bg-linen/30 border border-linen/40'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Video Cards Grid */}
-          <section className="section-pad bg-cream/50 pt-12">
+          <section className="section-pad bg-soft-cream/50 pt-12">
             <div className="container-wide px-6 md:px-12 lg:px-20">
               {loading && (
                 <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -213,11 +167,11 @@ export const VirtualDesignPage = () => {
               {!loading && filtered.length === 0 && (
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="py-24 text-center">
                   <Video size={48} strokeWidth={1} className="mx-auto text-linen mb-4" />
-                  <p className="font-['Playfair_Display'] text-3xl text-espresso/30">
+                  <p className="font-display text-3xl text-luxury-text/30">
                     {items.length === 0 ? 'No projects yet.' : 'No results found.'}
                   </p>
                   {(query || categoryFilter) && (
-                    <button onClick={() => { setQuery(''); setCategoryFilter('') }} className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 text-2xs font-semibold uppercase tracking-widest border border-bronze text-bronze hover:bg-bronze hover:text-cream hover:border-bronze rounded-full transition">
+                    <button onClick={() => { setQuery(''); setCategoryFilter('') }} className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 text-2xs font-semibold uppercase tracking-widest border border-bronze text-bronze hover:bg-bronze hover:text-warm-ivory hover:border-bronze rounded-full transition">
                       <X size={12} strokeWidth={1.5} /> Clear Filters
                     </button>
                   )}
@@ -232,38 +186,38 @@ export const VirtualDesignPage = () => {
                     custom={i}
                     className="group"
                   >
-                    <div className="relative overflow-hidden bg-cream shadow-card hover:shadow-lift transition-all duration-500 aspect-[4/3]">
+                    <div className="relative overflow-hidden rounded-3xl bg-cream shadow-soft hover:shadow-lift transition-all duration-500 aspect-[4/3]">
                       <LazyVideo
                         src={getOptimizedVideoUrl(item.videoUrl, { width: 640 })}
                         poster={getVideoPosterUrl(item.videoUrl, { width: 640 })}
                         className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
                       />
-                      <div className="absolute inset-0 bg-espresso/0 transition-all duration-500 group-hover:bg-espresso/30" />
+                      <div className="absolute inset-0 bg-luxury-text/0 transition-all duration-500 group-hover:bg-luxury-text/30" />
                       {item.beforeAfterImages?.length > 0 && (
-                        <span className="absolute left-3 top-3 bg-bronze px-3 py-1 text-2xs font-semibold uppercase tracking-widest text-cream rounded-full shadow-lg">
+                        <span className="absolute left-3 top-3 bg-bronze px-3 py-1 text-2xs font-semibold uppercase tracking-widest text-warm-ivory rounded-full shadow-lg">
                           Before/After
                         </span>
                       )}
                       <button
                         onClick={() => setFullscreen(item)}
-                        className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center bg-cream/90 text-espresso rounded-full opacity-0 transition-all duration-300 group-hover:opacity-100 hover:bg-cream shadow-lg hover:scale-110"
+                        className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center bg-warm-ivory/90 text-luxury-text rounded-full opacity-0 transition-all duration-300 group-hover:opacity-100 hover:bg-warm-ivory shadow-lg hover:scale-110"
                         aria-label="Full screen"
                       >
                         <Maximize2 size={18} strokeWidth={1.5} />
                       </button>
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-500">
-                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-cream/90 shadow-lg">
-                          <Play size={20} strokeWidth={1.5} className="ml-1 text-espresso" />
+                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-warm-ivory/90 shadow-lg">
+                          <Play size={20} strokeWidth={1.5} className="ml-1 text-luxury-text" />
                         </div>
                       </div>
                     </div>
                     <div className="pt-5">
-                      <h3 className="font-['Playfair_Display'] text-2xl font-medium text-espresso group-hover:text-bronze transition-colors">{item.title}</h3>
+                      <h3 className="font-display text-2xl font-normal text-luxury-text group-hover:text-bronze transition-colors">{item.title}</h3>
                       {item.description && (
                         <p className="mt-2 text-sm leading-relaxed text-stone line-clamp-2">{item.description}</p>
                       )}
                       {item.category && (
-                        <p className="mt-2 text-2xs font-semibold uppercase tracking-widest text-bronze">{item.category}</p>
+                        <p className="mt-2 text-2xs font-semibold uppercase tracking-widest text-orange-accent">{item.category}</p>
                       )}
                       {item.services?.length > 0 && (
                         <div className="mt-3 flex flex-wrap gap-2">
@@ -283,88 +237,6 @@ export const VirtualDesignPage = () => {
         </div>
       </section>
 
-      {/* Consultation Packages */}
-      <section className="relative overflow-hidden bg-espresso">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(184,138,90,0.12),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(220,203,183,0.06),transparent_60%)]" />
-        <div className="relative section-pad">
-          <div className="container-narrow px-6 text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-linen/50 mb-4">Start Your Journey</p>
-              <h2 className="font-['Playfair_Display'] text-4xl font-medium text-cream md:text-5xl lg:text-6xl leading-[1.05]">
-                Ready to Transform<br />Your Space?
-              </h2>
-              <p className="mt-6 max-w-lg mx-auto text-base text-cream/50 leading-relaxed">
-                Book a virtual consultation and let our experts bring your dream interior to life.
-              </p>
-              <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-                <Link to="/virtual-interior-design" className="inline-flex items-center gap-3 rounded-full bg-bronze px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-cream transition-all duration-300 hover:bg-amber-900 hover:shadow-[0_10px_40px_rgba(184,138,90,0.2)] hover:-translate-y-0.5">
-                  <Sparkles size={14} strokeWidth={1.5} />
-                  Book Virtual Consultation
-                </Link>
-                <Link to="/portfolio" className="inline-flex items-center justify-center gap-3 rounded-full border border-cream/25 px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-cream transition-all duration-300 hover:bg-cream hover:text-espresso hover:border-cream">
-                  View Portfolio
-                </Link>
-              </div>
-            </motion.div>
-
-            {/* Consultation Packages */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-100px' }}
-              transition={{ duration: 0.8, delay: 0.3 }}
-              className="mt-24"
-            >
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-linen/50 mb-12 text-center">Consultation Packages</p>
-              <div className="grid gap-8 md:grid-cols-3">
-                {consultationPackages.map((pkg, i) => (
-                  <motion.div
-                    key={pkg.name}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: i * 0.1 }}
-                    className={`relative group p-8 rounded-3xl bg-cream/5 border ${pkg.popular ? 'border-bronze/30' : 'border-cream/10'} ${pkg.popular ? 'shadow-[0_0_0_1px_rgba(184,138,90,0.2)]' : ''}`}
-                  >
-                    {pkg.popular && (
-                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-bronze text-cream text-[10px] font-semibold uppercase tracking-widest px-3 py-1 rounded-full">
-                        Most Popular
-                      </span>
-                    )}
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-bronze mb-2">{pkg.name}</p>
-                    <div className="mb-4">
-                      <span className="font-['Playfair_Display'] text-4xl font-medium text-espresso">{pkg.price}</span>
-                      <span className="text-cream/40 ml-2">/ project</span>
-                    </div>
-                    <p className="text-sm text-cream/50 mb-6">{pkg.description}</p>
-                    <ul className="space-y-3 mb-8">
-                      {pkg.features.map((feature, idx) => (
-                        <li key={idx} className="flex items-start gap-3 text-sm text-cream/70">
-                          <div className="flex-shrink-0 mt-1 w-5 h-5 rounded-full bg-bronze/20 flex items-center justify-center">
-                            <Zap size={10} strokeWidth={2} className="text-bronze" />
-                          </div>
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <button className={`w-full rounded-full py-3 text-[11px] font-semibold uppercase tracking-[0.08em] transition-all duration-300 ${pkg.popular ? 'bg-bronze text-cream hover:bg-amber-900 hover:shadow-[0_10px_40px_rgba(184,138,90,0.2)]' : 'bg-cream/10 text-cream border border-cream/20 hover:bg-cream/20'}`}>
-                      Select Package
-                    </button>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Fullscreen Video Modal */}
       <AnimatePresence>
         {fullscreen && (
           <motion.div
@@ -372,12 +244,12 @@ export const VirtualDesignPage = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-espresso/98 p-4 md:p-8 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-luxury-text/98 p-4 md:p-8 backdrop-blur-sm"
             onClick={() => setFullscreen(null)}
           >
             <button
               onClick={() => setFullscreen(null)}
-              className="absolute right-5 top-5 z-10 flex h-11 w-11 items-center justify-center border border-cream/20 text-cream/70 transition hover:border-cream hover:text-cream rounded-full"
+              className="absolute right-5 top-5 z-10 flex h-11 w-11 items-center justify-center border border-warm-ivory/20 text-warm-ivory/70 transition hover:border-warm-ivory hover:text-warm-ivory rounded-full"
               aria-label="Close"
             >
               <X size={18} strokeWidth={1.5} />
@@ -389,21 +261,21 @@ export const VirtualDesignPage = () => {
                 controls autoPlay loop playsInline preload="metadata"
                 className="max-h-[70vh] w-full object-contain rounded-2xl shadow-2xl"
               />
-              <div className="mt-6 bg-cream/95 backdrop-blur-sm p-6 rounded-3xl">
-                <h2 className="font-['Playfair_Display'] text-3xl font-medium text-espresso">{fullscreen.title}</h2>
+              <div className="mt-6 bg-warm-ivory/95 backdrop-blur-sm p-6 rounded-3xl">
+                <h2 className="font-display text-3xl font-normal text-luxury-text">{fullscreen.title}</h2>
                 {fullscreen.description && (
-                  <p className="mt-3 text-sm text-espresso/60 leading-relaxed">{fullscreen.description}</p>
+                  <p className="mt-3 text-sm text-luxury-text/60 leading-relaxed">{fullscreen.description}</p>
                 )}
 
                 {fullscreen.beforeAfterImages?.length > 0 && (
                   <div className="mt-8">
-                    <p className="text-2xs font-semibold uppercase tracking-widest text-bronze mb-4">Before & After Gallery</p>
+                    <p className="text-2xs font-semibold uppercase tracking-widest text-orange-accent mb-4">Before & After Gallery</p>
                     <div className="grid md:grid-cols-2 gap-4">
                       {fullscreen.beforeAfterImages.map((img, idx) => (
                         <div key={idx} className="relative overflow-hidden rounded-2xl">
                           <img src={img.url} alt={img.label || `View ${idx + 1}`} className="w-full object-cover aspect-[4/3] hover:scale-105 transition duration-500" />
                           {img.label && (
-                            <p className="absolute bottom-3 left-3 bg-espresso/80 text-cream text-2xs px-3 py-1.5 rounded-full">{img.label}</p>
+                            <p className="absolute bottom-3 left-3 bg-luxury-text/80 text-warm-ivory text-2xs px-3 py-1.5 rounded-full">{img.label}</p>
                           )}
                         </div>
                       ))}
@@ -413,12 +285,12 @@ export const VirtualDesignPage = () => {
 
                 {fullscreen.services?.length > 0 && (
                   <div className="mt-8">
-                    <p className="text-2xs font-semibold uppercase tracking-widest text-bronze mb-4">Services Included</p>
+                    <p className="text-2xs font-semibold uppercase tracking-widest text-orange-accent mb-4">Services Included</p>
                     <div className="grid md:grid-cols-2 gap-3">
                       {fullscreen.services.map((s, idx) => (
                         <div key={idx} className="border border-linen/40 p-4 rounded-2xl hover:border-bronze transition">
-                          <p className="font-medium text-espresso">{s.title}</p>
-                          <p className="text-sm text-espresso/50 mt-1">{s.description}</p>
+                          <p className="font-medium text-luxury-text">{s.title}</p>
+                          <p className="text-sm text-luxury-text/50 mt-1">{s.description}</p>
                         </div>
                       ))}
                     </div>

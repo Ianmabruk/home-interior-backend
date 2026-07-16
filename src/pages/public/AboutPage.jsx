@@ -44,7 +44,7 @@ export const AboutPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-primary-bg">
+      <div className="min-h-screen bg-cream">
         <div className="h-[70vh] w-full bg-linen/50" />
         <div className="section-pad container-wide px-6 md:px-12 lg:px-20">
           <div className="grid gap-16 md:grid-cols-2">
@@ -66,13 +66,13 @@ export const AboutPage = () => {
 
   if (!about) {
     return (
-      <div className="flex min-h-[70vh] items-center justify-center bg-primary-bg px-6">
+      <div className="flex min-h-[70vh] items-center justify-center bg-cream px-6">
         <div className="text-center max-w-lg">
-          <h1 className="font-display text-6xl font-medium text-charcoal">About</h1>
+          <h1 className="font-display text-6xl font-normal text-luxury-text">About</h1>
           <p className="mt-6 text-base text-stone leading-relaxed">
-            About content has not been configured yet. The admin can add the company story, mission, vision, values, and gallery images from the <strong className="text-charcoal">Admin Dashboard → About</strong> section.
+            About content has not been configured yet. The admin can add the company story, mission, vision, values, and gallery images from the <strong className="text-luxury-text">Admin Dashboard → About</strong> section.
           </p>
-          <Link to="/" className="btn-primary mt-8">Go Home</Link>
+          <Link to="/" className="btn-luxury-primary mt-8 inline-block">Go Home</Link>
         </div>
       </div>
     )
@@ -86,9 +86,9 @@ export const AboutPage = () => {
   ]
 
   return (
-    <motion.div className="min-h-screen bg-primary-bg" initial="hidden" animate="show" variants={staggerContainer}>
+    <motion.div className="min-h-screen bg-cream" initial="hidden" animate="show" variants={staggerContainer}>
       {/* Hero Header */}
-      <motion.section ref={heroRef} className="relative h-[70vh] min-h-[500px] overflow-hidden bg-dark-luxury" variants={fadeUp}>
+      <motion.section ref={heroRef} className="relative h-[70vh] min-h-[500px] overflow-hidden bg-luxury-text" variants={fadeUp}>
         <motion.div style={{ y: heroY, opacity: heroOpacity }} className="absolute inset-0">
           {about.aboutImageUrl && (
             <PositionedImage
@@ -99,14 +99,14 @@ export const AboutPage = () => {
               loading="eager"
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-dark-luxury/90 via-dark-luxury/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-luxury-text/90 via-luxury-text/50 to-transparent" />
         </motion.div>
-        <div className="absolute inset-0 bg-gradient-to-b from-dark-luxury/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-luxury-text/40 to-transparent" />
         <div className="relative z-10 flex h-full items-end">
           <div className="container-wide px-6 pb-16 md:px-12 lg:px-20 lg:pb-24">
             <motion.div variants={fadeUp} custom={0}>
-              <p className="eyebrow mb-4 text-champagne/80">Our Story</p>
-              <h1 className="font-display text-5xl font-medium leading-[0.95] text-white md:text-7xl lg:text-8xl">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-orange-accent/80 mb-4">Our Story</p>
+              <h1 className="font-display text-5xl font-normal leading-[0.95] text-white md:text-7xl lg:text-8xl">
                 About HOK
               </h1>
               <p className="mt-6 max-w-xl text-base text-white/70 leading-relaxed">
@@ -118,23 +118,23 @@ export const AboutPage = () => {
       </motion.section>
 
       {/* Story + Values */}
-      <section className="section-pad bg-primary-bg">
+      <section className="section-pad bg-cream">
         <div className="container-wide px-6 md:px-12 lg:px-20">
           <div className="grid gap-16 lg:grid-cols-2">
-            <motion.div variants={fadeUp} custom={0} className="space-y-6">
+            <motion.div variants={fadeUp} custom={0} className="space-y-6 max-w-3xl">
               {about.story && (
                 <div>
-                  <p className="eyebrow mb-4 text-warm-gold">Our Story</p>
-                  <p className="text-lg leading-[1.8] text-ink/70">{about.story}</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-orange-accent mb-4">Our Story</p>
+                  <p className="text-lg leading-[1.8] text-luxury-text">{about.story}</p>
                 </div>
               )}
               {about.companyDescription && (
-                <p className="text-base leading-[1.8] text-ink/55">{about.companyDescription}</p>
+                <p className="text-base leading-[1.8] text-luxury-text/55">{about.companyDescription}</p>
               )}
               {about.location && (
                 <div className="pt-4">
-                  <p className="text-2xs font-semibold uppercase tracking-widest text-ink/40 mb-1">Location</p>
-                  <p className="text-sm text-ink/60">{about.location}</p>
+                  <p className="text-2xs font-semibold uppercase tracking-widest text-luxury-text/40 mb-1">Location</p>
+                  <p className="text-sm text-luxury-text/60">{about.location}</p>
                 </div>
               )}
             </motion.div>
@@ -145,12 +145,12 @@ export const AboutPage = () => {
                   key={i}
                   variants={fadeUp}
                   custom={i + 1}
-                  className="group relative overflow-hidden rounded-2xl border border-champagne/40 bg-white p-6 transition-all duration-500 hover:border-warm-gold/60 hover:shadow-lift"
+                  className="group relative overflow-hidden rounded-2xl border border-linen bg-white p-6 transition-all duration-500 hover:border-bronze/60 hover:shadow-lift"
                 >
-                  <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-warm-gold to-champagne opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                  <value.icon size={28} strokeWidth={1.2} className="text-warm-gold mb-4" />
-                  <h3 className="font-display text-xl font-medium text-ink">{value.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-ink/55">{value.desc}</p>
+                  <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-bronze to-linen opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                  <value.icon size={28} strokeWidth={1.2} className="text-orange-accent mb-4" />
+                  <h3 className="font-display text-xl font-normal text-luxury-text">{value.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-luxury-text/55">{value.desc}</p>
                 </motion.div>
               ))}
             </motion.div>
@@ -159,26 +159,26 @@ export const AboutPage = () => {
           {/* Mission + Vision Cards */}
           <motion.div variants={staggerContainer} className="mt-20 grid gap-6 md:grid-cols-2">
             {about.mission && (
-              <motion.div variants={fadeUp} custom={0} className="relative overflow-hidden rounded-3xl bg-white p-8 md:p-10 shadow-soft border border-champagne/30">
-                <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-warm-gold via-champagne to-warm-gold" />
+              <motion.div variants={fadeUp} custom={0} className="relative overflow-hidden rounded-3xl bg-white p-8 md:p-10 shadow-soft border border-linen">
+                <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-bronze via-linen to-bronze" />
                 <div className="pl-6">
                   <div className="flex items-center gap-3 mb-4">
-                    <Target size={24} strokeWidth={1.5} className="text-warm-gold" />
-                    <p className="eyebrow text-warm-gold">Mission</p>
+                    <Target size={24} strokeWidth={1.5} className="text-orange-accent" />
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-orange-accent">Mission</p>
                   </div>
-                  <p className="text-base leading-[1.8] text-ink/65">{about.mission}</p>
+                  <p className="text-base leading-[1.8] text-luxury-text/65">{about.mission}</p>
                 </div>
               </motion.div>
             )}
             {about.vision && (
-              <motion.div variants={fadeUp} custom={1} className="relative overflow-hidden rounded-3xl bg-white p-8 md:p-10 shadow-soft border border-champagne/30">
-                <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-champagne via-warm-gold to-champagne" />
+              <motion.div variants={fadeUp} custom={1} className="relative overflow-hidden rounded-3xl bg-white p-8 md:p-10 shadow-soft border border-linen">
+                <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-linen via-bronze to-linen" />
                 <div className="pl-6">
                   <div className="flex items-center gap-3 mb-4">
-                    <Award size={24} strokeWidth={1.5} className="text-warm-gold" />
-                    <p className="eyebrow text-warm-gold">Vision</p>
+                    <Award size={24} strokeWidth={1.5} className="text-orange-accent" />
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-orange-accent">Vision</p>
                   </div>
-                  <p className="text-base leading-[1.8] text-ink/65">{about.vision}</p>
+                  <p className="text-base leading-[1.8] text-luxury-text/65">{about.vision}</p>
                 </div>
               </motion.div>
             )}
@@ -187,24 +187,24 @@ export const AboutPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="relative overflow-hidden bg-dark-luxury">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(198,155,109,0.15),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(232,211,190,0.08),transparent_60%)]" />
+      <section className="relative overflow-hidden bg-luxury-text">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(214,178,122,0.15),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(230,211,203,0.08),transparent_60%)]" />
         <div className="relative section-pad">
           <div className="container-narrow px-6 text-center">
             <motion.div variants={staggerContainer}>
-              <motion.p variants={fadeUp} custom={0} className="eyebrow mb-4 text-champagne/50">Ready to Begin?</motion.p>
-              <motion.h2 variants={fadeUp} custom={1} className="font-display text-5xl font-medium text-white md:text-6xl lg:text-7xl leading-[1.05]">
-                Let's Create<br />Something Beautiful
+              <motion.p variants={fadeUp} custom={0} className="text-[11px] font-semibold uppercase tracking-widest text-linen/50 mb-4">Ready to Begin?</motion.p>
+              <motion.h2 variants={fadeUp} custom={1} className="font-display text-5xl font-normal text-white md:text-6xl lg:text-7xl leading-[1.05]">
+                Let&apos;s Create<br />Something Beautiful
               </motion.h2>
               <motion.p variants={fadeUp} custom={2} className="mt-6 max-w-md mx-auto text-base text-white/50 leading-relaxed">
                 Transform your space with our expert interior design services. Schedule a consultation today.
               </motion.p>
               <motion.div variants={fadeUp} custom={3} className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-                <Link to="/portfolio" className="btn-primary group">
+                <Link to="/portfolio" className="btn-luxury-primary group">
                   View Our Work <ArrowRight size={14} strokeWidth={1.5} className="transition-transform group-hover:translate-x-1" />
                 </Link>
-                <Link to="/virtual-interior-design" className="btn-outline border-white/25 text-white hover:bg-white hover:text-ink hover:border-white">
+                <Link to="/virtual-interior-design" className="btn-luxury-secondary group">
                   Virtual Showroom
                 </Link>
               </motion.div>

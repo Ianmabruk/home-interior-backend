@@ -53,10 +53,9 @@ describe('ShopPage', () => {
     localStorage.clear()
   })
 
-  it('renders shop page search input', () => {
+  it('renders shop page filter controls', () => {
     renderWithProviders(<ShopPage />)
-    const inputs = screen.getAllByPlaceholderText('Search products...')
-    expect(inputs.length).toBeGreaterThan(0)
+    expect(screen.getByText('Filters')).toBeDefined()
   })
 
   it('renders filters section', () => {

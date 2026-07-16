@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
+import { motion } from 'framer-motion'
 
 export const LoginPage = () => {
   const navigate = useNavigate()
@@ -32,58 +33,76 @@ export const LoginPage = () => {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-8">
+    <motion.form
+      onSubmit={submit}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      className="space-y-8"
+    >
       <div>
-        <p className="eyebrow mb-3">Welcome back</p>
-        <h1 className="font-display text-5xl font-medium text-ink">Sign In</h1>
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-orange-accent mb-3">Welcome back</p>
+        <h1 className="font-display text-5xl font-normal text-luxury-text">Sign In</h1>
       </div>
 
       {error && (
-        <p className="border-l-2 border-red-400 pl-4 text-sm text-red-600">{error}</p>
+        <motion.p
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-sm text-error bg-error/5 border border-error/20 px-4 py-3 rounded-xl"
+        >
+          {error}
+        </motion.p>
       )}
 
       <div className="space-y-6">
         <div>
-          <label className="label">Email Address</label>
+          <label className="block text-sm font-medium text-luxury-text mb-1.5">Email Address</label>
           <input
-            className="input"
+            className="input-luxury"
             type="email"
             required
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             autoComplete="email"
+            placeholder="you@example.com"
           />
         </div>
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <label className="label !mb-0">Password</label>
-            <Link to="/forgot-password" className="text-2xs font-medium uppercase tracking-widest text-ink/40 transition hover:text-ink">
+            <label className="block text-sm font-medium text-luxury-text mb-0">Password</label>
+            <Link to="/forgot-password" className="text-2xs font-medium uppercase tracking-widest text-luxury-text/40 transition hover:text-bronze">
               Forgot?
             </Link>
           </div>
           <input
-            className="input"
+            className="input-luxury"
             type="password"
             required
             minLength={8}
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             autoComplete="current-password"
+            placeholder="••••••••"
           />
         </div>
       </div>
 
       <div className="space-y-4">
-        <button type="submit" disabled={loading} className="btn-primary w-full">
+        <button
+          type="submit"
+          disabled={loading}
+          className="btn-luxury-primary w-full"
+        >
           {loading ? 'Signing in…' : <>Sign In <ArrowRight size={14} strokeWidth={1.5} /></>}
         </button>
-        <p className="text-center text-sm text-ink/45">
+        <p className="text-center text-sm text-luxury-text/45">
           No account?{' '}
-          <Link to="/register" className="font-medium text-ink transition hover:text-warm">
+          <Link to="/register" className="font-medium text-luxury-text transition hover:text-bronze">
             Create one
           </Link>
         </p>
       </div>
-    </form>
+    </motion.form>
   )
 }

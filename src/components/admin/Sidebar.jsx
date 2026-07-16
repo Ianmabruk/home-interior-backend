@@ -92,7 +92,7 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
                   onTabChange(item.id)
                   onCloseMobile()
                 }}
-                className={`relative w-full flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center px-2'} py-2.5 text-sm font-medium transition-all duration-200 hover:bg-white/10 hover:text-white ${isActive ? 'text-forest bg-white rounded-xl shadow-sm' : 'text-white/75'}`}
+                className={`relative w-full flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center px-2'} py-2.5 text-sm font-medium transition-all duration-200 hover:bg-white/10 hover:text-white ${isActive ? 'text-forest bg-white rounded-xl shadow-sm font-semibold' : 'text-white/75'}`}
                 title={!sidebarOpen ? item.label : undefined}
               >
                 {isActive && (

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
+import { motion } from 'framer-motion'
 
 export const RegisterPage = () => {
   const navigate = useNavigate()
@@ -28,77 +29,97 @@ export const RegisterPage = () => {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-8">
+    <motion.form
+      onSubmit={submit}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      className="space-y-8"
+    >
       <div>
-        <p className="eyebrow mb-3">Join HOK</p>
-        <h1 className="font-display text-5xl font-medium text-ink">Create Account</h1>
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-orange-accent mb-3">Join HOK</p>
+        <h1 className="font-display text-5xl font-normal text-luxury-text">Create Account</h1>
       </div>
 
       {error && (
-        <p className="border-l-2 border-red-400 pl-4 text-sm text-red-600">{error}</p>
+        <motion.p
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-sm text-error bg-error/5 border border-error/20 px-4 py-3 rounded-xl"
+        >
+          {error}
+        </motion.p>
       )}
 
       <div className="space-y-6">
         <div>
-          <label className="label">Full Name</label>
+          <label className="block text-sm font-medium text-luxury-text mb-1.5">Full Name</label>
           <input
-            className="input"
+            className="input-luxury"
             required
             minLength={2}
             value={form.fullName}
             onChange={(e) => setForm({ ...form, fullName: e.target.value })}
             autoComplete="name"
+            placeholder="John Smith"
           />
         </div>
         <div>
-          <label className="label">Email Address</label>
+          <label className="block text-sm font-medium text-luxury-text mb-1.5">Email Address</label>
           <input
-            className="input"
+            className="input-luxury"
             type="email"
             required
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             autoComplete="email"
+            placeholder="you@example.com"
           />
         </div>
         <div>
-          <label className="label">Password</label>
+          <label className="block text-sm font-medium text-luxury-text mb-1.5">Password</label>
           <input
-            className="input"
+            className="input-luxury"
             type="password"
             required
             minLength={8}
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             autoComplete="new-password"
+            placeholder="••••••••"
           />
-          <p className="mt-1.5 text-2xs text-ink/35">Min 8 characters, at least 1 number.</p>
+          <p className="mt-1.5 text-2xs text-luxury-text/35">Min 8 characters, at least 1 number.</p>
         </div>
         <div>
-          <label className="label">Confirm Password</label>
+          <label className="block text-sm font-medium text-luxury-text mb-1.5">Confirm Password</label>
           <input
-            className="input"
+            className="input-luxury"
             type="password"
             required
             minLength={8}
             value={form.confirm}
             onChange={(e) => setForm({ ...form, confirm: e.target.value })}
             autoComplete="new-password"
+            placeholder="••••••••"
           />
         </div>
       </div>
 
       <div className="space-y-4">
-        <button type="submit" disabled={loading} className="btn-primary w-full">
+        <button
+          type="submit"
+          disabled={loading}
+          className="btn-luxury-primary w-full"
+        >
           {loading ? 'Creating account…' : <>Create Account <ArrowRight size={14} strokeWidth={1.5} /></>}
         </button>
-        <p className="text-center text-sm text-ink/45">
+        <p className="text-center text-sm text-luxury-text/45">
           Already have an account?{' '}
-          <Link to="/login" className="font-medium text-ink transition hover:text-warm">
+          <Link to="/login" className="font-medium text-luxury-text transition hover:text-bronze">
             Sign in
           </Link>
         </p>
       </div>
-    </form>
+    </motion.form>
   )
 }

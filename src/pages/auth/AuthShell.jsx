@@ -4,13 +4,13 @@ import { Outlet } from 'react-router-dom'
 
 const AuthLoader = () => (
   <div className="flex min-h-[40vh] items-center justify-center">
-    <div className="h-8 w-8 animate-spin rounded-full border-2 border-sand border-t-orange" />
+    <div className="h-8 w-8 animate-spin rounded-full border-2 border-linen border-t-bronze" />
   </div>
 )
 
 export const AuthShell = () => {
   return (
-    <div className="grid min-h-screen bg-cream md:grid-cols-2">
+    <div className="grid min-h-screen bg-warm-ivory md:grid-cols-2">
       {/* Left image panel */}
       <div className="relative hidden overflow-hidden md:block">
         <img
@@ -18,14 +18,13 @@ export const AuthShell = () => {
           alt="Luxury interior"
           className="absolute inset-0 h-full w-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/20 to-ink/10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-luxury-text/70 via-luxury-text/20 to-luxury-text/10" />
         <div className="absolute bottom-12 left-12 max-w-sm">
           <Link to="/">
-            <p className="font-display text-4xl font-semibold text-white">HOK</p>
-            <p className="text-2xs font-medium uppercase tracking-widest text-orange">Interior Designs</p>
+            <p className="font-display text-4xl font-normal tracking-luxury text-white">HOK INTERIORS</p>
           </Link>
-          <p className="mt-6 font-display text-3xl font-medium leading-snug text-white/85">
-            Luxury spaces begin here.
+          <p className="mt-6 font-display text-3xl font-normal leading-snug text-white/85">
+            Timeless interiors, designed for a life well lived.
           </p>
         </div>
       </div>
@@ -36,8 +35,7 @@ export const AuthShell = () => {
           {/* Mobile logo */}
           <div className="mb-10 md:hidden">
             <Link to="/">
-              <p className="font-display text-3xl font-semibold text-ink">HOK</p>
-              <p className="text-2xs font-medium uppercase tracking-widest text-orange">Interior Designs</p>
+              <p className="font-display text-3xl font-normal tracking-luxury text-luxury-text">HOK INTERIORS</p>
             </Link>
           </div>
           <Suspense fallback={<AuthLoader />}>

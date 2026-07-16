@@ -46,7 +46,7 @@ const itemVariants = {
 
 export const Services = () => {
   return (
-    <section className="bg-white px-6 md:px-12 lg:px-20 py-24 md:py-36">
+    <section className="bg-soft-cream px-6 md:px-12 lg:px-20 py-20 md:py-32">
       <div className="container-wide">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -56,10 +56,10 @@ export const Services = () => {
           className="mb-16 md:mb-24 text-center"
         >
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-bronze mb-4">Services</p>
-          <h2 className="font-['Playfair_Display'] text-4xl font-medium leading-tight text-charcoal md:text-5xl lg:text-6xl">
+          <h2 className="font-display text-4xl font-medium leading-tight text-espresso md:text-5xl lg:text-6xl">
             What We Do
           </h2>
-          <p className="mt-4 max-w-2xl mx-auto text-base text-stone leading-relaxed">
+          <p className="mt-4 max-w-2xl mx-auto text-base text-espresso/60 leading-relaxed">
             Comprehensive interior design services tailored to elevate your space with timeless elegance.
           </p>
         </motion.div>
@@ -77,16 +77,19 @@ export const Services = () => {
               <motion.div
                 key={item.title}
                 variants={itemVariants}
-                whileHover={{ y: -6, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } }}
+                whileHover={{ y: -8, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } }}
                 className="group flex flex-col items-center text-center"
               >
-                <div className="mb-8 inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-secondary/60 text-forest transition-all duration-500 group-hover:bg-forest group-hover:text-white group-hover:scale-105">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  className="mb-8 inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-champagne-beige/60 text-espresso transition-all duration-500 group-hover:bg-espresso group-hover:text-cream group-hover:scale-105"
+                >
                   <Icon size={28} strokeWidth={1.5} />
-                </div>
-                <h3 className="font-['Playfair_Display'] text-xl md:text-2xl font-medium text-charcoal leading-tight">
+                </motion.div>
+                <h3 className="font-display text-xl md:text-2xl font-medium text-espresso leading-tight">
                   {item.title}
                 </h3>
-                <p className="mt-2 text-sm text-stone leading-relaxed">{item.description}</p>
+                <p className="mt-2 text-sm text-espresso/60 leading-relaxed">{item.description}</p>
               </motion.div>
             )
           })}

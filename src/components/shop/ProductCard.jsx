@@ -9,9 +9,6 @@ import PositionedImage from '../common/PositionedImage'
 export const ProductCard = memo(({ product, onQuickView }) => {
   const { addToCart, toggleWishlist, wishlist } = useShop()
   const { formatPrice } = useCurrency()
-  // FIX #1: resolve the storefront default variant exactly like the detail
-  // page (isDefault flag, then first variant) so the shop card and the product
-  // page agree on which color shows first (White, not an arbitrary variant).
   const variants = product.colorVariants || []
   const defaultVariant = variants.length ? (variants.find((v) => v.isDefault) || variants[0]) : null
   const primaryImage =
@@ -28,9 +25,9 @@ export const ProductCard = memo(({ product, onQuickView }) => {
     <motion.article
       whileHover={{ y: -4 }}
       transition={{ duration: 0.3 }}
-      className="group relative overflow-hidden bg-white shadow-lg hover:shadow-xl"
+      className="group relative overflow-hidden bg-white shadow-lg hover:shadow-xl rounded-3xl"
     >
-      <div className="relative aspect-[1/1] overflow-hidden bg-linen">
+      <div className="relative aspect-[3/4] overflow-hidden bg-linen">
         <PositionedImage
           src={primaryImage}
           alt={product.name}
@@ -42,12 +39,12 @@ export const ProductCard = memo(({ product, onQuickView }) => {
 
         <div className="absolute left-3 top-3 flex flex-col gap-1.5">
           {salePercent && (
-            <span className="bg-orange px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-white rounded-full">
+            <span className="bg-orange-accent px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-white rounded-full">
               −{salePercent}%
             </span>
           )}
           {product.stock === 0 && (
-            <span className="bg-ink px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-white rounded-full">
+            <span className="bg-luxury-text px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-white rounded-full">
               Sold Out
             </span>
           )}
@@ -56,7 +53,7 @@ export const ProductCard = memo(({ product, onQuickView }) => {
         <div className="absolute right-3 top-3 flex flex-col gap-2 translate-x-10 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100">
           <button
             onClick={() => toggleWishlist(product)}
-            className={`flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center bg-white rounded-full shadow-md transition hover:bg-linen ${isWishlisted ? 'text-orange' : 'text-ink/50'}`}
+            className={`flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center bg-white rounded-full shadow-md transition hover:bg-linen ${isWishlisted ? 'text-orange-accent' : 'text-luxury-text/50'}`}
             aria-label="Add to wishlist"
           >
             <Heart size={15} strokeWidth={1.5} fill={isWishlisted ? 'currentColor' : 'none'} />
@@ -64,43 +61,43 @@ export const ProductCard = memo(({ product, onQuickView }) => {
           <button
             onClick={() => addToCart(product, 1, defaultVariant ? { colorName: defaultVariant.colorName, colorHex: defaultVariant.colorHex, imageUrl: defaultVariant.imageUrl } : null)}
             disabled={product.stock === 0}
-            className="flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center bg-white rounded-full shadow-md text-ink/50 transition hover:bg-linen disabled:opacity-40"
+            className="flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center bg-white rounded-full shadow-md text-luxury-text/50 transition hover:bg-linen disabled:opacity-40"
             aria-label="Add to cart"
           >
             <ShoppingBag size={15} strokeWidth={1.5} />
           </button>
           <button
             onClick={() => onQuickView?.(product)}
-            className="flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center bg-white rounded-full shadow-md text-ink/50 transition hover:bg-linen"
+            className="flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center bg-white rounded-full shadow-md text-luxury-text/50 transition hover:bg-linen"
             aria-label="Quick view"
           >
             <Eye size={15} strokeWidth={1.5} />
           </button>
         </div>
 
-        <div className="absolute inset-0 bg-ink/0 transition-all duration-500 group-hover:bg-ink/20" />
+        <div className="absolute inset-0 bg-luxury-text/0 transition-all duration-500 group-hover:bg-luxury-text/20" />
 
         <Link
           to={`/shop/${product._id}`}
-          className="absolute inset-0 flex items-center justify-center bg-ink/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          className="absolute inset-0 flex items-center justify-center bg-luxury-text/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
         >
-          <span className="rounded-full bg-white px-6 py-2.5 text-xs font-medium uppercase tracking-wider text-ink">
+          <span className="rounded-full bg-white px-6 py-2.5 text-xs font-medium uppercase tracking-wider text-luxury-text">
             View Product
           </span>
         </Link>
       </div>
 
       <div className="p-5">
-        <p className="text-2xs font-medium uppercase tracking-widest text-orange">{product.category}</p>
-        <h3 className="mt-2 font-display text-xl font-medium leading-snug text-ink">
-          <Link to={`/shop/${product._id}`} className="hover:text-orange transition-colors">
+        <p className="text-2xs font-medium uppercase tracking-widest text-orange-accent">{product.category}</p>
+        <h3 className="mt-2 font-display text-xl font-normal leading-snug text-luxury-text">
+          <Link to={`/shop/${product._id}`} className="hover:text-orange-accent transition-colors">
             {product.name}
           </Link>
         </h3>
         <div className="mt-3 flex items-baseline gap-2">
-          <span className="font-medium text-ink">{formatPrice(price)}</span>
+          <span className="font-medium text-luxury-text">{formatPrice(price)}</span>
           {product.discountPrice && (
-            <span className="text-sm text-ink/35 line-through">{formatPrice(product.price)}</span>
+            <span className="text-sm text-luxury-text/35 line-through">{formatPrice(product.price)}</span>
           )}
         </div>
       </div>
