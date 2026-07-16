@@ -390,13 +390,13 @@ export const VirtualInteriorDashboard = () => {
               />
             </div>
 
-            {/* Main Media Upload */}
+            {/* Main Media Upload - Multiple Images */}
             <div className="space-y-2">
               <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70 flex items-center gap-2">
-                {form.mediaType === 'video' ? <Video size={14} strokeWidth={1.5} /> : <Image size={14} strokeWidth={1.5} />}
-                {form.mediaType === 'video' ? 'Video' : 'Image'} Upload
+                <Image size={14} strokeWidth={1.5} />
+                Image Upload (Multiple)
               </label>
-              <input ref={fileRef} type="file" accept={form.mediaType === 'video' ? 'video/*' : 'image/*'} onChange={(e) => handleFiles(e.target.files, setMediaFiles, setMediaPreviews)} className="hidden" />
+              <input ref={fileRef} type="file" accept="image/*" multiple onChange={(e) => handleFiles(e.target.files, setMediaFiles, setMediaPreviews)} className="hidden" />
               <motion.div
                 whileHover={{ scale: 1.01 }}
                 onDrop={(e) => { e.preventDefault(); handleFiles(e.dataTransfer.files, setMediaFiles, setMediaPreviews) }}
@@ -410,7 +410,7 @@ export const VirtualInteriorDashboard = () => {
                 {mediaPreviews.length > 0 ? (
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="text-sm font-medium text-[var(--primary)]">Main Media</p>
+                      <p className="text-sm font-medium text-[var(--primary)]">Main Media ({mediaPreviews.length}/10)</p>
                       <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
@@ -418,27 +418,37 @@ export const VirtualInteriorDashboard = () => {
                         onClick={() => fileRef.current?.click()}
                         className="text-xs text-[var(--accent)] hover:text-[var(--primary)] font-medium"
                       >
-                        Change
+                        Add More
                       </motion.button>
                     </div>
-                    {mediaPreviews[0] && (
-                      <div className="relative rounded-xl overflow-hidden">
-                        {mediaPreviews[0].match(/\.(mp4|webm|mov)$/i) || (mediaFiles[0] && mediaFiles[0].type.startsWith('video/')) ? (
-                          <video src={mediaPreviews[0]} className="h-48 w-full object-cover" autoPlay muted loop controls />
-                        ) : (
-                          <img src={mediaPreviews[0]} alt="Main media" className="h-48 w-full object-cover" />
-                        )}
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setMediaFiles([]); setMediaPreviews([]) }}
-                          className="absolute top-2 right-2 bg-[var(--primary)]/90 backdrop-blur-sm text-white p-2 rounded-full hover:bg-[var(--primary)] shadow-lg"
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {mediaPreviews.map((preview, index) => (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="relative rounded-xl overflow-hidden group"
                         >
-                          <X size={14} />
-                        </motion.button>
-                      </div>
-                    )}
+                          <img
+                            src={preview}
+                            alt={`Preview ${index + 1}`}
+                            className="h-40 w-full object-cover"
+                          />
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setMediaFiles(prev => prev.filter((_, i) => i !== index)); setMediaPreviews(prev => { URL.revokeObjectURL(prev[index]); return prev.filter((_, i) => i !== index) }) }}
+                            className="absolute top-2 right-2 bg-[var(--primary)]/90 backdrop-blur-sm text-white p-2 rounded-full hover:bg-[var(--primary)] shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X size={14} />
+                          </motion.button>
+                          <div className="absolute bottom-2 left-2 text-[10px] font-medium text-white bg-black/50 px-1.5 py-0.5 rounded">
+                            {index + 1}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-3 py-8">
@@ -447,11 +457,11 @@ export const VirtualInteriorDashboard = () => {
                       transition={{ duration: 2, repeat: Infinity }}
                       className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--accent)]/10 to-[var(--secondary)]/10 flex items-center justify-center text-[var(--accent)]"
                     >
-                      {form.mediaType === 'video' ? <Video size={28} /> : <Image size={28} />}
+                      <Image size={28} />
                     </motion.div>
                     <div>
-                      <p className="text-sm font-medium text-[var(--primary)]">Drop {form.mediaType === 'video' ? 'video' : 'image'} here or click to browse</p>
-                      <p className="text-[10px] text-[var(--primary)]/50 mt-1">{form.mediaType === 'video' ? 'MP4, MOV up to 100MB' : 'PNG, JPG up to 10MB'}</p>
+                      <p className="text-sm font-medium text-[var(--primary)]">Drop images here or click to browse</p>
+                      <p className="text-[10px] text-[var(--primary)]/50 mt-1">PNG, JPG up to 10MB each (max 10 images)</p>
                     </div>
                   </div>
                 )}

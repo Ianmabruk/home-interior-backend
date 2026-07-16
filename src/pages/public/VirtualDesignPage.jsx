@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Maximize2, Play, Video, Image, Search, Filter, X as XIcon, ArrowUpDown } from 'lucide-react'
+import { X, Maximize2, Play, Video, Image, Search, Filter, X as XIcon, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api } from '../../services/api'
 import { getOptimizedUrl, getOptimizedVideoUrl, getVideoPosterUrl } from '../../utils/cloudinaryHelpers'
@@ -16,6 +16,18 @@ const itemVariants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } },
 }
 
+const getProjectImages = (project) => {
+  const images = []
+  if (project.imageUrl) images.push(project.imageUrl)
+  if (project.images && Array.isArray(project.images)) {
+    project.images.forEach(img => {
+      const url = typeof img === 'string' ? img : img.url
+      if (url && !images.includes(url)) images.push(url)
+    })
+  }
+  return images
+}
+
 export const VirtualDesignPage = () => {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -24,6 +36,7 @@ export const VirtualDesignPage = () => {
   const [viewMode, setViewMode] = useState('all')
   const [fullscreen, setFullscreen] = useState(null)
   const [imageFullscreen, setImageFullscreen] = useState(null)
+  const [galleryIndex, setGalleryIndex] = useState(0)
 
   useEffect(() => {
     const load = async () => {
@@ -74,7 +87,10 @@ export const VirtualDesignPage = () => {
   })
 
   const handleImageFullscreen = (item) => {
-    if (item.imageUrl) setImageFullscreen(item)
+    if (item.imageUrl) {
+      setImageFullscreen(item)
+      setGalleryIndex(0)
+    }
   }
 
   const handleVideoFullscreen = (item) => {
@@ -83,6 +99,7 @@ export const VirtualDesignPage = () => {
 
   const handleJourneyImageFullscreen = (imageUrl, title, category) => {
     setImageFullscreen({ imageUrl, title, category })
+    setGalleryIndex(0)
   }
 
   const handleJourneyVideoFullscreen = (videoUrl, title, category) => {
@@ -555,7 +572,7 @@ export const VirtualDesignPage = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8 bg-[var(--primary)]/98 backdrop-blur-sm"
-              onClick={() => setImageFullscreen(null)}
+              onClick={() => { setImageFullscreen(null); setGalleryIndex(0) }}
               aria-hidden="true"
             />
             <motion.div
@@ -569,24 +586,82 @@ export const VirtualDesignPage = () => {
               aria-labelledby="image-fullscreen-title"
             >
               <button
-                onClick={() => setImageFullscreen(null)}
+                onClick={() => { setImageFullscreen(null); setGalleryIndex(0) }}
                 className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/90 backdrop-blur text-[var(--primary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition-all duration-300"
                 aria-label="Close"
               >
                 <X size={20} strokeWidth={2} />
               </button>
+              
+              {/* Get all images for this project */}
+              {(() => {
+                const project = items.find(i => i._id === imageFullscreen._id || i.title === imageFullscreen.title)
+                const images = project ? getProjectImages(project) : [imageFullscreen.imageUrl]
+                return images.length > 1 ? (
+                  <>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setGalleryIndex(prev => prev === 0 ? images.length - 1 : prev - 1) }}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white/90 backdrop-blur text-[var(--primary)] hover:bg-white shadow-lg transition-all duration-300 hover:shadow-xl"
+                      aria-label="Previous image"
+                    >
+                      <ChevronLeft size={24} strokeWidth={2} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setGalleryIndex(prev => prev === images.length - 1 ? 0 : prev + 1) }}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white/90 backdrop-blur text-[var(--primary)] hover:bg-white shadow-lg transition-all duration-300 hover:shadow-xl"
+                      aria-label="Next image"
+                    >
+                      <ChevronRight size={24} strokeWidth={2} />
+                    </button>
+                  </>
+                ) : null
+              })()}
+              
               <div className="relative h-full w-full flex items-center justify-center p-4">
                 <img
-                  src={getOptimizedUrl(imageFullscreen.imageUrl, { width: 1920 })}
+                  src={getOptimizedUrl(images[galleryIndex] || imageFullscreen.imageUrl, { width: 1920 })}
                   alt={imageFullscreen.title}
                   className="max-h-[80vh] max-w-full object-contain"
                 />
               </div>
+              
+              {/* Thumbnail Navigation */}
+              {(() => {
+                const project = items.find(i => i._id === imageFullscreen._id || i.title === imageFullscreen.title)
+                const images = project ? getProjectImages(project) : [imageFullscreen.imageUrl]
+                return images.length > 1 ? (
+                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+                    {images.map((img, idx) => (
+                      <button
+                        key={idx}
+                        onClick={(e) => { e.stopPropagation(); setGalleryIndex(idx) }}
+                        className={`w-5 h-5 rounded-full border-2 transition-all duration-300 ${
+                          idx === galleryIndex
+                            ? 'border-white bg-white'
+                            : 'border-white/50 hover:border-white/80'
+                        }`}
+                        aria-label={`View image ${idx + 1}`}
+                        aria-current={idx === galleryIndex ? 'true' : 'false'}
+                      />
+                    ))}
+                  </div>
+                ) : null
+              })()}
+              
               <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 bg-gradient-to-t from-[var(--primary)]/90 to-transparent text-white">
                 {imageFullscreen.category && (
                   <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--accent)] mb-2">{imageFullscreen.category}</p>
                 )}
                 <h2 id="image-fullscreen-title" className="font-display text-3xl md:text-4xl font-normal leading-tight">{imageFullscreen.title}</h2>
+{(() => {
+                    const project = items.find(i => i._id === imageFullscreen._id || i.title === imageFullscreen.title)
+                    const projectImages = project ? getProjectImages(project) : [imageFullscreen.imageUrl]
+                    return projectImages.length > 1 && (
+                      <p className="mt-2 text-sm text-white/70">
+                        Image {galleryIndex + 1} of {projectImages.length}
+                      </p>
+                    )
+                  })()}
               </div>
             </motion.div>
           </>

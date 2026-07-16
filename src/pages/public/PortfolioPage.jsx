@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useState } from 'react'
-import { X, ArrowRight, Grid3X3 } from 'lucide-react'
+import { X, ArrowRight, Grid3X3, ChevronLeft, ChevronRight } from 'lucide-react'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
 import PositionedImage from '../../components/common/PositionedImage'
@@ -13,11 +13,24 @@ const fadeUp = {
   show: (i = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.7, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] } }),
 }
 
+const getProjectImages = (project) => {
+  const images = []
+  if (project.imageUrl) images.push(project.imageUrl)
+  if (project.images && Array.isArray(project.images)) {
+    project.images.forEach(img => {
+      const url = typeof img === 'string' ? img : img.url
+      if (url && !images.includes(url)) images.push(url)
+    })
+  }
+  return images
+}
+
 export const PortfolioPage = () => {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
   const [page, setPage] = useState(1)
+  const [galleryIndex, setGalleryIndex] = useState(0)
 
   const loadPortfolio = () => {
     api.get('/content/portfolio')
@@ -43,6 +56,10 @@ export const PortfolioPage = () => {
     return () => { document.body.style.overflow = '' }
   }, [selected])
 
+  useEffect(() => {
+    setGalleryIndex(0)
+  }, [selected])
+
   const filtered = items
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -57,8 +74,20 @@ export const PortfolioPage = () => {
     show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } },
   }
 
-  // Use first portfolio item image as hero background
-  const heroImage = items[0]?.imageUrl || 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1920&h=1080&fit=crop'
+  // Get all images for selected project
+  const getProjectImages = (project) => {
+    const images = []
+    if (project.imageUrl) images.push(project.imageUrl)
+    if (project.images && Array.isArray(project.images)) {
+      project.images.forEach(img => {
+        const url = typeof img === 'string' ? img : img.url
+        if (url && !images.includes(url)) images.push(url)
+      })
+    }
+    return images
+  }
+
+  const projectImages = selected ? getProjectImages(selected) : []
 
   return (
     <div className="min-h-screen bg-[var(--bg)]">
@@ -284,8 +313,9 @@ export const PortfolioPage = () => {
               </button>
               <div className="relative h-full flex">
                 <div className="relative w-full md:w-1/2 overflow-hidden">
+                  {/* Main Image */}
                   <PositionedImage
-                    src={selected.imageUrl}
+                    src={projectImages[galleryIndex]}
                     alt={selected.title}
                     settings={selected.mediaSettings}
                     className="h-full w-full object-cover"
@@ -297,7 +327,51 @@ export const PortfolioPage = () => {
                       <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--accent)] mb-2">{selected.category}</p>
                     )}
                     <h2 id="project-title" className="font-display text-3xl md:text-4xl font-normal leading-tight">{selected.title}</h2>
+                    {projectImages.length > 1 && (
+                      <p className="mt-2 text-sm text-white/70">
+                        Image {galleryIndex + 1} of {projectImages.length}
+                      </p>
+                    )}
                   </div>
+
+                  {/* Gallery Navigation - Desktop */}
+                  {projectImages.length > 1 && (
+                    <>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setGalleryIndex(prev => prev === 0 ? projectImages.length - 1 : prev - 1) }}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white/90 backdrop-blur text-[var(--primary)] hover:bg-white shadow-lg transition-all duration-300 hover:shadow-xl"
+                        aria-label="Previous image"
+                      >
+                        <ChevronLeft size={24} strokeWidth={2} />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setGalleryIndex(prev => prev === projectImages.length - 1 ? 0 : prev + 1) }}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white/90 backdrop-blur text-[var(--primary)] hover:bg-white shadow-lg transition-all duration-300 hover:shadow-xl"
+                        aria-label="Next image"
+                      >
+                        <ChevronRight size={24} strokeWidth={2} />
+                      </button>
+                    </>
+                  )}
+
+                  {/* Thumbnail Navigation - Bottom */}
+                  {projectImages.length > 1 && (
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+                      {projectImages.map((img, idx) => (
+                        <button
+                          key={idx}
+                          onClick={(e) => { e.stopPropagation(); setGalleryIndex(idx) }}
+                          className={`w-5 h-5 rounded-full border-2 transition-all duration-300 ${
+                            idx === galleryIndex
+                              ? 'border-white bg-white'
+                              : 'border-white/50 hover:border-white/80'
+                          }`}
+                          aria-label={`View image ${idx + 1}`}
+                          aria-current={idx === galleryIndex ? 'true' : 'false'}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="w-full md:w-1/2 p-8 md:p-12 overflow-y-auto">
                   {selected.description && (

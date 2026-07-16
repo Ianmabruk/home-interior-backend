@@ -58,16 +58,16 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
         )}
       </AnimatePresence>
 
-<motion.aside
+      <motion.aside
         initial={false}
         animate={{
           width: sidebarOpen ? (isCollapsed ? 88 : 300) : (mobileOpen ? 300 : 0),
         }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-        className="fixed inset-y-0 left-0 z-40 flex flex-col bg-[#1B1714] text-white border-r border-white/10 shadow-2xl"
+        className="fixed inset-y-0 left-0 z-40 flex flex-col bg-[#1B1714] text-white border-r border-white/10 shadow-2xl overflow-hidden"
       >
         {/* Logo Section */}
-        <div className="flex items-center gap-3 h-20 px-5 border-b border-white/10">
+        <div className="flex items-center gap-3 h-20 px-5 border-b border-white/10 flex-shrink-0">
           <motion.div
             whileHover={{ scale: 1.05 }}
             className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent)] flex items-center justify-center flex-shrink-0 shadow-lg shadow-[var(--accent)]/20"
@@ -165,7 +165,7 @@ export const Sidebar = ({ activeTab, onTabChange, sidebarOpen, mobileOpen, onClo
         </nav>
 
         {/* User Section */}
-        <div className="p-3 border-t border-white/10">
+        <div className="p-3 border-t border-white/10 flex-shrink-0">
           {sidebarOpen && !isCollapsed ? (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
