@@ -1,10 +1,10 @@
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
-import { X, ArrowRight, Grid3X3, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowRight, Grid3X3 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
 import PositionedImage from '../../components/common/PositionedImage'
-import { getOptimizedUrl } from '../../utils/cloudinaryHelpers'
 
 const PAGE_SIZE = 12
 
@@ -13,24 +13,10 @@ const fadeUp = {
   show: (i = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.7, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] } }),
 }
 
-const getProjectImages = (project) => {
-  const images = []
-  if (project.imageUrl) images.push(project.imageUrl)
-  if (project.images && Array.isArray(project.images)) {
-    project.images.forEach(img => {
-      const url = typeof img === 'string' ? img : img.url
-      if (url && !images.includes(url)) images.push(url)
-    })
-  }
-  return images
-}
-
 export const PortfolioPage = () => {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
-  const [selected, setSelected] = useState(null)
   const [page, setPage] = useState(1)
-  const [galleryIndex, setGalleryIndex] = useState(0)
   const [heroImage] = useState('https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1920&q=80')
 
   const loadPortfolio = () => {
@@ -51,44 +37,9 @@ export const PortfolioPage = () => {
     return () => window.removeEventListener(ADMIN_DATA_CHANGED_EVENT, handler)
   }, [])
 
-  useEffect(() => {
-    if (selected) document.body.style.overflow = 'hidden'
-    else document.body.style.overflow = ''
-    return () => { document.body.style.overflow = '' }
-  }, [selected])
-
-  useEffect(() => {
-    setGalleryIndex(0)
-  }, [selected])
-
   const filtered = items
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-
-  const containerVariants = {
-    hidden: {},
-    show: { transition: { staggerChildren: 0.05 } },
-  }
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } },
-  }
-
-  // Get all images for selected project
-  const getProjectImages = (project) => {
-    const images = []
-    if (project.imageUrl) images.push(project.imageUrl)
-    if (project.images && Array.isArray(project.images)) {
-      project.images.forEach(img => {
-        const url = typeof img === 'string' ? img : img.url
-        if (url && !images.includes(url)) images.push(url)
-      })
-    }
-    return images
-  }
-
-  const projectImages = selected ? getProjectImages(selected) : []
 
   return (
     <div className="min-h-screen bg-[var(--bg)]">
@@ -214,13 +165,13 @@ export const PortfolioPage = () => {
                       transition={{ delay: 0.2 }}
                       className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest"
                     >
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setSelected(item) }}
+                      <Link
+                        to={`/portfolio/${item._id}`}
                         className="btn-luxury-primary group px-5 py-2.5 text-[10px] rounded-full"
                       >
                         VIEW PROJECT
                         <ArrowRight size={12} strokeWidth={1.5} className="transition-transform duration-300 group-hover:translate-x-1" />
-                      </button>
+                      </Link>
                     </motion.div>
                   </div>
                 </div>
@@ -280,162 +231,8 @@ export const PortfolioPage = () => {
               </button>
             </motion.div>
           )}
-        </div>
+</div>
       </section>
-
-      {/* Modal Detail View */}
-      <AnimatePresence>
-        {selected && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-[var(--primary)]/90 backdrop-blur-sm z-50"
-              onClick={() => setSelected(null)}
-              aria-hidden="true"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed inset-4 md:inset-10 lg:inset-20 z-50 bg-white rounded-3xl overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.3)]"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="project-title"
-            >
-              <button
-                onClick={() => setSelected(null)}
-                className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/90 backdrop-blur text-[var(--primary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition-all duration-300"
-                aria-label="Close project"
-              >
-                <X size={20} strokeWidth={2} />
-              </button>
-              <div className="relative h-full flex">
-                <div className="relative w-full md:w-1/2 overflow-hidden">
-                  {/* Main Image */}
-                  <PositionedImage
-                    src={projectImages[galleryIndex]}
-                    alt={selected.title}
-                    settings={selected.mediaSettings}
-                    className="h-full w-full object-cover"
-                    loading="eager"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[var(--primary)]/60 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                    {selected.category && (
-                      <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--accent)] mb-2">{selected.category}</p>
-                    )}
-                    <h2 id="project-title" className="font-display text-3xl md:text-4xl font-normal leading-tight">{selected.title}</h2>
-                    {projectImages.length > 1 && (
-                      <p className="mt-2 text-sm text-white/70">
-                        Image {galleryIndex + 1} of {projectImages.length}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Gallery Navigation - Desktop */}
-                  {projectImages.length > 1 && (
-                    <>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setGalleryIndex(prev => prev === 0 ? projectImages.length - 1 : prev - 1) }}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white/90 backdrop-blur text-[var(--primary)] hover:bg-white shadow-lg transition-all duration-300 hover:shadow-xl"
-                        aria-label="Previous image"
-                      >
-                        <ChevronLeft size={24} strokeWidth={2} />
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setGalleryIndex(prev => prev === projectImages.length - 1 ? 0 : prev + 1) }}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white/90 backdrop-blur text-[var(--primary)] hover:bg-white shadow-lg transition-all duration-300 hover:shadow-xl"
-                        aria-label="Next image"
-                      >
-                        <ChevronRight size={24} strokeWidth={2} />
-                      </button>
-                    </>
-                  )}
-
-                  {/* Thumbnail Navigation - Bottom */}
-                  {projectImages.length > 1 && (
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-                      {projectImages.map((img, idx) => (
-                        <button
-                          key={idx}
-                          onClick={(e) => { e.stopPropagation(); setGalleryIndex(idx) }}
-                          className={`w-5 h-5 rounded-full border-2 transition-all duration-300 ${
-                            idx === galleryIndex
-                              ? 'border-white bg-white'
-                              : 'border-white/50 hover:border-white/80'
-                          }`}
-                          aria-label={`View image ${idx + 1}`}
-                          aria-current={idx === galleryIndex ? 'true' : 'false'}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="w-full md:w-1/2 p-8 md:p-12 overflow-y-auto">
-                  {selected.description && (
-                    <p className="text-base leading-relaxed text-[var(--primary)]/70 mb-8">{selected.description}</p>
-                  )}
-                  {selected.materials && (
-                    <div className="mb-6">
-                      <h3 className="font-display text-xl font-normal text-[var(--primary)] mb-3">Materials Used</h3>
-                      <p className="text-sm leading-relaxed text-[var(--primary)]/60">{selected.materials}</p>
-                    </div>
-                  )}
-                  {selected.inspiration && (
-                    <div className="mb-6">
-                      <h3 className="font-display text-xl font-normal text-[var(--primary)] mb-3">Design Inspiration</h3>
-                      <p className="text-sm leading-relaxed text-[var(--primary)]/60">{selected.inspiration}</p>
-                    </div>
-                  )}
-                  <div className="space-y-3">
-                    {selected.location && (
-                      <div className="flex items-center gap-3 text-sm text-[var(--primary)]/60">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="text-[var(--accent)]">
-                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                          <circle cx="12" cy="10" r="3" />
-                        </svg>
-                        <span>{selected.location}</span>
-                      </div>
-                    )}
-                    {selected.year && (
-                      <div className="flex items-center gap-3 text-sm text-[var(--primary)]/60">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="text-[var(--accent)]">
-                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                          <line x1="16" y1="2" x2="16" y2="6" />
-                          <line x1="8" y1="2" x2="8" y2="6" />
-                          <line x1="3" y1="10" x2="21" y2="10" />
-                        </svg>
-                        <span>Completed: {selected.year}</span>
-                      </div>
-                    )}
-                    {selected.client && (
-                      <div className="flex items-center gap-3 text-sm text-[var(--primary)]/60">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="text-[var(--accent)]">
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                          <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        <span>Client: {selected.client}</span>
-                      </div>
-                    )}
-                    {selected.duration && (
-                      <div className="flex items-center gap-3 text-sm text-[var(--primary)]/60">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="text-[var(--accent)]">
-                          <circle cx="12" cy="12" r="10" />
-                          <polyline points="12 6 12 12 16 14" />
-                        </svg>
-                        <span>Duration: {selected.duration}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </div>
   )
 }
