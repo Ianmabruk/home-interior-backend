@@ -8,7 +8,7 @@ import rateLimit from 'express-rate-limit'
 import crypto from 'crypto'
 import apiRoutes from './routes/index.js'
 import { env } from './config/env.js'
-import { prisma } from './config/db.js'
+import { prisma, checkDatabaseHealth } from './config/db.js'
 import { ApiError } from './utils/ApiError.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
 import { zodErrorHandler } from './middleware/zodErrorHandler.js'
@@ -205,7 +205,7 @@ const cachePublic = (req, res, next) => {
 app.use(cachePublic)
 
 app.use(async (req, res, next) => {
-  if (req.path === '/health') return next()
+  if (req.path === '/health' || req.path === '/api/health') return next()
   if (req.method === 'OPTIONS') return next()
   try {
     const maintenance = await isMaintenanceMode(prisma)
@@ -220,10 +220,18 @@ app.use(async (req, res, next) => {
 
 app.get(['/api/health', '/health'], async (req, res) => {
   try {
-    await prisma.$queryRaw`SELECT 1`
-    res.json({ status: 'ok', service: 'hok-interior-backend', database: 'connected' })
+    const health = await checkDatabaseHealth()
+    res.json({
+      database: health.database,
+      prisma: health.prisma,
+      server: 'running',
+    })
   } catch {
-    res.status(503).json({ status: 'error', service: 'hok-interior-backend', database: 'disconnected' })
+    res.status(503).json({
+      database: 'disconnected',
+      prisma: 'disconnected',
+      server: 'running',
+    })
   }
 })
 

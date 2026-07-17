@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useParams, Link } from 'react-router-dom'
-import { X, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, ArrowLeft, ChevronLeft, ChevronRight, CalendarCheck, ArrowRight } from 'lucide-react'
 import { api } from '../../services/api'
 import { getOptimizedUrl } from '../../utils/cloudinaryHelpers'
 
@@ -327,7 +327,9 @@ export const PortfolioDetailPage = () => {
                 <p className="text-base leading-relaxed text-[var(--primary)]/70">{project.description}</p>
               </div>
             )}
-            <div className="grid gap-4 md:grid-cols-3">
+            
+            {/* Project Meta */}
+            <div className="grid gap-4 md:grid-cols-3 mb-12">
               {project.location && (
                 <div className="flex items-center justify-center gap-3 text-sm text-[var(--primary)]/60">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="text-[var(--accent)]">
@@ -348,15 +350,33 @@ export const PortfolioDetailPage = () => {
                   <span>Completed: {project.completionDate}</span>
                 </div>
               )}
-              {project.client && (
+              {project.designStyle && (
                 <div className="flex items-center justify-center gap-3 text-sm text-[var(--primary)]/60">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="text-[var(--accent)]">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                   </svg>
-                  <span>Client: {project.client}</span>
+                  <span>Style: {project.designStyle}</span>
                 </div>
               )}
+            </div>
+
+            {/* Conversion CTA */}
+            <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent('open-consultation'))}
+                className="group btn-luxury-primary px-8 py-4 text-[11px] rounded-xl"
+              >
+                Book Consultation
+                <CalendarCheck size={14} strokeWidth={1.5} className="transition-transform duration-300 group-hover:scale-110" />
+              </button>
+              <Link
+                to="/contact"
+                className="group btn-luxury-secondary px-8 py-4 text-[11px] rounded-xl"
+              >
+                Contact Us
+                <ArrowRight size={14} strokeWidth={1.5} className="transition-transform duration-300 group-hover:translate-x-1" />
+              </Link>
             </div>
           </motion.div>
         </div>

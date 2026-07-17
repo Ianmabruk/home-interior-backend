@@ -1,7 +1,7 @@
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Award, Leaf, Users, Target, Building2, Sparkles, Image, PenTool, Layers, Clock } from 'lucide-react'
+import { ArrowRight, Award, Leaf, Users, Target, Sparkles, PenTool, Layers, Clock, Shield, Heart, MapPin, Sparkles as SparklesIcon } from 'lucide-react'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
 import PositionedImage from '../../components/common/PositionedImage'
@@ -93,6 +93,26 @@ export const AboutPage = () => {
     { icon: Leaf, title: 'Sustainability', desc: 'Committed to eco-friendly materials and responsible design practices.' },
     { icon: Users, title: 'Client Focus', desc: about.companyDescription || 'Every project begins with understanding your unique vision.' },
     { icon: Target, title: 'Precision', desc: about.vision || 'Attention to detail in every texture, shade, and silhouette.' },
+  ]
+
+  const whyChooseHok = [
+    { icon: Shield, title: 'Proven Expertise', desc: '15+ years delivering exceptional interiors across Kenya and East Africa.' },
+    { icon: Heart, title: 'Personalized Approach', desc: 'Every project is tailored to your lifestyle, preferences, and aspirations.' },
+    { icon: SparklesIcon, title: 'End-to-End Service', desc: 'From concept to completion — design, procurement, installation, and styling.' },
+    { icon: Award, title: 'Award-Winning Design', desc: 'Recognized for innovation, quality, and timeless elegance in interior design.' },
+    { icon: Users, title: 'Trusted by Clients', desc: '500+ satisfied clients including luxury homes, hotels, and commercial spaces.' },
+    { icon: MapPin, title: 'Local Knowledge', desc: 'Deep understanding of East African architecture, climate, and materials.' },
+  ]
+
+  const areasServed = [
+    'Nairobi & Surrounds',
+    'Mombasa & Coast',
+    'Kisumu & Western Kenya',
+    'Eldoret & Rift Valley',
+    'Nakuru & Central Rift',
+    'Arusha, Tanzania',
+    'Kampala, Uganda',
+    'Kigali, Rwanda',
   ]
 
   const team = [
@@ -199,6 +219,85 @@ export const AboutPage = () => {
                 </div>
               </motion.div>
             )}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Why Choose HOK */}
+      <section className="section-pad bg-[var(--bg)]">
+        <div className="container-wide px-6 md:px-12 lg:px-20">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+            className="mb-16 md:mb-24 text-center"
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--accent)] mb-4">Why Choose HOK</p>
+            <h2 className="font-display text-4xl font-normal leading-tight text-[var(--primary)] md:text-5xl lg:text-6xl">
+               The HOK Difference
+            </h2>
+            <p className="mt-6 max-w-2xl mx-auto text-base text-[var(--primary)]/60 leading-relaxed">
+              We don't just design spaces — we craft experiences that transform how you live, work, and feel.
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true }}
+            variants={staggerContainer}
+            className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+          >
+            {whyChooseHok.map((item, i) => (
+              <motion.div
+                key={i}
+                variants={fadeUp}
+                custom={i}
+                className="group relative overflow-hidden rounded-2xl border border-[var(--border)] bg-white p-6 md:p-8 transition-all duration-500 hover:border-[var(--accent)]/60 hover:shadow-[0_20px_60px_rgba(42,36,31,0.08)]"
+              >
+                <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-[var(--accent)] to-[var(--secondary)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                <item.icon size={28} strokeWidth={1.2} className="text-[var(--accent)] mb-4" />
+                <h3 className="font-display text-xl font-normal text-[var(--primary)]">{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-[var(--primary)]/55">{item.desc}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Areas Served */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-100px' }}
+            transition={{ delay: 0.3, duration: 0.7 }}
+            className="mt-24"
+          >
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[var(--primary)] via-[var(--primary)]/90 to-[var(--primary)]/70 p-8 md:p-12 lg:p-16 text-center">
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(232,154,67,0.2),transparent_60%)]" />
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(230,211,203,0.1),transparent_60%)]" />
+              <div className="relative z-10">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--secondary)]/50 mb-4">We Serve</p>
+                <h3 className="font-display text-4xl md:text-5xl font-normal text-white mb-8">
+                  Across Kenya & East Africa
+                </h3>
+                <p className="mt-6 max-w-2xl mx-auto text-base text-white/60 leading-relaxed mb-10">
+                  From Nairobi to the Coast, Western Kenya to the Rift Valley — and across borders to Tanzania, Uganda, and Rwanda.
+                </p>
+                <div className="flex flex-wrap justify-center gap-3 md:gap-4">
+                  {areasServed.map((area, i) => (
+                    <motion.span
+                      key={i}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.1 + i * 0.05 }}
+                      className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white text-sm font-medium transition-all duration-300 hover:bg-white/20 hover:border-white/40"
+                    >
+                      {area}
+                    </motion.span>
+                  ))}
+                </div>
+              </div>
+            </div>
           </motion.div>
         </div>
       </section>

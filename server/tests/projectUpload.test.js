@@ -10,6 +10,8 @@ const PROJECTS_TEMP_PATH = path.join(process.cwd(), 'temp', 'projects.json')
 
 jest.unstable_mockModule('../src/config/db.js', () => ({
   prisma: mockPrisma,
+  executeWithRetry: jest.fn((fn) => fn()),
+  checkDatabaseHealth: jest.fn().mockResolvedValue({ database: 'connected', prisma: 'connected' }),
 }))
 
 jest.unstable_mockModule('../src/config/cloudinary.js', () => ({

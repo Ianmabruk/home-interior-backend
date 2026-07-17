@@ -54,7 +54,7 @@ export const PortfolioPage = () => {
 
   return (
     <div className="min-h-screen bg-[var(--bg)]">
-      {/* Portfolio Hero Banner - Using Portfolio Image as Background */}
+      {/* Portfolio Hero Banner */}
       <section className="relative h-[60vh] min-h-[400px] overflow-hidden">
         <div className="absolute inset-0">
           <img
@@ -63,7 +63,6 @@ export const PortfolioPage = () => {
             className="h-full w-full object-cover"
             loading="eager"
           />
-          {/* Dark translucent overlay for readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-[var(--primary)]/85 via-[var(--primary)]/50 to-[var(--primary)]/30" />
         </div>
         <div className="relative z-10 flex h-full items-center justify-center">
@@ -76,7 +75,38 @@ export const PortfolioPage = () => {
             <h1 className="font-display text-5xl font-normal leading-tight text-white md:text-7xl lg:text-8xl tracking-wide">
               PORTFOLIO
             </h1>
+            <p className="mt-4 text-base md:text-lg text-white/70 leading-relaxed max-w-2xl mx-auto">
+              A curated collection of our completed interior design projects across residential, commercial, and hospitality spaces.
+            </p>
           </motion.div>
+        </div>
+      </section>
+
+      {/* CTA Section - Above Portfolio Grid */}
+      <section className="bg-[var(--secondary)]/30 py-12 px-6 md:px-12 lg:px-20 border-y border-[var(--border)]/40">
+        <div className="container-wide mx-auto max-w-4xl text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--accent)] mb-4">Ready to Start Your Project?</p>
+          <h2 className="font-display text-3xl md:text-4xl font-normal text-[var(--primary)] mb-6 leading-tight">
+            Let&apos;s Create Something Beautiful Together
+          </h2>
+          <p className="text-base md:text-lg text-[var(--primary)]/60 mb-8 leading-relaxed">
+            From concept to completion, we guide you through every step of the design journey.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              to="/virtual-interior-design"
+              className="btn-luxury-primary group px-8 py-4 text-[11px] rounded-xl"
+            >
+              Explore Virtual Design
+              <ArrowRight size={14} strokeWidth={1.5} className="transition-transform duration-300 group-hover:translate-x-1" />
+            </Link>
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('open-consultation'))}
+              className="btn-luxury-secondary group px-8 py-4 text-[11px] rounded-xl"
+            >
+              Book Consultation
+            </button>
+          </div>
         </div>
       </section>
 
@@ -241,7 +271,34 @@ export const PortfolioPage = () => {
               </button>
             </motion.div>
           )}
-</div>
+        </div>
+      </section>
+
+      {/* Final CTA Section */}
+      <section className="section-pad bg-[var(--primary)]">
+        <div className="container-wide px-6 md:px-12 lg:px-20 text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--secondary)]/50 mb-4">Start Your Journey</p>
+          <h2 className="font-display text-4xl font-normal text-white md:text-5xl lg:text-6xl leading-[1.05] mb-6">
+            Ready to Transform Your Space?
+          </h2>
+          <p className="mt-6 max-w-2xl mx-auto text-base text-white/50 leading-relaxed mb-10">
+            Let&apos;s discuss your vision and create an interior that reflects your unique style.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('open-consultation'))}
+              className="btn-luxury-primary group px-8 py-4 text-[11px] rounded-xl"
+            >
+              Book Consultation
+            </button>
+            <Link
+              to="/virtual-interior-design"
+              className="group btn-luxury-secondary px-8 py-4 text-[11px] rounded-xl"
+            >
+              View Virtual Design
+            </Link>
+          </div>
+        </div>
       </section>
     </div>
   )

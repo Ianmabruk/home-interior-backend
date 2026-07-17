@@ -12,6 +12,8 @@ const mockPrisma = createMockPrisma()
 
 jest.unstable_mockModule('../src/config/db.js', () => ({
   prisma: mockPrisma,
+  executeWithRetry: jest.fn((fn) => fn()),
+  checkDatabaseHealth: jest.fn().mockResolvedValue({ database: 'connected', prisma: 'connected' }),
 }))
 
 // Mock the centralized upload service so we exercise the real controller
@@ -47,6 +49,7 @@ jest.unstable_mockModule('../src/config/sendgrid.js', () => ({
   buildNewProductEmailTemplate: jest.fn().mockReturnValue('<html></html>'),
   buildQuoteEmailTemplate: jest.fn().mockReturnValue('<html></html>'),
   buildReceiptEmailTemplate: jest.fn().mockReturnValue('<html></html>'),
+  buildConsultationEmailTemplate: jest.fn().mockReturnValue('<html></html>'),
 }))
 
 process.env.JWT_ACCESS_SECRET = 'test-access-secret-key'
@@ -280,20 +283,24 @@ describe('PROJECTS upload pipeline (reference module)', () => {
 })
 
 describe('HOMEPAGE feed aggregates all published content', () => {
-  it('returns projects, portfolio and about together', async () => {
-    mockPrisma.project.findMany.mockResolvedValue([
-      { id: 'p1', title: 'P', description: 'd', category: 'c', media: [], coverImageUrl: 'https://res.cloudinary.com/p.jpg', videoUrl: null, order: 0, mediaSettings: null },
-    ])
+  it('returns portfolio, virtualInteriorDesign, about and testimonials together', async () => {
     mockPrisma.portfolio.findMany.mockResolvedValue([
-      { id: 'f1', title: 'F', category: 'c', imageUrl: 'https://res.cloudinary.com/f.jpg', mediaSettings: null },
+      { id: 'f1', title: 'F', category: 'c', imageUrl: 'https://res.cloudinary.com/f.jpg', mediaSettings: null, order: 0, createdAt: new Date() },
+    ])
+    mockPrisma.virtualDesign.findMany.mockResolvedValue([
+      { id: 'v1', title: 'V', description: 'd', category: 'c', imageUrl: 'https://res.cloudinary.com/v.jpg', mediaSettings: null, order: 0, createdAt: new Date() },
     ])
     mockPrisma.about.findFirst.mockResolvedValue({ id: 'a1', aboutImageUrl: 'https://res.cloudinary.com/a.jpg', story: 's', mission: 'm', vision: 'v', mediaSettings: null })
+    mockPrisma.testimonial.findMany.mockResolvedValue([
+      { id: 't1', name: 'Test', role: 'Client', content: 'Great!', avatarUrl: 'https://res.cloudinary.com/t.jpg', order: 0, displayOrder: 0, isActive: true, createdAt: new Date() },
+    ])
 
     const res = await request(app).get('/api/content/homepage')
     expect(res.status).toBe(200)
     expect(res.body.data.portfolio[0].imageUrl).toContain('res.cloudinary.com')
     expect(res.body.data.about.aboutImageUrl).toContain('res.cloudinary.com')
-    expect(res.body.data.projects.length).toBe(1)
+    expect(res.body.data.virtualInteriorDesign.length).toBe(1)
+    expect(res.body.data.testimonials.length).toBe(1)
   })
 })
 

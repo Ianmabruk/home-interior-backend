@@ -20,9 +20,11 @@ import { useShop } from '../context/ShopContext'
 import hokLogo from '../assets/hok png logo.png'
 
 const NAV_ITEMS = [
+  { to: '/', label: 'Home' },
   { to: '/shop', label: 'Shop' },
   { to: '/virtual-interior-design', label: 'Virtual Interior Design' },
-  { to: '/about', label: 'About Us' },
+  { to: '/portfolio', label: 'Portfolio' },
+  { to: '/about', label: 'About' },
 ]
 
 export const Navbar = () => {

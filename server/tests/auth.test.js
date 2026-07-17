@@ -74,6 +74,8 @@ const mockPrisma = {
 
 jest.unstable_mockModule('../src/config/db.js', () => ({
   prisma: mockPrisma,
+  executeWithRetry: jest.fn((fn) => fn()),
+  checkDatabaseHealth: jest.fn().mockResolvedValue({ database: 'connected', prisma: 'connected' }),
 }))
 
 jest.unstable_mockModule('../src/config/sendgrid.js', () => ({
@@ -84,6 +86,7 @@ jest.unstable_mockModule('../src/config/sendgrid.js', () => ({
   buildNewProductEmailTemplate: jest.fn().mockReturnValue('<html></html>'),
   buildQuoteEmailTemplate: jest.fn().mockReturnValue('<html></html>'),
   buildReceiptEmailTemplate: jest.fn().mockReturnValue('<html></html>'),
+  buildConsultationEmailTemplate: jest.fn().mockReturnValue('<html></html>'),
 }))
 
 jest.unstable_mockModule('../src/config/cloudinary.js', () => ({

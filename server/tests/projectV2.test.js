@@ -25,48 +25,52 @@ jest.unstable_mockModule('../src/config/cloudinary.js', () => ({
   default: {},
 }))
 
+const mockProjectV2 = {
+  findMany: jest.fn().mockResolvedValue([]),
+  findUnique: jest.fn().mockResolvedValue({
+    id: 'proj-1',
+    videoUrl: 'https://test.cloudinary.com/project-video.mp4',
+    videoPublicId: 'test-video-id',
+    thumbnailUrl: 'https://test.cloudinary.com/project-video-thumb.jpg',
+    order: 0,
+    isPublished: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }),
+  create: jest.fn().mockResolvedValue({
+    id: 'proj-new',
+    videoUrl: 'https://test.cloudinary.com/project-video.mp4',
+    videoPublicId: 'test-video-id',
+    thumbnailUrl: 'https://test.cloudinary.com/project-video-thumb.jpg',
+    order: 0,
+    isPublished: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }),
+  update: jest.fn().mockResolvedValue({
+    id: 'proj-1',
+    videoUrl: 'https://test.cloudinary.com/project-video.mp4',
+    videoPublicId: 'test-video-id',
+    thumbnailUrl: 'https://test.cloudinary.com/project-video-thumb.jpg',
+    order: 0,
+    isPublished: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }),
+  delete: jest.fn().mockResolvedValue({}),
+  $transaction: jest.fn((fn) => fn([
+    { id: 'proj-1', update: () => ({ id: 'proj-1', order: 0 }) },
+    { id: 'proj-2', update: () => ({ id: 'proj-2', order: 1 }) },
+  ])),
+}
+
 jest.unstable_mockModule('../src/config/db.js', () => ({
   prisma: {
-    projectV2: {
-      findMany: jest.fn().mockResolvedValue([]),
-      findUnique: jest.fn().mockResolvedValue({
-        id: 'proj-1',
-        videoUrl: 'https://test.cloudinary.com/project-video.mp4',
-        videoPublicId: 'test-video-id',
-        thumbnailUrl: 'https://test.cloudinary.com/project-video-thumb.jpg',
-        order: 0,
-        isPublished: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }),
-      create: jest.fn().mockResolvedValue({
-        id: 'proj-new',
-        videoUrl: 'https://test.cloudinary.com/project-video.mp4',
-        videoPublicId: 'test-video-id',
-        thumbnailUrl: 'https://test.cloudinary.com/project-video-thumb.jpg',
-        order: 0,
-        isPublished: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }),
-      update: jest.fn().mockResolvedValue({
-        id: 'proj-1',
-        videoUrl: 'https://test.cloudinary.com/project-video.mp4',
-        videoPublicId: 'test-video-id',
-        thumbnailUrl: 'https://test.cloudinary.com/project-video-thumb.jpg',
-        order: 0,
-        isPublished: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }),
-      delete: jest.fn().mockResolvedValue({}),
-      $transaction: jest.fn((fn) => fn([
-        { id: 'proj-1', update: () => ({ id: 'proj-1', order: 0 }) },
-        { id: 'proj-2', update: () => ({ id: 'proj-2', order: 1 }) },
-      ])),
-    },
+    projectV2: mockProjectV2,
     $transaction: jest.fn(),
   },
+  executeWithRetry: jest.fn((fn) => fn()),
+  checkDatabaseHealth: jest.fn().mockResolvedValue({ database: 'connected', prisma: 'connected' }),
 }))
 
 process.env.JWT_ACCESS_SECRET = 'test-access-secret-key'

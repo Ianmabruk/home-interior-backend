@@ -2,7 +2,9 @@ import { PrismaClient, Prisma } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { env } from './env.js'
 
-export const prisma = new PrismaClient()
+const prisma = new PrismaClient({
+  log: env.nodeEnv === 'development' ? ['query', 'error', 'warn'] : ['error'],
+})
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -64,19 +66,6 @@ export const verifyMediaSettingsColumns = async () => {
   console.log('✅ media_settings columns verified on all content tables')
 }
 
-// The live database has historically drifted from schema.prisma (the
-// schema-hardening migrations that added columns like projects.tags /
-// projects.services never ran on the production DB, because the deploy uses
-// `prisma db push`, which is additive but can be skipped / can fail without
-// re-applying). When a column the Prisma client expects is absent, every query
-// against that model throws P2022 and 500s the endpoint.
-//
-// This guard is a READ-ONLY startup check: it compares every Prisma model's
-// columns against the live database (via information_schema) and logs a clear
-// warning for ANY mismatch. It deliberately does NOT alter the database
-// (no ADD COLUMN) — fixing drift is done by aligning application code with the
-// schema (e.g. removing references to columns that don't exist), not by
-// mutating PostgreSQL at boot.
 export const verifyAndHealSchema = async () => {
   let models
   try {
@@ -164,6 +153,65 @@ export const ensureAdminUser = async () => {
   }
 }
 
+const isP1001 = (err) => err?.code === 'P1001' || (err?.message?.includes('P1001') && err?.message?.includes("Can't reach database server"))
+
+const isConnectionError = (err) =>
+  isP1001(err) ||
+  err?.code === 'P1002' ||
+  err?.code === 'P1003' ||
+  err?.code === 'P1008' ||
+  err?.code === 'P1017' ||
+  (err?.message?.includes('connection') && err?.message?.includes('terminated')) ||
+  (err?.message?.includes('socket') && err?.message?.includes('closed')) ||
+  (err?.name === 'PrismaClientKnownRequestError' && err?.code?.startsWith('P10'))
+
+export const executeWithRetry = async (operation, label = 'DB', options = {}) => {
+  const { maxRetries = 3, baseDelay = 500, maxDelay = 5000, timeout = 15000 } = options
+  let lastError
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`${label} query timeout after ${timeout}ms`)), timeout),
+      )
+      return await Promise.race([operation(), timeoutPromise])
+    } catch (err) {
+      lastError = err
+      const isConnErr = isConnectionError(err)
+
+      if (isConnErr) {
+        console.warn(`[${label}] Connection error on attempt ${attempt}/${maxRetries}: ${err?.code || err?.name}: ${err?.message}`)
+        if (attempt < maxRetries) {
+          const delay = Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay)
+          console.log(`[${label}] Waiting ${delay}ms before retry...`)
+          await sleep(delay)
+          try {
+            await prisma.$connect()
+            console.log(`[${label}] Reconnected to database`)
+          } catch (reconnectErr) {
+            console.error(`[${label}] Reconnection failed:`, reconnectErr?.message)
+          }
+          continue
+        }
+      } else {
+        console.error(`[${label}] Non-retryable error:`, err?.message)
+        throw err
+      }
+    }
+  }
+  throw lastError
+}
+
+export const checkDatabaseHealth = async () => {
+  try {
+    await executeWithRetry(() => prisma.$queryRaw`SELECT 1`, 'HEALTH', { maxRetries: 2, timeout: 5000 })
+    return { database: 'connected', prisma: 'connected' }
+  } catch (err) {
+    console.error('[HEALTH CHECK] Database health check failed:', err?.message)
+    return { database: 'disconnected', prisma: 'disconnected', error: err?.message }
+  }
+}
+
 export const connectDB = async () => {
   if (!env.databaseUrl) {
     throw new Error(
@@ -171,8 +219,29 @@ export const connectDB = async () => {
     )
   }
 
-  await prisma.$connect()
-  console.log('📝 Prisma Client connected to PostgreSQL')
+  console.log('🔌 Connecting to PostgreSQL...')
+
+  let connected = false
+  const maxStartupRetries = 5
+  for (let attempt = 1; attempt <= maxStartupRetries; attempt++) {
+    try {
+      await prisma.$connect()
+      connected = true
+      console.log('📝 Prisma Client connected to PostgreSQL')
+      break
+    } catch (err) {
+      if (isP1001(err) && attempt < maxStartupRetries) {
+        console.warn(`🔌 Connection attempt ${attempt}/${maxStartupRetries} failed (P1001), retrying in ${attempt * 2}s...`)
+        await sleep(attempt * 2000)
+      } else {
+        throw err
+      }
+    }
+  }
+
+  if (!connected) {
+    throw new Error('Failed to connect to database after multiple attempts')
+  }
 
   await verifyTables()
   await verifyMediaSettingsColumns()
@@ -183,3 +252,5 @@ export const connectDB = async () => {
 export const disconnectDB = async () => {
   await prisma.$disconnect()
 }
+
+export { prisma }

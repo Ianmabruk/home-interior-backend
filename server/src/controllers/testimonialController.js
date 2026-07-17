@@ -6,6 +6,7 @@ import { uploadImage, deleteMedia } from '../services/uploadService.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { withId, withIdArray } from '../utils/helpers.js'
 import { prismaSafeWrite } from '../utils/prismaSafeWrite.js'
+import { executeWithRetry } from '../config/db.js'
 
 const withIdArraySafe = (items) => withIdArray(Array.isArray(items) ? items : [])
 
@@ -19,10 +20,14 @@ const sortByOrder = (items) =>
 // ── Public: only active testimonials, ordered for the footer carousel ──
 export const listPublic = asyncHandler(async (req, res) => {
   try {
-    const items = await prisma.testimonial.findMany({
-      where: { isActive: true },
-      orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
-    })
+    const items = await executeWithRetry(
+      () => prisma.testimonial.findMany({
+        where: { isActive: true },
+        orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
+      }),
+      'TESTIMONIALS-PUBLIC',
+      { maxRetries: 2, timeout: 5000 }
+    )
     res.json(sendSuccess(withIdArraySafe(items)))
   } catch (err) {
     console.error('[TESTIMONIALS][PUBLIC] failed:', err?.message)
@@ -32,9 +37,13 @@ export const listPublic = asyncHandler(async (req, res) => {
 
 // ── Admin: all testimonials (active + inactive) ──
 export const listAdmin = asyncHandler(async (req, res) => {
-  const items = await prisma.testimonial.findMany({
-    orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
-  })
+  const items = await executeWithRetry(
+    () => prisma.testimonial.findMany({
+      orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
+    }),
+    'TESTIMONIALS-ADMIN',
+    { maxRetries: 2, timeout: 5000 }
+  )
   res.json(sendSuccess(withIdArraySafe(items)))
 })
 
