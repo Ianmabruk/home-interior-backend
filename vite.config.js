@@ -120,7 +120,8 @@ export default defineConfig({
           if (!id.includes('node_modules')) return
           if (id.includes('framer-motion') || id.includes('motion-')) return 'vendor-motion'
           if (id.includes('react-router') || id.includes('@remix-run')) return 'vendor-router'
-          if (id.includes('react-dom') || id.includes('scheduler') || id.includes('/react/')) return 'vendor-react'
+          if (id.includes('react-dom') || id.includes('scheduler')) return 'vendor-react-dom'
+          if (id.includes('/react/') || id.includes('react$')) return 'vendor-react'
           if (id.includes('lucide-react') || id.includes('react-icons')) return 'vendor-icons'
           if (id.includes('axios')) return 'vendor-axios'
           return 'vendor'
