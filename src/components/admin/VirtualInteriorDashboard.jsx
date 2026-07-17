@@ -10,11 +10,10 @@ import {
   Image,
   ArrowUpDown,
   CheckCircle,
-  AlertCircle,
 } from 'lucide-react'
 import { api } from '../../services/api'
 import { emitAdminDataChanged } from '../../utils/adminEvents'
-import { uploadFiles, validateFiles, revokePreviews, createDragDropHandlers } from '../../utils/upload'
+import { uploadFiles } from '../../utils/upload'
 import { getOptimizedVideoUrl, getVideoPosterUrl, getOptimizedUrl } from '../../utils/cloudinaryHelpers'
 
 const INITIAL_FORM = {
@@ -29,25 +28,24 @@ const INITIAL_FORM = {
   status: 'draft',
 }
 
-const INITIAL_JOURNEY = {
-  before: { images: [], videos: [] },
-  after: { images: [], videos: [] },
-}
-
 export const VirtualInteriorDashboard = () => {
   const [items, setItems] = useState([])
   const [form, setForm] = useState(INITIAL_FORM)
   const [editingId, setEditingId] = useState(null)
-  const [mainMediaFiles, setMainMediaFiles] = useState([])
+const [mainMediaFiles, setMainMediaFiles] = useState([])
   const [mainMediaPreviews, setMainMediaPreviews] = useState([])
   const [mainVideoFiles, setMainVideoFiles] = useState([])
   const [mainVideoPreviews, setMainVideoPreviews] = useState([])
+  // eslint-disable-next-line no-unused-vars -- used as setter in upload handlers
   const [journeyBeforeImages, setJourneyBeforeImages] = useState([])
   const [journeyBeforePreviews, setJourneyBeforePreviews] = useState([])
+  // eslint-disable-next-line no-unused-vars -- used as setter in upload handlers
   const [journeyAfterImages, setJourneyAfterImages] = useState([])
   const [journeyAfterPreviews, setJourneyAfterPreviews] = useState([])
+  // eslint-disable-next-line no-unused-vars -- used as setter in upload handlers
   const [journeyBeforeVideos, setJourneyBeforeVideos] = useState([])
   const [journeyBeforeVideoPreviews, setJourneyBeforeVideoPreviews] = useState([])
+  // eslint-disable-next-line no-unused-vars -- used as setter in upload handlers
   const [journeyAfterVideos, setJourneyAfterVideos] = useState([])
   const [journeyAfterVideoPreviews, setJourneyAfterVideoPreviews] = useState([])
   const [loading, setLoading] = useState(false)
@@ -122,8 +120,8 @@ export const VirtualInteriorDashboard = () => {
     const images = item.images && item.images.length > 0
       ? item.images.map(img => typeof img === 'string' ? img : img.url)
       : (item.imageUrl ? [item.imageUrl] : [])
-    setMediaPreviews(images)
-    setMediaFiles(images.map(() => null))
+    setMainMediaPreviews(images)
+    setMainMediaFiles(images.map(() => null))
     if (item.journey) {
       setJourneyBeforePreviews(item.journey.before?.images || [])
       setJourneyBeforeImages(item.journey.before?.images?.map(() => null) || [])
@@ -230,7 +228,7 @@ const submit = async (e) => {
             onFileError: (file, error) => {
               console.error('Upload error for', file.file.name, error)
             },
-            onAllComplete: ({ successful, failed }) => {
+            onAllComplete: ({ failed }) => {
               if (failed.length > 0) {
                 reject(new Error(`${failed.length} image(s) failed to upload`))
               } else {
@@ -261,7 +259,7 @@ const submit = async (e) => {
                   onFileError: (file, error) => {
                     console.error('Upload error for', file.file.name, error)
                   },
-                  onAllComplete: ({ successful, failed }) => {
+                  onAllComplete: ({ failed }) => {
                     if (failed.length > 0) {
                       reject(new Error(`${failed.length} video(s) failed to upload`))
                     } else {
@@ -301,7 +299,7 @@ const deleteItem = async () => {
     }
   }
 
-  const renderMediaUpload = ({ label, accept, files, previews, onClick, fileRef, isDragOver }) => (
+  const renderMediaUpload = ({ label, accept, files, previews, onClick, isDragOver, setFiles, setPreviews }) => (
     <motion.div
       whileHover={{ scale: 1.01 }}
       onDragOver={handleDragOver}
@@ -334,7 +332,7 @@ const deleteItem = async () => {
                 onDragStart={(e) => handleDragStart(e, index)}
                 onDragEnd={handleDragEnd}
                 onDragEnter={(e) => handleDragEnter(e, index)}
-                onDrop={(e) => handleDrop(e, setMediaFiles, setMediaPreviews)}
+                onDrop={(e) => handleDrop(e, setFiles, setPreviews)}
                 draggable
                 className={`relative rounded-xl overflow-hidden group ${dragOverIndex === index ? 'ring-2 ring-[var(--accent)]' : ''}`}
               >
@@ -353,7 +351,7 @@ const deleteItem = async () => {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); removeMedia(index, setMediaFiles, setMediaPreviews) }}
+                  onClick={(e) => { e.stopPropagation(); removeMedia(index, setFiles, setPreviews) }}
                   className="absolute top-2 right-2 bg-[var(--primary)]/90 backdrop-blur-sm text-white p-2 rounded-full hover:bg-[var(--primary)] shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <X size={14} />
@@ -569,15 +567,17 @@ const deleteItem = async () => {
                 <Image size={14} strokeWidth={1.5} />
                 Project Images (Drag to reorder, click cover badge to set cover)
               </label>
-              <input ref={fileRef} type="file" accept="image/*" multiple onChange={(e) => handleFiles(e.target.files, setMediaFiles, setMediaPreviews)} className="hidden" />
+              <input ref={fileRef} type="file" accept="image/*" multiple onChange={(e) => handleFiles(e.target.files, setMainMediaFiles, setMainMediaPreviews)} className="hidden" />
               {renderMediaUpload({
                 label: 'Project Images',
                 accept: 'image/*',
-                files: mediaFiles,
-                previews: mediaPreviews,
+                files: mainMediaFiles,
+                previews: mainMediaPreviews,
                 onClick: () => fileRef.current?.click(),
                 fileRef,
                 isDragOver: isDragOver,
+                setFiles: setMainMediaFiles,
+                setPreviews: setMainMediaPreviews,
               })}
             </div>
 
@@ -587,15 +587,17 @@ const deleteItem = async () => {
                 <Video size={14} strokeWidth={1.5} />
                 Project Videos (Drag to reorder)
               </label>
-              <input ref={videoRef} type="file" accept="video/*" multiple onChange={(e) => handleFiles(e.target.files, setVideoFiles, setVideoPreviews)} className="hidden" />
+              <input ref={videoRef} type="file" accept="video/*" multiple onChange={(e) => handleFiles(e.target.files, setMainVideoFiles, setMainVideoPreviews)} className="hidden" />
               {renderMediaUpload({
                 label: 'Project Videos',
                 accept: 'video/*',
-                files: videoFiles,
-                previews: videoPreviews,
+                files: mainVideoFiles,
+                previews: mainVideoPreviews,
                 onClick: () => videoRef.current?.click(),
                 fileRef: videoRef,
                 isDragOver: isDragOver,
+                setFiles: setMainVideoFiles,
+                setPreviews: setMainVideoPreviews,
               })}
             </div>
 
