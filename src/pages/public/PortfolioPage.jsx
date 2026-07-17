@@ -4,6 +4,7 @@ import { ArrowRight, Grid3X3 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api } from '../../services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '../../utils/adminEvents'
+import { getOptimizedUrl } from '../../utils/cloudinaryHelpers'
 import PositionedImage from '../../components/common/PositionedImage'
 
 const PAGE_SIZE = 12
