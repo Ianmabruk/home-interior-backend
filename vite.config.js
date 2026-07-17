@@ -22,6 +22,7 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
+        navigateFallback: null,
         // Never let the SW cache/handle API calls as navigations.
         navigateFallbackDenylist: [/^\/api/, /\/api\//],
         runtimeCaching: [
