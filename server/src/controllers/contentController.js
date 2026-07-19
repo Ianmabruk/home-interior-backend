@@ -227,6 +227,8 @@ export const homepageFeed = asyncHandler(async (req, res) => {
   let about = null
   let testimonials = []
   let services = []
+  let heroImages = []
+  let featuredProject = null
 
   try {
     portfolio = await executeWithRetry(
@@ -352,12 +354,45 @@ export const homepageFeed = asyncHandler(async (req, res) => {
     testimonials = []
   }
 
+  try {
+    const homepageContent = await executeWithRetry(
+      () => prisma.homepageContent.findFirst({
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          heroImages: true,
+          title: true,
+          subtitle: true,
+        },
+      }),
+      'HOMEPAGE-CONTENT',
+      { maxRetries: 2, timeout: 5000 }
+    )
+    if (homepageContent) {
+      heroImages = homepageContent.heroImages || []
+    }
+  } catch (err) {
+    console.error('[HOMEPAGE] heroImages query failed:', err?.message)
+    heroImages = []
+  }
+
+  // Featured Project Priority:
+  // 1. Explicit Featured Project (from portfolio with featured: true)
+  // 2. Most Recent Portfolio Project
+  // 3. First Available Portfolio Project
   const sortedPortfolio = sortByOrderThenDate(portfolio || []).slice(0, 12)
+  const featuredPortfolio = sortedPortfolio.filter(item => item.featured).slice(0, 3)
+
+  if (featuredPortfolio.length > 0) {
+    featuredProject = featuredPortfolio[0]
+  } else if (sortedPortfolio.length > 0) {
+    featuredProject = sortedPortfolio[0]
+  }
+
   const sortedVirtualDesigns = sortByOrderThenDate(virtualDesigns || []).slice(0, 12)
   const sortedServices = sortByOrderThenDate(services || []).slice(0, 8)
   const sortedTestimonials = sortByOrderThenDate(testimonials || []).slice(0, 10)
 
-  const featuredPortfolio = sortedPortfolio.filter(item => item.featured).slice(0, 3)
   const featuredVirtualDesigns = sortedVirtualDesigns.filter(item => item.featured).slice(0, 3)
 
   console.log('[HOMEPAGE DEBUG]', {
@@ -368,6 +403,8 @@ export const homepageFeed = asyncHandler(async (req, res) => {
     servicesCount: sortedServices.length,
     testimonialCount: sortedTestimonials.length,
     aboutFound: about ? true : false,
+    heroImagesCount: heroImages.length,
+    featuredProject: featuredProject ? featuredProject.title : 'missing',
   })
 
   res.json(sendSuccess({
@@ -378,6 +415,8 @@ export const homepageFeed = asyncHandler(async (req, res) => {
     testimonials: withIdArray(sortedTestimonials),
     featuredPortfolio: withIdArray(featuredPortfolio),
     featuredVirtualDesigns: withIdArray(featuredVirtualDesigns),
+    heroImages: heroImages,
+    featuredProject: featuredProject ? withId(featuredProject) : null,
   }))
 })
 
@@ -432,4 +471,79 @@ export const deleteMediaController = asyncHandler(async (req, res) => {
   }
   const result = await deleteMedia(publicId, resourceType === 'video' ? 'video' : 'image')
   res.json(sendSuccess({ result: result?.result || 'ok' }))
+})
+
+export const upsertHomepageContent = asyncHandler(async (req, res) => {
+  try {
+    const payload = {}
+
+    if (req.body.title !== undefined) payload.title = req.body.title
+    if (req.body.subtitle !== undefined) payload.subtitle = req.body.subtitle
+
+    const uploadedImages = []
+    if (req.files && Array.isArray(req.files)) {
+      for (const file of req.files) {
+        const upload = await uploadImage(file.buffer, 'hok/homepage/hero', file.mimetype)
+        uploadedImages.push(upload.secure_url)
+      }
+    }
+
+    if (uploadedImages.length > 0) {
+      payload.heroImages = uploadedImages
+    }
+
+    const existing = await executeWithRetry(
+      () => prisma.homepageContent.findFirst({ orderBy: { createdAt: 'desc' } }),
+      'HOMEPAGE-CONTENT-FIND',
+      { maxRetries: 2, timeout: 5000 }
+    )
+
+    if (!existing) {
+      const created = await prismaSafeWrite(
+        (data) => prisma.homepageContent.create({ data }),
+        payload,
+        'HOMEPAGE-CONTENT-CREATE'
+      )
+      return res.status(201).json(sendSuccess(withId(created)))
+    }
+
+    if (payload.heroImages && existing.heroImages) {
+      const toDelete = existing.heroImages.filter(url => !payload.heroImages.includes(url))
+      for (const url of toDelete) {
+        try {
+          const publicId = url.split('/').pop()?.split('.')[0]
+          if (publicId) {
+            await deleteMedia(publicId, 'image')
+          }
+        } catch (e) {
+          console.error('[HOMEPAGE] delete old hero image failed:', e?.message)
+        }
+      }
+    }
+
+    const updated = await prismaSafeWrite(
+      (data) => prisma.homepageContent.update({ where: { id: existing.id }, data }),
+      payload,
+      'HOMEPAGE-CONTENT-UPDATE'
+    )
+    res.json(sendSuccess(withId(updated)))
+  } catch (error) {
+    console.error("FULL ERROR:", error)
+    console.error("MESSAGE:", error.message)
+    console.error("STACK:", error.stack)
+    console.error("PRISMA CODE:", error.code)
+    console.error("BODY:", req.body)
+    console.error("FILES:", req.files)
+    if (error instanceof ApiError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message, details: error.details })
+    }
+    res.status(500).json({
+      success: false,
+      route: req.originalUrl || req.path,
+      error: error.message,
+      rawMessage: error.message,
+      code: error.code,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+    })
+  }
 })

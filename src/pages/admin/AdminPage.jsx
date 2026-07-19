@@ -29,9 +29,11 @@ import { AboutDashboard } from '../../components/admin/AboutDashboard'
 import { ConsultationDashboard } from '../../components/admin/ConsultationDashboard'
 import { TestimonialDashboard } from '../../components/admin/TestimonialDashboard'
 import { ServicesDashboard } from '../../components/admin/ServicesDashboard'
+import { HeroImagesDashboard } from '../../components/admin/HeroImagesDashboard'
 
 const tabs = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'hero', label: 'Hero Images', icon: UploadCloud },
   { id: 'portfolio', label: 'Portfolio', icon: Images },
   { id: 'shop', label: 'Shop', icon: ShoppingBag },
   { id: 'services', label: 'Services', icon: Layers },
@@ -378,6 +380,7 @@ const { user, logout, updateProfile } = useAuth()
               {activeTab === 'dashboard' && (
                 <DashboardOverview overview={overview} onNavigate={setActiveTab} />
               )}
+              {activeTab === 'hero' && <HeroImagesDashboard />}
               {activeTab === 'portfolio' && <PortfolioDashboard />}
               {activeTab === 'shop' && <ShopDashboard />}
               {activeTab === 'services' && <ServicesDashboard />}

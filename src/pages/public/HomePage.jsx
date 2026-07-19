@@ -50,7 +50,7 @@ export const HomePage = () => {
   useEffect(() => {
     const handler = (event) => {
       const payload = getAdminDataChangedPayload(event)
-      if (payload?.type === 'portfolio-changed' || payload?.type === 'services-changed' || payload?.type === 'virtual-changed' || payload?.type === 'products-changed') {
+      if (payload?.type === 'portfolio-changed' || payload?.type === 'services-changed' || payload?.type === 'virtual-changed' || payload?.type === 'products-changed' || payload?.type === 'hero-images-changed') {
         loadData()
       }
     }

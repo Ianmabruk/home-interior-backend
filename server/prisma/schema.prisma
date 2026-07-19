@@ -231,6 +231,17 @@ model Testimonial {
   @@map("testimonials")
 }
 
+model HomepageContent {
+  id           String   @id @default(uuid()) @map("_id")
+  heroImages   String[] @default([]) @map("hero_images")
+  title        String?
+  subtitle     String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("homepage_content")
+}
+
 model Consultation {
   id        String   @id @default(uuid()) @map("_id")
   name      String

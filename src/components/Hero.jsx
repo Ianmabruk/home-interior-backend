@@ -24,17 +24,19 @@ export const Hero = ({ onBookConsultation }) => {
 
         const carouselImages = []
 
-        const heroItems = data.featuredPortfolio && data.featuredPortfolio.length > 0
-          ? data.featuredPortfolio
-          : (data.portfolio || [])
+        const heroItems = data.heroImages && data.heroImages.length > 0
+          ? data.heroImages
+          : (data.featuredPortfolio && data.featuredPortfolio.length > 0
+            ? data.featuredPortfolio
+            : (data.portfolio || []))
 
         heroItems
-          .filter(item => item.imageUrl)
+          .filter(item => item.imageUrl || item.url)
           .slice(0, 5)
           .forEach(item => {
             carouselImages.push({
-              url: item.imageUrl,
-              alt: item.title || 'Luxury interior design project'
+              url: item.imageUrl || item.url,
+              alt: item.title || item.alt || 'Luxury interior design project'
             })
           })
 

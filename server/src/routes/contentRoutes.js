@@ -10,6 +10,7 @@ import {
   testUpload,
   deleteMediaController,
   uploadMediaController,
+  upsertHomepageContent,
 } from '../controllers/contentController.js'
 import { portfolioController } from '../controllers/portfolioController.js'
 import { virtualDesignController } from '../controllers/virtualDesignController.js'
@@ -100,6 +101,8 @@ router.delete('/services/:id', auth, authorize('admin'), writeLimiter, auditLog,
 
 router.get('/about', getAbout)
 router.put('/about', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, upsertAbout)
+
+router.put('/homepage', auth, authorize('admin'), writeLimiter, auditLog, upload.array('heroImages', 10), validateGalleryUpload, sanitizeInput, upsertHomepageContent)
 
 router.post('/consultations', validateConsultationBody, consultationController.createConsultation)
 
