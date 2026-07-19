@@ -89,21 +89,58 @@ model Product {
 }
 
 model Portfolio {
-  id            String   @id @default(uuid()) @map("_id")
-  title         String?
-  description   String?
-  imageUrl      String   @map("image_url")
-  galleryImages String[] @default([]) @map("gallery_images")
-  cloudinaryId  String?  @map("cloudinary_id")
-  featured      Boolean  @default(false)
-  displayOrder  Int      @default(0) @map("display_order")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id                 String   @id @default(uuid()) @map("_id")
+  title              String?
+  description        String?
+  imageUrl           String   @map("image_url")
+  galleryImages      String[] @default([]) @map("gallery_images")
+  beforeAfterImages  Json?    @map("before_after_images")
+  gallery            Json?    @map("gallery")
+  cloudinaryId       String?  @map("cloudinary_id")
+  featured           Boolean  @default(false)
+  displayOrder       Int      @default(0) @map("display_order")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   @@index([featured])
   @@index([displayOrder])
   @@index([createdAt])
   @@map("portfolios")
+}
+
+model Project {
+  id            String   @id @default(uuid()) @map("_id")
+  title         String?
+  description   String?
+  tags          String[]
+  services      String[]
+  media         Json?
+  mediaSettings Json?    @map("media_settings")
+  thumbnailUrl  String?  @map("thumbnail_url")
+  thumbnailPublicId String? @map("thumbnail_public_id")
+  isPublished   Boolean  @default(true) @map("is_published")
+  order         Int      @default(0)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([isPublished])
+  @@index([order])
+  @@map("projects")
+}
+
+model ProjectV2 {
+  id            String   @id @default(uuid()) @map("_id")
+  videoUrl      String   @map("video_url")
+  videoPublicId String   @map("video_public_id")
+  thumbnailUrl  String?  @map("thumbnail_url")
+  order         Int      @default(0)
+  isPublished   Boolean  @default(true) @map("is_published")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([order])
+  @@index([isPublished])
+  @@map("project_v2")
 }
 
 model About {

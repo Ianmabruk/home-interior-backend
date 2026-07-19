@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Maximize2, Play, CalendarCheck, ShoppingBag } from 'lucide-react'
+import { ArrowRight, Maximize2, Play, ShoppingBag } from 'lucide-react'
 import { Hero } from '../../components/Hero'
 import { AboutPreview } from '../../components/AboutPreview'
 import { ConsultationModal } from '../../components/ConsultationModal'
@@ -15,12 +15,9 @@ export const HomePage = () => {
   const [services, setServices] = useState([])
   const [virtualDesigns, setVirtualDesigns] = useState([])
   const [products, setProducts] = useState([])
-  const [featuredPortfolio, setFeaturedPortfolio] = useState([])
-  const [featuredVirtualDesigns, setFeaturedVirtualDesigns] = useState([])
-  const [about, setAbout] = useState(null)
-  const [testimonials, setTestimonials] = useState([])
   const [loading, setLoading] = useState(true)
-
+  const [heroImages, setHeroImages] = useState([])
+  
   const loadData = async () => {
     try {
       // Use the combined homepage endpoint for all data
@@ -33,10 +30,7 @@ export const HomePage = () => {
       setPortfolio(homepageData.portfolio || [])
       setServices(homepageData.services || [])
       setVirtualDesigns(homepageData.virtualInteriorDesign || homepageData.virtualDesigns || [])
-      setFeaturedPortfolio(homepageData.featuredPortfolio || [])
-      setFeaturedVirtualDesigns(homepageData.featuredVirtualDesigns || [])
-      setAbout(homepageData.about || null)
-      setTestimonials(homepageData.testimonials || [])
+      setHeroImages(homepageData.heroImages || [])
       setProducts(Array.isArray(productsRes.data) ? productsRes.data : productsRes.data?.items || [])
     } catch (err) {
       console.warn('[HOME] Failed to load data:', err?.message)
@@ -45,7 +39,10 @@ export const HomePage = () => {
     }
   }
 
-  useEffect(() => { loadData() }, [])
+useEffect(() => { 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Initial data load is a standard pattern
+    loadData() 
+  }, [])
 
   useEffect(() => {
     const handler = (event) => {
@@ -61,7 +58,7 @@ export const HomePage = () => {
   if (loading) {
     return (
       <main>
-        <Hero onBookConsultation={() => setShowModal(true)} />
+        <Hero onBookConsultation={() => setShowModal(true)} heroImages={[]} />
         <section className="bg-[var(--secondary)]/30 px-6 md:px-12 lg:px-20 py-20 md:py-32">
           <div className="container-wide">
             <div className="mb-16 text-center">
@@ -161,7 +158,7 @@ export const HomePage = () => {
 
   return (
     <main>
-      <Hero onBookConsultation={() => setShowModal(true)} />
+      <Hero onBookConsultation={() => setShowModal(true)} heroImages={heroImages} />
 
       {/* Portfolio Section */}
       <motion.section

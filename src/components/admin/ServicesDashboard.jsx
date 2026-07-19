@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { UploadCloud, X, Edit, Trash2, Image, Eye, Plus, Sparkles, LayoutGrid, Brush, MonitorSmartphone, Armchair, Search, Star } from 'lucide-react'
+import { UploadCloud, X, Edit, Trash2, Eye, Plus, Sparkles, LayoutGrid, Brush, MonitorSmartphone, Armchair, Search, Star } from 'lucide-react'
 import { api } from '../../services/api'
 import { emitAdminDataChanged } from '../../utils/adminEvents'
 

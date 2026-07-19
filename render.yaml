@@ -24,12 +24,22 @@ services:
           name: hok-interior-db
           property: connectionString
       - key: JWT_ACCESS_SECRET
-        generateValue: true
+        value: REPLACE_WITH_SECURE_RANDOM_STRING_MIN_32_CHARS
       - key: JWT_REFRESH_SECRET
-        generateValue: true
+        value: REPLACE_WITH_SECURE_RANDOM_STRING_MIN_32_CHARS
       - key: CLIENT_URL
         value: https://homy-comfy.netlify.app
       - key: SEED_ADMIN_EMAIL
         value: admin@hokinterior.com
       - key: SEED_ADMIN_PASSWORD
         generateValue: true
+      - key: CLOUDINARY_CLOUD_NAME
+        value: REPLACE_WITH_YOUR_CLOUDINARY_CLOUD_NAME
+      - key: CLOUDINARY_API_KEY
+        value: REPLACE_WITH_YOUR_CLOUDINARY_API_KEY
+      - key: CLOUDINARY_API_SECRET
+        value: REPLACE_WITH_YOUR_CLOUDINARY_API_SECRET
+      - key: SENDGRID_API_KEY
+        value: REPLACE_WITH_YOUR_SENDGRID_API_KEY
+      - key: EMAIL_FROM
+        value: info@hokinterior.com

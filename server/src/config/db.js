@@ -14,6 +14,7 @@ const MODEL_TABLE_MAP = {
   Order: 'orders',
   Product: 'products',
   Project: 'projects',
+  ProjectV2: 'project_v2',
   Portfolio: 'portfolios',
   About: 'abouts',
   VirtualDesign: 'virtual_designs',

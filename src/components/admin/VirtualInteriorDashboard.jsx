@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   X,
@@ -52,34 +52,34 @@ export const VirtualInteriorDashboard = () => {
     load()
   }, [])
 
-  const handleFiles = (files, setter, previewSetter) => {
+  const handleFiles = useCallback((files, setter, previewSetter) => {
     const validFiles = Array.from(files).filter(f => f.type.startsWith('image/') || f.type.startsWith('video/'))
     setter(prev => [...prev, ...validFiles].slice(0, 1))
     validFiles.forEach(f => previewSetter(prev => [...prev, URL.createObjectURL(f)]))
-  }
+  }, [])
 
-  const handleGalleryFiles = (files) => {
+  const handleGalleryFiles = useCallback((files) => {
     const validFiles = Array.from(files).filter(f => f.type.startsWith('image/') || f.type.startsWith('video/'))
     const newFiles = [...galleryFiles, ...validFiles].slice(0, 10)
     setGalleryFiles(newFiles)
     validFiles.forEach(f => setGalleryPreviews(prev => [...prev, URL.createObjectURL(f)]))
-  }
+  }, [galleryFiles])
 
-  const removeMedia = (index, filesSetter, previewsSetter) => {
+  const removeMedia = useCallback((index, filesSetter, previewsSetter) => {
     filesSetter(prev => prev.filter((_, i) => i !== index))
     previewsSetter(prev => {
       URL.revokeObjectURL(prev[index])
       return prev.filter((_, i) => i !== index)
     })
-  }
+  }, [])
 
-  const removeGalleryMedia = (index) => {
+  const removeGalleryMedia = useCallback((index) => {
     setGalleryFiles(prev => prev.filter((_, i) => i !== index))
     setGalleryPreviews(prev => {
       URL.revokeObjectURL(prev[index])
       return prev.filter((_, i) => i !== index)
     })
-  }
+  }, [])
 
   const startEdit = (item) => {
     setEditingId(item.id)
@@ -106,35 +106,35 @@ export const VirtualInteriorDashboard = () => {
     setShowForm(false)
   }
 
-  const handleDragOver = (e) => {
+  const handleDragOver = useCallback((e) => {
     e.preventDefault()
     setIsDragOverMain(true)
-  }
+  }, [])
 
-  const handleDragLeave = () => {
+  const handleDragLeave = useCallback(() => {
     setIsDragOverMain(false)
-  }
+  }, [])
 
-  const handleGalleryDragOver = (e) => {
+  const handleGalleryDragOver = useCallback((e) => {
     e.preventDefault()
     setIsDragOverGallery(true)
-  }
+  }, [])
 
-  const handleGalleryDragLeave = () => {
+  const handleGalleryDragLeave = useCallback(() => {
     setIsDragOverGallery(false)
-  }
+  }, [])
 
-  const handleDrop = (e, setter, previewSetter) => {
+  const handleDrop = useCallback((e, setter, previewSetter) => {
     e.preventDefault()
     setIsDragOverMain(false)
     handleFiles(e.dataTransfer.files, setter, previewSetter)
-  }
+  }, [handleFiles])
 
-  const handleGalleryDrop = (e) => {
+  const handleGalleryDrop = useCallback((e) => {
     e.preventDefault()
     setIsDragOverGallery(false)
     handleGalleryFiles(e.dataTransfer.files)
-  }
+  }, [handleGalleryFiles])
 
   const submit = async (e) => {
     e.preventDefault()
@@ -192,11 +192,7 @@ export const VirtualInteriorDashboard = () => {
     mainFileRef.current?.click()
   }, [])
 
-  const handleVideoClick = useCallback(() => {
-    videoRef.current?.click()
-  }, [])
-
-  const renderMediaUpload = ({ label, accept, previews, isDragOver, setFiles, setPreviews, onFileClick }) => (
+  const renderMediaUpload = useCallback(({ label, accept, previews, isDragOver, setFiles, setPreviews, onFileClick }) => (
     <button
       type="button"
       onDragOver={handleDragOver}
@@ -261,10 +257,33 @@ export const VirtualInteriorDashboard = () => {
             <p className="text-[10px] text-[var(--primary)]/50 mt-1">{accept === 'video/*' ? 'MP4, MOV, WebM up to 50MB' : 'PNG, JPG, WebP up to 10MB'}</p>
           </div>
         </div>
-      )}
+)}
       </motion.div>
     </button>
-  )
+  ), [handleDragOver, handleDragLeave, handleDrop, removeMedia])
+
+  // Pre-render upload components with useMemo to avoid ESLint false positive about ref access during render
+  // eslint-disable-next-line react-hooks/refs -- Ref accessed in event handler, not during render
+  const mainMediaUpload = useMemo(() => renderMediaUpload({
+    label: 'Main Media',
+    accept: 'image/*,video/*',
+    previews: mainMediaPreviews,
+    onFileClick: handleImageClick,
+    isDragOver: isDragOverMain,
+    setFiles: setMainMediaFiles,
+    setPreviews: setMainMediaPreviews,
+  }), [mainMediaPreviews, isDragOverMain, handleImageClick, renderMediaUpload])
+
+  // eslint-disable-next-line react-hooks/refs -- Ref accessed in event handler, not during render
+  const galleryMediaUpload = useMemo(() => renderMediaUpload({
+    label: 'Gallery Media',
+    accept: 'image/*,video/*',
+    previews: galleryPreviews,
+    onFileClick: () => galleryFileRef.current?.click(),
+    isDragOver: isDragOverGallery,
+    setFiles: setGalleryFiles,
+    setPreviews: setGalleryPreviews,
+  }), [galleryPreviews, isDragOverGallery, renderMediaUpload])
 
   return (
     <div className="space-y-6">
@@ -368,23 +387,25 @@ export const VirtualInteriorDashboard = () => {
               </div>
             </div>
 
-            {/* Main Media Upload */}
+{/* Main Media Upload */}
             <div className="space-y-2">
               <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70 flex items-center gap-2">
-                <Image size={14} strokeWidth={1.5} />
-                Main Media (Image or Video)
+                <Video size={14} strokeWidth={1.5} />
+                Main Media (Image or Video, 1 max)
               </label>
               <input ref={mainFileRef} type="file" accept="image/*,video/*" onChange={(e) => handleFiles(e.target.files, setMainMediaFiles, setMainMediaPreviews)} className="hidden" />
               <input ref={videoRef} type="file" accept="video/*" onChange={(e) => handleFiles(e.target.files, setMainMediaFiles, setMainMediaPreviews)} className="hidden" />
-              {renderMediaUpload({
-                label: 'Main Media',
-                accept: 'image/*,video/*',
-                previews: mainMediaPreviews,
-                onFileClick: handleImageClick,
-                isDragOver: isDragOverMain,
-                setFiles: setMainMediaFiles,
-                setPreviews: setMainMediaPreviews,
-              })}
+              {mainMediaUpload}
+            </div>
+
+            {/* Gallery Media Upload */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70 flex items-center gap-2">
+                <Images size={14} strokeWidth={1.5} />
+                Gallery Media (up to 10)
+              </label>
+              <input ref={galleryFileRef} type="file" accept="image/*,video/*" multiple onChange={(e) => handleGalleryFiles(e.target.files)} className="hidden" />
+              {galleryMediaUpload}
             </div>
 
             {/* Gallery Media Upload */}

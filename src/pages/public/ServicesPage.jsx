@@ -32,7 +32,10 @@ export const ServicesPage = () => {
     }
   }
 
-  useEffect(() => { loadServices() }, [])
+  useEffect(() => { 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Initial data load is a standard pattern
+    loadServices() 
+  }, [])
 
   useEffect(() => {
     const handler = (event) => {

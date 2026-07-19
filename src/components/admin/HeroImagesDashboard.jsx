@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { UploadCloud, X, Edit, Trash2, Images, Eye, Plus, GripVertical, Star, Image as ImageIcon } from 'lucide-react'
+import { UploadCloud, X, Trash2, Images, Eye, Plus, Image as ImageIcon } from 'lucide-react'
 import { api } from '../../services/api'
 import { emitAdminDataChanged } from '../../utils/adminEvents'
 
@@ -12,7 +12,6 @@ const INITIAL_FORM = {
 export const HeroImagesDashboard = () => {
   const [heroImages, setHeroImages] = useState([])
   const [form, setForm] = useState(INITIAL_FORM)
-  const [editingId, setEditingId] = useState(null)
   const [mediaFiles, setMediaFiles] = useState([])
   const [mediaPreviews, setMediaPreviews] = useState([])
   const [loading, setLoading] = useState(false)
@@ -66,13 +65,7 @@ export const HeroImagesDashboard = () => {
     })
   }
 
-  const startEdit = () => {
-    setEditingId('edit')
-    setShowForm(true)
-  }
-
   const resetForm = () => {
-    setEditingId(null)
     setForm(INITIAL_FORM)
     setMediaFiles([])
     setMediaPreviews([])
@@ -138,7 +131,7 @@ export const HeroImagesDashboard = () => {
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          onClick={() => { setEditingId(null); setForm(INITIAL_FORM); setMediaFiles([]); setMediaPreviews([]); setShowForm(true) }}
+          onClick={() => { setForm(INITIAL_FORM); setMediaFiles([]); setMediaPreviews([]); setShowForm(true) }}
           className="btn-luxury-primary flex items-center gap-2 whitespace-nowrap"
         >
           <Plus size={18} strokeWidth={2} />

@@ -1,56 +1,28 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { CalendarCheck } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { api } from '../services/api'
 import { getOptimizedUrl } from '../utils/cloudinaryHelpers'
 
 const SLIDE_DURATION = 8000
 const FADE_DURATION = 2.5
 
-export const Hero = ({ onBookConsultation }) => {
-  const [images, setImages] = useState([])
+export const Hero = ({ onBookConsultation, heroImages = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [loading, setLoading] = useState(true)
   const [isPaused, setIsPaused] = useState(false)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const intervalRef = useRef(null)
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await api.get('/content/homepage')
-        const data = res.data || {}
-
-        const carouselImages = []
-
-        const heroItems = data.heroImages && data.heroImages.length > 0
-          ? data.heroImages
-          : (data.featuredPortfolio && data.featuredPortfolio.length > 0
-            ? data.featuredPortfolio
-            : (data.portfolio || []))
-
-        heroItems
-          .filter(item => item.imageUrl || item.url)
-          .slice(0, 5)
-          .forEach(item => {
-            carouselImages.push({
-              url: item.imageUrl || item.url,
-              alt: item.title || item.alt || 'Luxury interior design project'
-            })
-          })
-
-        if (carouselImages.length > 0) {
-          setImages(carouselImages)
-        }
-      } catch (err) {
-        console.warn('[HERO] Failed to load images:', err?.message)
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [])
+  const images = useMemo(() => {
+    if (!heroImages || heroImages.length === 0) return []
+    return heroImages
+      .filter(item => item)
+      .slice(0, 5)
+      .map(item => ({
+        url: typeof item === 'string' ? item : item.imageUrl || item.url,
+        alt: item.title || item.alt || 'Luxury interior design project'
+      }))
+  }, [heroImages])
 
   const next = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % images.length)
@@ -86,7 +58,19 @@ export const Hero = ({ onBookConsultation }) => {
       aria-label="Hero image carousel"
     >
       {/* Background Slides - Full Width, Edge to Edge */}
-      {!loading && images.length > 0 && (
+      {!images.length && (
+        <div className="absolute inset-0">
+          <img
+            src={getOptimizedUrl(fallbackImage, { width: 1920, crop: 'limit' })}
+            alt="Luxury interior design"
+            className="h-full w-full object-cover"
+            loading="eager"
+            decoding="async"
+            style={{ transform: 'scale(1.15)' }}
+          />
+        </div>
+      )}
+      {images.length > 0 && (
         <div className="absolute inset-0">
           <AnimatePresence mode="wait">
             <motion.div
@@ -110,20 +94,6 @@ export const Hero = ({ onBookConsultation }) => {
               />
             </motion.div>
           </AnimatePresence>
-        </div>
-      )}
-
-      {/* Fallback */}
-      {(loading || images.length === 0) && (
-        <div className="absolute inset-0">
-          <img
-            src={getOptimizedUrl(fallbackImage, { width: 1920, crop: 'limit' })}
-            alt="Luxury interior design"
-            className="h-full w-full object-cover"
-            loading="eager"
-            decoding="async"
-            style={{ transform: 'scale(1.15)' }}
-          />
         </div>
       )}
 

@@ -547,3 +547,61 @@ export const upsertHomepageContent = asyncHandler(async (req, res) => {
     })
   }
 })
+
+export const deleteHeroImagesController = asyncHandler(async (req, res) => {
+  try {
+    const { heroImages } = req.body
+    if (!Array.isArray(heroImages) || heroImages.length === 0) {
+      return res.status(400).json({ success: false, message: 'heroImages array is required' })
+    }
+
+    const existing = await executeWithRetry(
+      () => prisma.homepageContent.findFirst({ orderBy: { createdAt: 'desc' } }),
+      'HOMEPAGE-CONTENT-FIND',
+      { maxRetries: 2, timeout: 5000 }
+    )
+
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Homepage content not found' })
+    }
+
+    // Delete from Cloudinary
+    for (const url of heroImages) {
+      try {
+        const publicId = url.split('/').pop()?.split('.')[0]
+        if (publicId) {
+          await deleteMedia(publicId, 'image')
+        }
+      } catch (e) {
+        console.error('[HOMEPAGE] delete hero image failed:', e?.message)
+      }
+    }
+
+    // Remove from database
+    const updatedHeroImages = existing.heroImages.filter(url => !heroImages.includes(url))
+    
+    const updated = await prismaSafeWrite(
+      (data) => prisma.homepageContent.update({ where: { id: existing.id }, data }),
+      { heroImages: updatedHeroImages },
+      'HOMEPAGE-CONTENT-DELETE-HERO'
+    )
+    res.json(sendSuccess(withId(updated)))
+  } catch (error) {
+    console.error("FULL ERROR:", error)
+    console.error("MESSAGE:", error.message)
+    console.error("STACK:", error.stack)
+    console.error("PRISMA CODE:", error.code)
+    console.error("BODY:", req.body)
+    if (error instanceof ApiError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message, details: error.details })
+    }
+    res.status(500).json({
+      success: false,
+      route: req.originalUrl || req.path,
+      error: error.message,
+      rawMessage: error.message,
+      code: error.code,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+    })
+  }
+})

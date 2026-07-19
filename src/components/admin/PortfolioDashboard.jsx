@@ -169,17 +169,6 @@ export const PortfolioDashboard = () => {
     }
   }
 
-  const removeGalleryImageFromServer = async (itemId, imageUrl) => {
-    try {
-      await api.delete(`/content/portfolio/${itemId}/gallery`, { data: { imageUrl } })
-      const res = await api.get('/content/portfolio')
-      setPortfolio(Array.isArray(res.data) ? res.data : res.data?.items || [])
-      emitAdminDataChanged({ type: 'portfolio-changed' })
-    } catch (err) {
-      console.error('Remove gallery image error:', err)
-    }
-  }
-
   return (
     <div className="space-y-6">
       {/* Header with Add Button */}

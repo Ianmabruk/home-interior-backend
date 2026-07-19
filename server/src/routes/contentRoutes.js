@@ -11,6 +11,7 @@ import {
   deleteMediaController,
   uploadMediaController,
   upsertHomepageContent,
+  deleteHeroImagesController,
 } from '../controllers/contentController.js'
 import { portfolioController } from '../controllers/portfolioController.js'
 import { virtualDesignController } from '../controllers/virtualDesignController.js'
@@ -103,6 +104,9 @@ router.get('/about', getAbout)
 router.put('/about', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, upsertAbout)
 
 router.put('/homepage', auth, authorize('admin'), writeLimiter, auditLog, upload.array('heroImages', 10), validateGalleryUpload, sanitizeInput, upsertHomepageContent)
+
+router.delete('/homepage/hero-images', auth, authorize('admin'), writeLimiter, auditLog, sanitizeInput, deleteHeroImagesController)
+router.delete('/homepage/hero-images', auth, authorize('admin'), writeLimiter, auditLog, sanitizeInput, deleteHeroImagesController)
 
 router.post('/consultations', validateConsultationBody, consultationController.createConsultation)
 

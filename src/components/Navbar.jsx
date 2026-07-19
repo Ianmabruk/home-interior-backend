@@ -11,7 +11,6 @@ import {
   X,
   Package,
   CreditCard,
-  Heart,
   CalendarCheck,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
