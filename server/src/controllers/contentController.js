@@ -226,6 +226,7 @@ export const homepageFeed = asyncHandler(async (req, res) => {
   let virtualDesigns = []
   let about = null
   let testimonials = []
+  let services = []
 
   try {
     portfolio = await executeWithRetry(
@@ -273,6 +274,35 @@ export const homepageFeed = asyncHandler(async (req, res) => {
   } catch (err) {
     console.error('[HOMEPAGE] virtualDesigns query failed:', err?.message)
     virtualDesigns = []
+  }
+
+  try {
+    services = await executeWithRetry(
+      () => prisma.service.findMany({
+        where: { isActive: true },
+        orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
+        take: 8,
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          icon: true,
+          imageUrl: true,
+          cloudinaryId: true,
+          mediaSettings: true,
+          featured: true,
+          displayOrder: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      'HOMEPAGE-SERVICES',
+      { maxRetries: 2, timeout: 8000 }
+    )
+  } catch (err) {
+    console.error('[HOMEPAGE] services query failed:', err?.message)
+    services = []
   }
 
   try {
@@ -324,6 +354,7 @@ export const homepageFeed = asyncHandler(async (req, res) => {
 
   const sortedPortfolio = sortByOrderThenDate(portfolio || []).slice(0, 12)
   const sortedVirtualDesigns = sortByOrderThenDate(virtualDesigns || []).slice(0, 12)
+  const sortedServices = sortByOrderThenDate(services || []).slice(0, 8)
   const sortedTestimonials = sortByOrderThenDate(testimonials || []).slice(0, 10)
 
   const featuredPortfolio = sortedPortfolio.filter(item => item.featured).slice(0, 3)
@@ -334,6 +365,7 @@ export const homepageFeed = asyncHandler(async (req, res) => {
     featuredPortfolioCount: featuredPortfolio.length,
     virtualDesignCount: sortedVirtualDesigns.length,
     featuredVirtualDesignCount: featuredVirtualDesigns.length,
+    servicesCount: sortedServices.length,
     testimonialCount: sortedTestimonials.length,
     aboutFound: about ? true : false,
   })
@@ -341,6 +373,7 @@ export const homepageFeed = asyncHandler(async (req, res) => {
   res.json(sendSuccess({
     portfolio: withIdArray(sortedPortfolio),
     virtualInteriorDesign: withIdArray(sortedVirtualDesigns),
+    services: withIdArray(sortedServices),
     about: withId(about),
     testimonials: withIdArray(sortedTestimonials),
     featuredPortfolio: withIdArray(featuredPortfolio),

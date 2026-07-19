@@ -15,19 +15,28 @@ export const HomePage = () => {
   const [services, setServices] = useState([])
   const [virtualDesigns, setVirtualDesigns] = useState([])
   const [products, setProducts] = useState([])
+  const [featuredPortfolio, setFeaturedPortfolio] = useState([])
+  const [featuredVirtualDesigns, setFeaturedVirtualDesigns] = useState([])
+  const [about, setAbout] = useState(null)
+  const [testimonials, setTestimonials] = useState([])
   const [loading, setLoading] = useState(true)
 
   const loadData = async () => {
     try {
-      const [portfolioRes, servicesRes, virtualRes, productsRes] = await Promise.all([
-        api.get('/content/portfolio'),
-        api.get('/content/services'),
-        api.get('/content/virtual-design'),
+      // Use the combined homepage endpoint for all data
+      const [homepageRes, productsRes] = await Promise.all([
+        api.get('/content/homepage'),
         api.get('/products?limit=8&featured=true'),
       ])
-      setPortfolio(Array.isArray(portfolioRes.data) ? portfolioRes.data : portfolioRes.data?.items || [])
-      setServices(Array.isArray(servicesRes.data) ? servicesRes.data : servicesRes.data?.items || [])
-      setVirtualDesigns(Array.isArray(virtualRes.data) ? virtualRes.data : virtualRes.data?.items || [])
+      
+      const homepageData = homepageRes.data || {}
+      setPortfolio(homepageData.portfolio || [])
+      setServices(homepageData.services || [])
+      setVirtualDesigns(homepageData.virtualInteriorDesign || homepageData.virtualDesigns || [])
+      setFeaturedPortfolio(homepageData.featuredPortfolio || [])
+      setFeaturedVirtualDesigns(homepageData.featuredVirtualDesigns || [])
+      setAbout(homepageData.about || null)
+      setTestimonials(homepageData.testimonials || [])
       setProducts(Array.isArray(productsRes.data) ? productsRes.data : productsRes.data?.items || [])
     } catch (err) {
       console.warn('[HOME] Failed to load data:', err?.message)
