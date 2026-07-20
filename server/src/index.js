@@ -3,6 +3,23 @@ import { prisma } from './config/prisma.js'
 import { verifyCloudinaryConfig } from './config/cloudinary.js'
 import { env } from './config/env.js'
 
+const logDatabaseConfig = () => {
+  const dbUrl = env.databaseUrl || ''
+  console.log(`  DATABASE_URL : ${dbUrl ? 'configured' : '❌ NOT SET'}`)
+  console.log(`  DIRECT_URL   : ${env.directUrl ? 'configured' : '❌ NOT SET'}`)
+
+  if (dbUrl) {
+    try {
+      const parsed = new URL(dbUrl)
+      console.log(`  DB Host      : ${parsed.hostname}`)
+      console.log(`  DB Port      : ${parsed.port}`)
+      console.log(`  DB Protocol  : ${parsed.protocol.replace(':', '')}`)
+    } catch (e) {
+      console.log('  DB Parse     : ❌ Failed to parse DATABASE_URL')
+    }
+  }
+}
+
 const start = async () => {
   console.log('')
   console.log('══════════════════════════════════════════')
@@ -10,7 +27,7 @@ const start = async () => {
   console.log('══════════════════════════════════════════')
   console.log(`  Environment : ${env.nodeEnv}`)
   console.log(`  Port        : ${env.port}`)
-  console.log(`  DATABASE_URL : ${env.databaseUrl ? 'configured' : '❌ NOT SET'}`)
+  logDatabaseConfig()
   console.log(`  CLIENT_URL  : ${env.clientUrl}`)
   console.log(`  Cloudinary  : ${env.cloudinaryCloudName || '❌ NOT SET'}`)
   console.log(`  Admin email : ${env.seedAdminEmail}`)
