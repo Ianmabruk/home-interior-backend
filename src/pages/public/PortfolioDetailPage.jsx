@@ -8,6 +8,11 @@ import { getOptimizedUrl } from '../../utils/cloudinaryHelpers'
 const getProjectImages = (project) => {
   const images = []
   if (project.imageUrl) images.push(project.imageUrl)
+  if (project.galleryImages && Array.isArray(project.galleryImages)) {
+    for (const img of project.galleryImages) {
+      if (img && img !== project.imageUrl) images.push(img)
+    }
+  }
   return images
 }
 

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { UploadCloud, X, Edit, Trash2, Eye, Plus, Sparkles, LayoutGrid, Brush, MonitorSmartphone, Armchair, Search, Star } from 'lucide-react'
+import { UploadCloud, X, Edit, Trash2, Eye, Plus, Sparkles, LayoutGrid, Brush, MonitorSmartphone, Armchair, Search, Star, ArrowUp, ArrowDown, ToggleLeft } from 'lucide-react'
 import { api } from '../../services/api'
 import { emitAdminDataChanged } from '../../utils/adminEvents'
 
@@ -139,6 +139,33 @@ export const ServicesDashboard = () => {
       emitAdminDataChanged({ type: 'services-changed' })
     } catch (err) {
       console.error('Delete error:', err)
+    }
+  }
+
+  const moveService = async (index, direction) => {
+    const newIndex = index + direction
+    if (newIndex < 0 || newIndex >= services.length) return
+    const updated = [...services]
+    const temp = updated[index]
+    updated[index] = updated[newIndex]
+    updated[newIndex] = temp
+    const orderPayload = updated.map((s, i) => ({ id: s.id, displayOrder: i }))
+    try {
+      await api.patch('/content/services/reorder', { order: orderPayload })
+      setServices(updated)
+      emitAdminDataChanged({ type: 'services-changed' })
+    } catch (err) {
+      console.error('Reorder error:', err)
+    }
+  }
+
+  const toggleActive = async (item) => {
+    try {
+      await api.patch(`/content/services/${item.id}`, { isActive: !item.isActive })
+      setServices(services.map(s => s.id === item.id ? { ...s, isActive: !s.isActive } : s))
+      emitAdminDataChanged({ type: 'services-changed' })
+    } catch (err) {
+      console.error('Toggle active error:', err)
     }
   }
 
@@ -426,6 +453,36 @@ export const ServicesDashboard = () => {
 
               {/* Quick Actions - Top Right */}
               <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => toggleActive(item)}
+                  className={`p-2 ${item.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} backdrop-blur-sm rounded-xl shadow-lg`}
+                  aria-label={item.isActive ? 'Unpublish service' : 'Publish service'}
+                  title={item.isActive ? 'Unpublish' : 'Publish'}
+                >
+                  <ToggleLeft size={14} />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => moveService(i, -1)}
+                  disabled={i === 0}
+                  className="p-2 bg-white/90 backdrop-blur-sm rounded-xl text-[var(--primary)] hover:bg-white shadow-lg disabled:opacity-30"
+                  aria-label="Move up"
+                >
+                  <ArrowUp size={14} />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => moveService(i, 1)}
+                  disabled={i === services.length - 1}
+                  className="p-2 bg-white/90 backdrop-blur-sm rounded-xl text-[var(--primary)] hover:bg-white shadow-lg disabled:opacity-30"
+                  aria-label="Move down"
+                >
+                  <ArrowDown size={14} />
+                </motion.button>
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}

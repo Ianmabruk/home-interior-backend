@@ -9,6 +9,7 @@ import {
   portfolioSeed,
   productsSeed,
   projectsSeed,
+  servicesSeed,
   settingsSeed,
   testimonialsSeed,
   virtualDesignSeed,
@@ -23,6 +24,7 @@ const seed = async () => {
     await prisma.project.deleteMany()
     await prisma.product.deleteMany()
     await prisma.virtualDesign.deleteMany()
+    await prisma.service.deleteMany()
     await prisma.testimonial.deleteMany()
     await prisma.about.deleteMany()
     await prisma.settings.deleteMany()
@@ -38,6 +40,10 @@ const seed = async () => {
 
     for (const item of portfolioSeed) {
       await prisma.portfolio.create({ data: item })
+    }
+
+    for (const item of servicesSeed) {
+      await prisma.service.create({ data: item })
     }
 
     for (const item of virtualDesignSeed) {

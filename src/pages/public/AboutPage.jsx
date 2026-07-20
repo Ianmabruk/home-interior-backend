@@ -453,7 +453,7 @@ export const AboutPage = () => {
                 <Link to="/contact" className="btn-luxury-primary group">
                   View Our Work <ArrowRight size={14} strokeWidth={1.5} className="transition-transform group-hover:translate-x-1" />
                 </Link>
-                <Link to="/virtual-interior-design" className="btn-luxury-secondary group">
+                <Link to="/virtual-design" className="btn-luxury-secondary group">
                   Virtual Showroom
                 </Link>
               </motion.div>

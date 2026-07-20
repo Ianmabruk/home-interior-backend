@@ -45,7 +45,7 @@ export const Footer = () => {
 const quickLinks = [
     { to: '/portfolio', label: 'Portfolio' },
     { to: '/services', label: 'Services' },
-    { to: '/virtual-design', label: 'Website Designs' },
+    { to: '/virtual-design', label: 'Virtual Designs' },
     { to: '/about', label: 'About Us' },
     { to: '/account', label: 'My Account', auth: true },
     { to: '/register', label: 'Register', guest: true },

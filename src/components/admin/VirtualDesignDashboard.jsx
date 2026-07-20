@@ -22,7 +22,7 @@ const INITIAL_FORM = {
   featured: false,
 }
 
-export const VirtualInteriorDashboard = () => {
+export const VirtualDesignDashboard = () => {
   const [items, setItems] = useState([])
   const [form, setForm] = useState(INITIAL_FORM)
   const [editingId, setEditingId] = useState(null)

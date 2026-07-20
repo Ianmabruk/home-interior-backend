@@ -16,7 +16,7 @@ const tabs = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'portfolio', label: 'Portfolio', icon: Images },
   { id: 'shop', label: 'Shop', icon: ShoppingBag },
-  { id: 'virtual', label: 'Website Designs', icon: Brush },
+  { id: 'virtual', label: 'Virtual Designs', icon: Brush },
   { id: 'about', label: 'About', icon: Info },
   { id: 'testimonials', label: 'Testimonials', icon: Star },
   { id: 'consultations', label: 'Consultations', icon: MessageSquare },

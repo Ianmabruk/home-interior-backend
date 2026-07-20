@@ -407,8 +407,12 @@ export const homepageFeed = asyncHandler(async (req, res) => {
     featuredProject: featuredProject ? featuredProject.title : 'missing',
   })
 
+  // Canonical keys (spec-aligned) plus legacy `virtualInteriorDesign` alias for
+  // any client still referencing the old name. "Virtual Interior Designs" is now
+  // simply "Virtual Designs" everywhere.
   res.json(sendSuccess({
     portfolio: withIdArray(sortedPortfolio),
+    virtualDesigns: withIdArray(sortedVirtualDesigns),
     virtualInteriorDesign: withIdArray(sortedVirtualDesigns),
     services: withIdArray(sortedServices),
     about: withId(about),

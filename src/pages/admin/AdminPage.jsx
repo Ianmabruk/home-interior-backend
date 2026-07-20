@@ -24,7 +24,7 @@ import { Sidebar } from '../../components/admin/Sidebar'
 import { DashboardOverview } from '../../components/admin/DashboardOverview'
 import { PortfolioDashboard } from '../../components/admin/PortfolioDashboard'
 import { ShopDashboard } from '../../components/admin/ShopDashboard'
-import { VirtualInteriorDashboard } from '../../components/admin/VirtualInteriorDashboard'
+import { VirtualDesignDashboard } from '../../components/admin/VirtualDesignDashboard'
 import { AboutDashboard } from '../../components/admin/AboutDashboard'
 import { ConsultationDashboard } from '../../components/admin/ConsultationDashboard'
 import { TestimonialDashboard } from '../../components/admin/TestimonialDashboard'
@@ -384,7 +384,7 @@ const { user, logout, updateProfile } = useAuth()
               {activeTab === 'portfolio' && <PortfolioDashboard />}
               {activeTab === 'shop' && <ShopDashboard />}
               {activeTab === 'services' && <ServicesDashboard />}
-              {activeTab === 'virtual' && <VirtualInteriorDashboard />}
+              {activeTab === 'virtual' && <VirtualDesignDashboard />}
               {activeTab === 'about' && <AboutDashboard />}
               {activeTab === 'testimonials' && <TestimonialDashboard />}
               {activeTab === 'consultations' && <ConsultationDashboard />}

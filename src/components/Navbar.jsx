@@ -28,7 +28,8 @@ const NAV_ITEMS = [
 const MOBILE_NAV_ITEMS = [
   { to: '/portfolio', label: 'Portfolio' },
   { to: '/services', label: 'Services' },
-  { to: '/virtual-design', label: 'Website Designs' },
+  { to: '/shop', label: 'Shop' },
+  { to: '/virtual-design', label: 'Virtual Designs' },
   { to: '/about', label: 'About' },
 ]
 
@@ -158,7 +159,7 @@ export const Navbar = () => {
                     aria-expanded={cartOpen}
                     aria-haspopup="true"
                   >
-                    <ShoppingBag size={20} md={22} strokeWidth={1.5} aria-hidden="true" />
+                    <Package size={20} md={22} strokeWidth={1.5} aria-hidden="true" />
                     {totalItems > 0 && (
                       <motion.span
                         initial={{ scale: 0 }}

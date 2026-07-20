@@ -7,9 +7,9 @@
 ### 1. Homepage Restructure ✓
 - **File**: `src/pages/public/HomePage.jsx`
 - **Changes**:
-  - Section order: Hero Video Gallery → Projects → Portfolio → About Parallax → Virtual Interior → Footer
+  - Section order: Hero → Portfolio → Services → Shop → About → Footer (no homepage videos)
   - Added Projects section on homepage
-  - Added Virtual Interior section on homepage
+  - Added Virtual Designs section on homepage
   - Added ParallaxAboutSection component
 
 ### 2. Mobile Navigation ✓
@@ -17,7 +17,7 @@
 - **Changes**:
   - Added bottom navigation bar for mobile
   - Added drawer menu with all shop categories
-  - Added Virtual Interior, About, and Chat links in drawer
+  - Added Virtual Designs, About, and Chat links in drawer
 
 ### 3. Footer Redesign ✓
 - **File**: `src/components/layout/Footer.jsx`

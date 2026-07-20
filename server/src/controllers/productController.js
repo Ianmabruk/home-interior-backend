@@ -21,12 +21,21 @@ const formBoolean = z.preprocess((value) => {
 
 const VALID_CATEGORIES = ['Mirrors', 'Frames', 'Throw Pillows']
 
+// Prisma enum ProductCategory uses code members (ThrowPillows) mapped to the
+// stored DB label "Throw Pillows". Normalize incoming category strings to the
+// Prisma member name before writing.
+const normalizeCategory = (value) => {
+  if (value === 'Throw Pillows') return 'ThrowPillows'
+  if (VALID_CATEGORIES.includes(value)) return value
+  return value
+}
+
 const productSchema = z.object({
   name: z.string().min(2),
   description: z.string().min(10),
   price: z.coerce.number().min(0),
   discountPrice: z.coerce.number().min(0).optional(),
-  category: z.enum(VALID_CATEGORIES),
+  category: z.enum(VALID_CATEGORIES).transform(normalizeCategory),
   vendor: z.string().optional(),
   stock: z.coerce.number().int().min(0),
   sku: z.string().min(2),
@@ -45,13 +54,12 @@ export const listProducts = async (req, res) => {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
-        { category: { contains: search, mode: 'insensitive' } },
         { sku: { contains: search, mode: 'insensitive' } },
         { vendor: { contains: search, mode: 'insensitive' } },
       ]
     }
     if (category) {
-      where.category = String(category)
+      where.category = normalizeCategory(String(category))
     }
 
     const sortField = sort.startsWith('-') ? sort.slice(1) : sort
@@ -103,13 +111,12 @@ export const listAllProducts = async (req, res) => {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
-        { category: { contains: search, mode: 'insensitive' } },
         { sku: { contains: search, mode: 'insensitive' } },
         { vendor: { contains: search, mode: 'insensitive' } },
       ]
     }
     if (category) {
-      where.category = String(category)
+      where.category = normalizeCategory(String(category))
     }
 
     const sortField = sort.startsWith('-') ? sort.slice(1) : sort

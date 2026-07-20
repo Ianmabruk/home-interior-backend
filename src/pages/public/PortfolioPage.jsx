@@ -95,7 +95,7 @@ export const PortfolioPage = () => {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              to="/virtual-interior-design"
+              to="/virtual-design"
               className="btn-luxury-primary group px-8 py-4 text-[11px] rounded-xl"
             >
               Explore Virtual Design
@@ -296,7 +296,7 @@ export const PortfolioPage = () => {
               Book Consultation
             </button>
             <Link
-              to="/virtual-interior-design"
+              to="/virtual-design"
               className="group btn-luxury-secondary px-8 py-4 text-[11px] rounded-xl"
             >
               View Virtual Design

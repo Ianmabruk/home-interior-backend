@@ -1,0 +1,116 @@
+import { Router } from 'express'
+import multer from 'multer'
+import rateLimit from 'express-rate-limit'
+import { z } from 'zod'
+import {
+  getAbout,
+  homepageFeed,
+  getAnalytics,
+  upsertAbout,
+  upsertHomepageContent,
+  deleteHeroImagesController,
+} from '../controllers/contentController.js'
+import { portfolioController } from '../controllers/portfolioController.js'
+import { virtualDesignController } from '../controllers/virtualDesignController.js'
+import { testimonialController } from '../controllers/testimonialController.js'
+import { serviceController } from '../controllers/serviceController.js'
+import { consultationController } from '../controllers/consultationController.js'
+import { auth, authorize } from '../middleware/auth.js'
+import { sanitizeInput, validateFileUpload, validateBody } from '../middleware/validate.js'
+import { auditLog } from '../middleware/auditLog.js'
+
+// Canonical, spec-aligned API surface (top-level /api/* paths).
+// These proxy to the existing, battle-tested controllers so the legacy
+// /api/content/* routes keep working while the frontend/standard clients
+// use the cleaner paths required by the rebuild.
+
+const router = Router()
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } })
+
+const writeLimiter = rateLimit({
+  windowMs: 1000 * 60,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
+  message: { success: false, message: 'Too many write requests, please slow down.' },
+})
+
+const validateUpload = validateFileUpload('media', { maxBytes: 50 * 1024 * 1024 })
+const validateGalleryUpload = validateFileUpload('gallery', { maxBytes: 50 * 1024 * 1024 })
+
+const virtualDesignSchema = z.object({
+  title: z.string().min(1, 'title is required'),
+  description: z.string().optional(),
+}).passthrough()
+const validateVirtualDesignBody = validateBody(virtualDesignSchema)
+
+const portfolioSchema = z.object({
+  title: z.string().optional(),
+  description: z.string().optional(),
+}).passthrough()
+const validatePortfolioBody = validateBody(portfolioSchema)
+
+const serviceSchema = z.object({
+  title: z.string().min(1, 'title is required'),
+  description: z.string().optional(),
+  icon: z.string().optional(),
+}).passthrough()
+const validateServiceBody = validateBody(serviceSchema)
+
+const consultationSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  phone: z.string().optional(),
+  message: z.string().min(10),
+  preferredDate: z.string().optional(),
+  preferredTime: z.string().optional(),
+})
+const validateConsultationBody = validateBody(consultationSchema)
+
+// ── Homepage ────────────────────────────────────────────────────────────
+router.get('/homepage', homepageFeed)
+router.put('/homepage', auth, authorize('admin'), writeLimiter, auditLog, upload.array('heroImages', 10), validateGalleryUpload, sanitizeInput, upsertHomepageContent)
+router.delete('/homepage/hero-images', auth, authorize('admin'), writeLimiter, auditLog, sanitizeInput, deleteHeroImagesController)
+
+router.get('/analytics', auth, getAnalytics)
+
+// ── Portfolio ───────────────────────────────────────────────────────────
+router.get('/portfolio', portfolioController.list)
+router.get('/portfolio/:id', portfolioController.get)
+router.patch('/portfolio/reorder', auth, authorize('admin'), writeLimiter, auditLog, sanitizeInput, portfolioController.reorder)
+router.post('/portfolio', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, validatePortfolioBody, portfolioController.create)
+router.patch('/portfolio/:id', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, validatePortfolioBody, portfolioController.update)
+router.delete('/portfolio/:id', auth, authorize('admin'), writeLimiter, auditLog, portfolioController.remove)
+router.post('/portfolio/:id/gallery', auth, authorize('admin'), writeLimiter, auditLog, upload.array('gallery', 10), validateGalleryUpload, sanitizeInput, portfolioController.addGalleryImages)
+router.delete('/portfolio/:id/gallery', auth, authorize('admin'), writeLimiter, auditLog, sanitizeInput, portfolioController.removeGalleryImage)
+
+// ── Virtual Designs (formerly "Virtual Interior Designs") ─────────────────
+router.get('/virtual-designs', virtualDesignController.list)
+router.get('/virtual-designs/:id', virtualDesignController.get)
+router.post('/virtual-designs', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, validateVirtualDesignBody, virtualDesignController.create)
+router.patch('/virtual-designs/:id', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, validateVirtualDesignBody, virtualDesignController.update)
+router.delete('/virtual-designs/:id', auth, authorize('admin'), writeLimiter, auditLog, virtualDesignController.remove)
+router.post('/virtual-designs/:id/gallery', auth, authorize('admin'), writeLimiter, auditLog, upload.array('gallery', 10), validateGalleryUpload, sanitizeInput, virtualDesignController.addGalleryMedia)
+router.delete('/virtual-designs/:id/gallery', auth, authorize('admin'), writeLimiter, auditLog, sanitizeInput, virtualDesignController.removeGalleryMedia)
+
+// ── Services ────────────────────────────────────────────────────────────
+router.get('/services', serviceController.list)
+router.get('/services/:id', serviceController.get)
+router.patch('/services/reorder', auth, authorize('admin'), writeLimiter, auditLog, sanitizeInput, serviceController.reorder)
+router.post('/services', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, validateServiceBody, serviceController.create)
+router.patch('/services/:id', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, validateServiceBody, serviceController.update)
+router.delete('/services/:id', auth, authorize('admin'), writeLimiter, auditLog, serviceController.remove)
+
+// ── About ───────────────────────────────────────────────────────────────
+router.get('/about', getAbout)
+router.put('/about', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, upsertAbout)
+
+// ── Testimonials ────────────────────────────────────────────────────────
+router.get('/testimonials', testimonialController.listPublic)
+
+// ── Consultations ───────────────────────────────────────────────────────
+router.post('/consultations', validateConsultationBody, consultationController.createConsultation)
+
+export default router

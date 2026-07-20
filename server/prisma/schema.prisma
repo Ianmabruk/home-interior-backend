@@ -9,6 +9,12 @@ datasource db {
   relationMode = "prisma"
 }
 
+enum ProductCategory {
+  Mirrors
+  Frames
+  ThrowPillows @map("Throw Pillows")
+}
+
 model User {
   id                   String    @id @default(uuid()) @map("_id")
   fullName             String    @map("full_name")
@@ -70,7 +76,7 @@ model Product {
   discountPrice Float?   @map("discount_price")
   images        Json
   colorVariants Json     @map("color_variants")
-  category      String
+  category      ProductCategory
   vendor        String?  @default("")
   stock         Int
   sku           String   @unique
@@ -80,6 +86,7 @@ model Product {
   isPublished   Boolean? @default(true) @map("is_published")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
+  productImages ProductImage[]
 
   @@index([isPublished])
   @@index([category])
@@ -88,24 +95,61 @@ model Product {
   @@map("products")
 }
 
+// Relational product images (unlimited). Existing `images` JSON column is kept
+// as the primary store; ProductImage supports ordered, individually managed images.
+model ProductImage {
+  id        String   @id @default(uuid()) @map("_id")
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String   @map("product_id")
+  imageUrl  String   @map("image_url")
+  publicId  String?  @map("public_id")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([productId])
+  @@index([sortOrder])
+  @@map("product_images")
+}
+
 model Portfolio {
-  id                 String   @id @default(uuid()) @map("_id")
+  id                 String          @id @default(uuid()) @map("_id")
   title              String?
   description        String?
-  imageUrl           String   @map("image_url")
-  galleryImages      String[] @default([]) @map("gallery_images")
-  beforeAfterImages  Json?    @map("before_after_images")
-  gallery            Json?    @map("gallery")
-  cloudinaryId       String?  @map("cloudinary_id")
-  featured           Boolean  @default(false)
-  displayOrder       Int      @default(0) @map("display_order")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  imageUrl           String          @map("image_url")
+  featuredImage      String?         @map("featured_image")
+  galleryImages      String[]        @default([]) @map("gallery_images")
+  beforeAfterImages  Json?           @map("before_after_images")
+  gallery            Json?           @map("gallery")
+  cloudinaryId       String?         @map("cloudinary_id")
+  featured           Boolean         @default(false)
+  published          Boolean         @default(true) @map("published")
+  displayOrder       Int             @default(0) @map("display_order")
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
+  media              PortfolioMedia[]
 
   @@index([featured])
+  @@index([published])
   @@index([displayOrder])
   @@index([createdAt])
   @@map("portfolios")
+}
+
+// Relational media for Portfolio (unlimited records, ordered by sortOrder).
+// Existing galleryImages JSON column is preserved as a fallback for backwards
+// compatibility; new uploads should use PortfolioMedia.
+model PortfolioMedia {
+  id          String   @id @default(uuid()) @map("_id")
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  portfolioId String   @map("portfolio_id")
+  imageUrl    String   @map("image_url")
+  publicId    String?  @map("public_id")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([portfolioId])
+  @@index([sortOrder])
+  @@map("portfolio_media")
 }
 
 model Project {
@@ -162,20 +206,38 @@ model About {
 }
 
 model VirtualDesign {
-  id          String   @id @default(uuid()) @map("_id")
-  title       String
-  description String?
-  mediaType   String
-  mediaUrl    String   @map("media_url")
-  galleryMedia String[] @default([]) @map("gallery_media")
-  cloudinaryId String? @map("cloudinary_id")
-  featured    Boolean  @default(false)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id           String           @id @default(uuid()) @map("_id")
+  title        String
+  description  String?
+  mediaType    String
+  mediaUrl     String           @map("media_url")
+  featuredImage String?         @map("featured_image")
+  galleryMedia String[]         @default([]) @map("gallery_media")
+  cloudinaryId String?          @map("cloudinary_id")
+  featured     Boolean          @default(false)
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+  media        VirtualDesignMedia[]
 
   @@index([featured])
   @@index([createdAt])
   @@map("virtual_designs")
+}
+
+// Relational media for VirtualDesign (unlimited, ordered by sortOrder).
+// Existing galleryMedia JSON column is preserved as a fallback.
+model VirtualDesignMedia {
+  id           String        @id @default(uuid()) @map("_id")
+  virtualDesign VirtualDesign @relation(fields: [virtualDesignId], references: [id], onDelete: Cascade)
+  virtualDesignId String     @map("virtual_design_id")
+  imageUrl     String        @map("image_url")
+  publicId     String?       @map("public_id")
+  sortOrder    Int           @default(0) @map("sort_order")
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  @@index([virtualDesignId])
+  @@index([sortOrder])
+  @@map("virtual_design_media")
 }
 
 model Settings {
@@ -277,6 +339,22 @@ model HomepageContent {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@map("homepage_content")
+}
+
+// Canonical homepage settings: hero slider images, hero text, hero buttons,
+// and featured portfolio project references. Replaces the ad-hoc HomepageContent
+// shape with a structured, admin-editable model.
+model HomepageSettings {
+  id              String   @id @default(uuid()) @map("_id")
+  heroImages      String[] @default([]) @map("hero_images")
+  heroTitle       String?  @map("hero_title")
+  heroSubtitle    String?  @map("hero_subtitle")
+  heroButtons     Json?    @map("hero_buttons")
+  featuredPortfolioIds String[] @default([]) @map("featured_portfolio_ids")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("homepage_settings")
 }
 
 model Consultation {

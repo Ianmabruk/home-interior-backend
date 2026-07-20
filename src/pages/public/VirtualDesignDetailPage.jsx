@@ -173,7 +173,7 @@ export const VirtualDesignDetailPage = () => {
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
               className="text-center"
             >
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--accent)]/80 mb-4">Website Designs</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--accent)]/80 mb-4">Virtual Designs</p>
               <h1 className="font-display text-5xl font-normal leading-tight text-white md:text-7xl lg:text-8xl">Loading...</h1>
             </motion.div>
           </div>
@@ -228,7 +228,7 @@ export const VirtualDesignDetailPage = () => {
             className="text-center max-w-4xl"
           >
             <Link
-              to="/virtual-interior-design"
+              to="/virtual-design"
               className="inline-flex items-center gap-2 text-white/70 hover:text-white transition-colors mb-4"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>

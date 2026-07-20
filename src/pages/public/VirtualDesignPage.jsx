@@ -252,7 +252,7 @@ export const VirtualDesignPage = () => {
               className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
             >
               <Link
-                to="/virtual-interior-design"
+                to="/virtual-design"
                 className="group btn-luxury-primary px-8 py-4 text-[11px] rounded-xl"
               >
                 Explore Projects
