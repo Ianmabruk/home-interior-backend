@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Instagram, Facebook, ArrowRight, Star, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Instagram, Facebook, ArrowRight, Star, ChevronLeft, ChevronRight, Mail } from 'lucide-react'
 import { FaTiktok, FaPinterest } from 'react-icons/fa'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '../services/api'
@@ -10,6 +10,21 @@ export const Footer = () => {
   const { user } = useAuth()
   const [testimonials, setTestimonials] = useState([])
   const [currentTestimonial, setCurrentTestimonial] = useState(0)
+  const [newsletterEmail, setNewsletterEmail] = useState('')
+  const [newsletterStatus, setNewsletterStatus] = useState('')
+
+  const handleNewsletterSubmit = async (e) => {
+    e.preventDefault()
+    if (!newsletterEmail) return
+    try {
+      await api.post('/content/newsletter', { email: newsletterEmail })
+      setNewsletterStatus('subscribed')
+      setNewsletterEmail('')
+    } catch {
+      setNewsletterStatus('error')
+    }
+    setTimeout(() => setNewsletterStatus(''), 3000)
+  }
 
   useEffect(() => {
     const loadTestimonials = async () => {
@@ -288,6 +303,44 @@ const quickLinks = [
                 </motion.a>
               ))}
             </div>
+          </motion.div>
+
+          {/* Section 4: Newsletter */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, delay: 0.4 }}
+            className="space-y-4"
+          >
+            <h3 className="font-display text-xl font-normal text-white">Newsletter</h3>
+            <p className="text-sm text-white/50">Subscribe for design inspiration and updates</p>
+            <form onSubmit={handleNewsletterSubmit} className="space-y-3">
+              <div className="relative">
+                <input
+                  type="email"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                  className="w-full px-4 py-3 pl-11 bg-white/10 border border-white/20 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-orange-accent focus:bg-white/15 transition-all duration-300"
+                />
+                <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+              </div>
+              <button
+                type="submit"
+                className="w-full btn-luxury-primary justify-center"
+              >
+                Subscribe
+                <ArrowRight size={14} strokeWidth={1.5} className="transition-transform duration-300 group-hover:translate-x-1" />
+              </button>
+              {newsletterStatus === 'subscribed' && (
+                <p className="text-xs text-green-400">Thank you for subscribing!</p>
+              )}
+              {newsletterStatus === 'error' && (
+                <p className="text-xs text-red-400">Something went wrong. Please try again.</p>
+              )}
+            </form>
           </motion.div>
         </motion.div>
 

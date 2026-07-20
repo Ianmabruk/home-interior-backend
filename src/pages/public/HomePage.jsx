@@ -198,7 +198,7 @@ useEffect(() => {
               viewport={{ once: true, margin: '-50px' }}
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12"
             >
-              {portfolio.slice(0, 8).map((item) => (
+              {portfolio.slice(0, 4).map((item) => (
                 <motion.article
                   key={item.id}
                   variants={itemVariants}
@@ -328,6 +328,22 @@ useEffect(() => {
               })
             )}
           </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3, duration: 0.7 }}
+            className="mt-16 text-center"
+          >
+            <Link
+              to="/services"
+              className="group inline-flex items-center gap-3 text-[11px] font-semibold uppercase tracking-widest text-[var(--primary)] transition-colors duration-300 hover:text-[var(--accent)]"
+            >
+              View Services
+              <ArrowRight size={14} strokeWidth={1.5} className="transition-transform duration-300 group-hover:translate-x-1" />
+            </Link>
+          </motion.div>
         </div>
       </motion.section>
 
@@ -372,7 +388,7 @@ useEffect(() => {
                 <p className="font-display text-xl text-[var(--primary)]/30">No products available</p>
               </motion.div>
             ) : (
-              products.slice(0, 8).map((item) => (
+              products.slice(0, 1).map((item) => (
                 <motion.article
                   key={item.id}
                   variants={itemVariants}
@@ -493,7 +509,7 @@ useEffect(() => {
                 <p className="font-display text-xl text-[var(--primary)]/30">No virtual designs yet</p>
               </motion.div>
             ) : (
-              virtualDesigns.slice(0, 8).map((item, index) => (
+              virtualDesigns.slice(0, 1).map((item, index) => (
                 <motion.article
                   key={item.id}
                   variants={itemVariants}
