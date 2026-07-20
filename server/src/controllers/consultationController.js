@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { prisma } from '../config/db.js'
+import { prisma, executeWithRetry } from '../config/db.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
@@ -52,13 +52,20 @@ export const listConsultations = asyncHandler(async (req, res) => {
       : {}),
   }
 
-  const items = await prisma.consultation.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-    skip: (page - 1) * pageSize,
-    take: pageSize,
-  })
-  const total = await prisma.consultation.count({ where })
+  const { items, total } = await executeWithRetry(
+    async () => {
+      const items = await prisma.consultation.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      })
+      const total = await prisma.consultation.count({ where })
+      return { items, total }
+    },
+    'CONSULTATION-LIST',
+    { maxRetries: 2, timeout: 10000 },
+  )
 
   res.json(
     sendSuccess({

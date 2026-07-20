@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { prisma } from '../config/db.js'
+import { prisma, executeWithRetry } from '../config/db.js'
 import { ApiError } from '../utils/ApiError.js'
 import { uploadImage, uploadVideo, deleteMedia } from '../services/uploadService.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
@@ -67,13 +67,22 @@ export const listProducts = async (req, res) => {
     const safeLimit = Math.min(Number(limit), 200)
     const safePage = Number(page)
 
-    const items = await prisma.product.findMany({
-      where,
-      orderBy: { [sortField]: sortOrder },
-      skip: (safePage - 1) * safeLimit,
-      take: safeLimit,
-    })
-    const total = await prisma.product.count({ where })
+    const items = await executeWithRetry(
+      () =>
+        prisma.product.findMany({
+          where,
+          orderBy: { [sortField]: sortOrder },
+          skip: (safePage - 1) * safeLimit,
+          take: safeLimit,
+        }),
+      'PRODUCT][LIST][FINDMANY',
+      { maxRetries: 2, timeout: 10000 },
+    )
+    const total = await executeWithRetry(
+      () => prisma.product.count({ where }),
+      'PRODUCT][LIST][COUNT',
+      { maxRetries: 2, timeout: 10000 },
+    )
 
     res.json(sendSuccess({ items: withIdArray(items), total, page: safePage, pages: Math.ceil(total / safeLimit) }))
   } catch (error) {
@@ -122,13 +131,22 @@ export const listAllProducts = async (req, res) => {
     const safeLimit = Math.min(Number(limit), 200)
     const safePage = Number(page)
 
-    const items = await prisma.product.findMany({
-      where,
-      orderBy: { [sortField]: sortOrder },
-      skip: (safePage - 1) * safeLimit,
-      take: safeLimit,
-    })
-    const total = await prisma.product.count({ where })
+    const items = await executeWithRetry(
+      () =>
+        prisma.product.findMany({
+          where,
+          orderBy: { [sortField]: sortOrder },
+          skip: (safePage - 1) * safeLimit,
+          take: safeLimit,
+        }),
+      'PRODUCT][LISTALL][FINDMANY',
+      { maxRetries: 2, timeout: 10000 },
+    )
+    const total = await executeWithRetry(
+      () => prisma.product.count({ where }),
+      'PRODUCT][LISTALL][COUNT',
+      { maxRetries: 2, timeout: 10000 },
+    )
 
     res.json(sendSuccess({ items: withIdArray(items), total, page: safePage, pages: Math.ceil(total / safeLimit) }))
   } catch (error) {

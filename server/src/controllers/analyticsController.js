@@ -1,4 +1,4 @@
-import { prisma } from '../config/db.js'
+import { prisma, executeWithRetry } from '../config/db.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
@@ -40,10 +40,17 @@ const buildSeries = (fromDate, mapFn) => {
 }
 
 export const overview = asyncHandler(async (req, res) => {
-  const products = await prisma.product.findMany({ select: { id: true, name: true, price: true, stock: true, isPublished: true } })
-  const users = await prisma.user.findMany({ select: { id: true, role: true, createdAt: true } })
-  const orders = await prisma.order.findMany({ select: { id: true, total: true, status: true, paymentStatus: true, createdAt: true, userId: true, items: true } })
-  const lowStockRows = await prisma.product.count({ where: { stock: { lte: 5 } } })
+  const { products, users, orders, lowStockRows } = await executeWithRetry(
+    async () => {
+      const products = await prisma.product.findMany({ select: { id: true, name: true, price: true, stock: true, isPublished: true } })
+      const users = await prisma.user.findMany({ select: { id: true, role: true, createdAt: true } })
+      const orders = await prisma.order.findMany({ select: { id: true, total: true, status: true, paymentStatus: true, createdAt: true, userId: true, items: true } })
+      const lowStockRows = await prisma.product.count({ where: { stock: { lte: 5 } } })
+      return { products, users, orders, lowStockRows }
+    },
+    'ANALYTICS-OVERVIEW',
+    { maxRetries: 2, timeout: 15000 },
+  )
 
   const totalRevenue = orders.reduce((s, o) => s + (Number(o.total) || 0), 0)
   const paidRevenue = orders

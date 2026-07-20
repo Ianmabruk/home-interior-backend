@@ -4,8 +4,11 @@ import { env } from './env.js'
 
 const prisma = new PrismaClient({
   log: env.nodeEnv === 'development' ? ['query', 'error', 'warn'] : ['error'],
-  // Pooler-friendly settings for Supabase / Neon / Render.
-  // These are passed through to the underlying pg driver.
+  datasources: {
+    db: {
+      url: env.databaseUrl,
+    },
+  },
 })
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -168,6 +171,15 @@ const isConnectionError = (err) =>
   (err?.message?.includes('socket') && err?.message?.includes('closed')) ||
   (err?.name === 'PrismaClientKnownRequestError' && err?.code?.startsWith('P10'))
 
+const isPreparedStatementError = (err) => {
+  const msg = (err?.message || '').toLowerCase()
+  return (
+    msg.includes('prepared statement') ||
+    err?.code === '26000' ||
+    err?.code === '42P05'
+  )
+}
+
 export const executeWithRetry = async (operation, label = 'DB', options = {}) => {
   const { maxRetries = 3, baseDelay = 500, maxDelay = 5000, timeout = 15000 } = options
   let lastError
@@ -181,9 +193,11 @@ export const executeWithRetry = async (operation, label = 'DB', options = {}) =>
     } catch (err) {
       lastError = err
       const isConnErr = isConnectionError(err)
+      const isStmtErr = isPreparedStatementError(err)
 
-      if (isConnErr) {
-        console.warn(`[${label}] Connection error on attempt ${attempt}/${maxRetries}: ${err?.code || err?.name}: ${err?.message}`)
+      if (isConnErr || isStmtErr) {
+        const labelText = isStmtErr ? 'Prepared-statement' : 'Connection'
+        console.warn(`[${labelText}] ${label} attempt ${attempt}/${maxRetries}: ${err?.code || err?.name}: ${err?.message}`)
         if (attempt < maxRetries) {
           const delay = Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay)
           console.log(`[${label}] Waiting ${delay}ms before retry...`)

@@ -1,4 +1,4 @@
-import { prisma } from '../config/db.js'
+import { prisma, executeWithRetry } from '../config/db.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { env } from '../config/env.js'
@@ -11,12 +11,20 @@ const withIdArray = (items) => items.map((item) => withId(item))
 const sortOrdersByDate = (orders) => orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
 export const dashboardOverview = asyncHandler(async (req, res) => {
-  const products = await prisma.product.findMany()
-  const userCount = await prisma.user.count()
-  const ordersRaw = await prisma.order.findMany()
-  const analyticsRaw = await prisma.analytics.findMany({ orderBy: { date: 'asc' } })
-  const portfolioCount = await prisma.portfolio.count()
-  const users = await prisma.user.findMany({ select: { id: true, fullName: true, email: true } })
+  const { products, userCount, ordersRaw, analyticsRaw, portfolioCount, users } =
+    await executeWithRetry(
+      async () => {
+        const products = await prisma.product.findMany()
+        const userCount = await prisma.user.count()
+        const ordersRaw = await prisma.order.findMany()
+        const analyticsRaw = await prisma.analytics.findMany({ orderBy: { date: 'asc' } })
+        const portfolioCount = await prisma.portfolio.count()
+        const users = await prisma.user.findMany({ select: { id: true, fullName: true, email: true } })
+        return { products, userCount, ordersRaw, analyticsRaw, portfolioCount, users }
+      },
+      'ADMIN-DASHBOARD',
+      { maxRetries: 2, timeout: 15000 },
+    )
 
   const userById = new Map(users.map((u) => [u.id, u]))
 
