@@ -4,6 +4,8 @@ import { env } from './env.js'
 
 const prisma = new PrismaClient({
   log: env.nodeEnv === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  // Pooler-friendly settings for Supabase / Neon / Render.
+  // These are passed through to the underlying pg driver.
 })
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -244,6 +246,15 @@ export const connectDB = async () => {
     throw new Error('Failed to connect to database after multiple attempts')
   }
 
+  // In production, skip expensive startup verification by default.
+  // Set SKIP_DB_VERIFY=false to force full verification.
+  const skipVerify = process.env.SKIP_DB_VERIFY !== 'false'
+  if (skipVerify && env.nodeEnv === 'production') {
+    console.log('✅ Skipping startup DB verification (SKIP_DB_VERIFY=true)')
+    return
+  }
+
+  // Development / explicit verification
   await verifyTables()
   await verifyMediaSettingsColumns()
   await verifyAndHealSchema()
