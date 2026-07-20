@@ -82,6 +82,7 @@ export const AppRouter = () => {
 
         <Route element={<ProtectedRoute adminOnly />}>
           <Route path="/admin" element={<ErrorBoundaryRoute element={<AdminPage />} />} />
+          <Route path="/admin-dashboard" element={<ErrorBoundaryRoute element={<AdminPage />} />} />
           <Route path="/admin/chat" element={<ErrorBoundaryRoute element={<AdminChatPage />} />} />
         </Route>
       </Route>
