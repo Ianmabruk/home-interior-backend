@@ -20,9 +20,9 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        value: postgresql://postgres.amcaogrlsrwxbvuglyle:nCZFVyn1WDo0Kpa8@db.amcaogrlsrwxbvuglyle.supabase.co:5432/postgres?sslmode=require&connect_timeout=15
+        value: postgresql://postgres:nCZFVyn1WDo0Kpa8@db.amcaogrlsrwxbvuglyle.supabase.co:5432/postgres?sslmode=require&connect_timeout=15
       - key: DIRECT_URL
-        value: postgresql://postgres.amcaogrlsrwxbvuglyle:nCZFVyn1WDo0Kpa8@db.amcaogrlsrwxbvuglyle.supabase.co:5432/postgres?sslmode=require&connect_timeout=15
+        value: postgresql://postgres:nCZFVyn1WDo0Kpa8@db.amcaogrlsrwxbvuglyle.supabase.co:5432/postgres?sslmode=require&connect_timeout=15
       - key: JWT_ACCESS_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
