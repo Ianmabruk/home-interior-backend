@@ -20,13 +20,13 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        value: postgresql://postgres.amcaogrlsrwxbvuglyle:a263e417c32984dd2b1c80d004203b30@aws-1-eu-west-2.pooler.supabase.com:6543/postgres?sslmode=require&connect_timeout=15
+        value: postgresql://postgres.amcaogrlsrwxbvuglyle:ackYQA7HgZGV7q1O@aws-1-eu-west-2.pooler.supabase.com:6543/postgres?sslmode=require&connect_timeout=15
       - key: DIRECT_URL
-        value: postgresql://postgres:f1ed71a2fc7fefd5c1a6fa10116a04ce@db.amcaogrlsrwxbvuglyle.supabase.co:5432/postgres?sslmode=require&connect_timeout=15
+        value: postgresql://postgres:ackYQA7HgZGV7q1O@db.amcaogrlsrwxbvuglyle.supabase.co:5432/postgres?sslmode=require&connect_timeout=15
       - key: JWT_ACCESS_SECRET
-        generateValue: true
+        value: 4549201ef63a5517aa42bf414e7f7d4d
       - key: JWT_REFRESH_SECRET
-        generateValue: true
+        value: 7a29ae8f489a3252be841287f383543a
       - key: CLIENT_URL
         value: https://homy-comfy.netlify.app
       - key: SEED_ADMIN_EMAIL
