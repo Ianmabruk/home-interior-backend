@@ -1,4 +1,5 @@
 export { prisma, executeWithRetry, connectDB } from './prisma.js'
+console.log('ACTIVE DB CONFIG FILE:', '/home/ian-mabruk/home/server/src/config/db.js (re-export barrel)')
 import { Prisma } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { env } from './env.js'

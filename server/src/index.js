@@ -21,6 +21,7 @@ const logDatabaseConfig = () => {
 }
 
 const start = async () => {
+  console.log(`DEPLOY VERSION: ${"50fa4cf24fcb93e7e6d4552c1de55735b9bc4e6e"}`)
   console.log('')
   console.log('══════════════════════════════════════════')
   console.log('  HOK Interior Designs — Backend Startup')
