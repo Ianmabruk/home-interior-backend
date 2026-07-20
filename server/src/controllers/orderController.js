@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { prisma } from '../config/db.js'
+import { prisma } from '../config/prisma.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { sendSuccess } from '../utils/sendSuccess.js'

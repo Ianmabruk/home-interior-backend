@@ -1,4 +1,4 @@
-import { prisma, executeWithRetry } from '../config/db.js'
+import { prisma, executeWithRetry } from '../config/prisma.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { env } from '../config/env.js'

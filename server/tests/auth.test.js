@@ -72,7 +72,7 @@ const mockPrisma = {
   $transaction: jest.fn(),
 }
 
-jest.unstable_mockModule('../src/config/db.js', () => ({
+jest.unstable_mockModule('../src/config/prisma.js', () => ({
   prisma: mockPrisma,
   executeWithRetry: jest.fn((fn) => fn()),
   checkDatabaseHealth: jest.fn().mockResolvedValue({ database: 'connected', prisma: 'connected' }),

@@ -1,17 +1,7 @@
-import { PrismaClient, Prisma } from '@prisma/client'
+export { prisma, executeWithRetry, connectDB } from './prisma.js'
+import { Prisma } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { env } from './env.js'
-
-const prisma = new PrismaClient({
-  log: env.nodeEnv === 'development' ? ['query', 'error', 'warn'] : ['error'],
-  datasources: {
-    db: {
-      url: env.databaseUrl,
-    },
-  },
-})
-
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 const MODEL_TABLE_MAP = {
   User: 'users',
@@ -159,66 +149,6 @@ export const ensureAdminUser = async () => {
   }
 }
 
-const isP1001 = (err) => err?.code === 'P1001' || (err?.message?.includes('P1001') && err?.message?.includes("Can't reach database server"))
-
-const isConnectionError = (err) =>
-  isP1001(err) ||
-  err?.code === 'P1002' ||
-  err?.code === 'P1003' ||
-  err?.code === 'P1008' ||
-  err?.code === 'P1017' ||
-  (err?.message?.includes('connection') && err?.message?.includes('terminated')) ||
-  (err?.message?.includes('socket') && err?.message?.includes('closed')) ||
-  (err?.name === 'PrismaClientKnownRequestError' && err?.code?.startsWith('P10'))
-
-const isPreparedStatementError = (err) => {
-  const msg = (err?.message || '').toLowerCase()
-  return (
-    msg.includes('prepared statement') ||
-    err?.code === '26000' ||
-    err?.code === '42P05'
-  )
-}
-
-export const executeWithRetry = async (operation, label = 'DB', options = {}) => {
-  const { maxRetries = 3, baseDelay = 500, maxDelay = 5000, timeout = 15000 } = options
-  let lastError
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error(`${label} query timeout after ${timeout}ms`)), timeout),
-      )
-      return await Promise.race([operation(), timeoutPromise])
-    } catch (err) {
-      lastError = err
-      const isConnErr = isConnectionError(err)
-      const isStmtErr = isPreparedStatementError(err)
-
-      if (isConnErr || isStmtErr) {
-        const labelText = isStmtErr ? 'Prepared-statement' : 'Connection'
-        console.warn(`[${labelText}] ${label} attempt ${attempt}/${maxRetries}: ${err?.code || err?.name}: ${err?.message}`)
-        if (attempt < maxRetries) {
-          const delay = Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay)
-          console.log(`[${label}] Waiting ${delay}ms before retry...`)
-          await sleep(delay)
-          try {
-            await prisma.$connect()
-            console.log(`[${label}] Reconnected to database`)
-          } catch (reconnectErr) {
-            console.error(`[${label}] Reconnection failed:`, reconnectErr?.message)
-          }
-          continue
-        }
-      } else {
-        console.error(`[${label}] Non-retryable error:`, err?.message)
-        throw err
-      }
-    }
-  }
-  throw lastError
-}
-
 export const checkDatabaseHealth = async () => {
   try {
     await executeWithRetry(() => prisma.$queryRaw`SELECT 1`, 'HEALTH', { maxRetries: 2, timeout: 5000 })
@@ -228,55 +158,3 @@ export const checkDatabaseHealth = async () => {
     return { database: 'disconnected', prisma: 'disconnected', error: err?.message }
   }
 }
-
-export const connectDB = async () => {
-  if (!env.databaseUrl) {
-    throw new Error(
-      'DATABASE_URL is not set. Add it to server/.env before starting the server.',
-    )
-  }
-
-  console.log('🔌 Connecting to PostgreSQL...')
-
-  let connected = false
-  const maxStartupRetries = 5
-  for (let attempt = 1; attempt <= maxStartupRetries; attempt++) {
-    try {
-      await prisma.$connect()
-      connected = true
-      console.log('📝 Prisma Client connected to PostgreSQL')
-      break
-    } catch (err) {
-      if (isP1001(err) && attempt < maxStartupRetries) {
-        console.warn(`🔌 Connection attempt ${attempt}/${maxStartupRetries} failed (P1001), retrying in ${attempt * 2}s...`)
-        await sleep(attempt * 2000)
-      } else {
-        throw err
-      }
-    }
-  }
-
-  if (!connected) {
-    throw new Error('Failed to connect to database after multiple attempts')
-  }
-
-  // In production, skip expensive startup verification by default.
-  // Set SKIP_DB_VERIFY=false to force full verification.
-  const skipVerify = process.env.SKIP_DB_VERIFY !== 'false'
-  if (skipVerify && env.nodeEnv === 'production') {
-    console.log('✅ Skipping startup DB verification (SKIP_DB_VERIFY=true)')
-    return
-  }
-
-  // Development / explicit verification
-  await verifyTables()
-  await verifyMediaSettingsColumns()
-  await verifyAndHealSchema()
-  await ensureAdminUser()
-}
-
-export const disconnectDB = async () => {
-  await prisma.$disconnect()
-}
-
-export { prisma }

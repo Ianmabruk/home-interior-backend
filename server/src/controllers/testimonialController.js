@@ -1,12 +1,12 @@
 import { z } from 'zod'
-import { prisma } from '../config/db.js'
+import { prisma } from '../config/prisma.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { uploadImage, deleteMedia } from '../services/uploadService.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { withId, withIdArray } from '../utils/helpers.js'
 import { prismaSafeWrite } from '../utils/prismaSafeWrite.js'
-import { executeWithRetry } from '../config/db.js'
+import { executeWithRetry } from '../config/prisma.js'
 
 const withIdArraySafe = (items) => withIdArray(Array.isArray(items) ? items : [])
 

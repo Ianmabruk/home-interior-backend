@@ -1,8 +1,8 @@
 import bcrypt from 'bcryptjs'
 import dotenv from 'dotenv'
-import { prisma } from '../config/db.js'
+import { prisma } from '../config/prisma.js'
 import { env } from '../config/env.js'
-import { ensureAdminUser } from '../config/db.js'
+import { ensureAdminUser } from '../config/prisma.js'
 import {
   aboutSeed,
   analyticsSeed,

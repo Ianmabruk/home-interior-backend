@@ -1,12 +1,12 @@
 import { asyncHandler } from '../utils/asyncHandler.js'
-import { prisma } from '../config/db.js'
+import { prisma } from '../config/prisma.js'
 import { ApiError } from '../utils/ApiError.js'
 import { uploadImage, uploadVideo, deleteMedia } from '../services/uploadService.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { env } from '../config/env.js'
 import { withId, withIdArray, parseMaybeJson, parseMediaSettings, DEFAULT_MEDIA_SETTINGS } from '../utils/helpers.js'
 import { prismaSafeWrite } from '../utils/prismaSafeWrite.js'
-import { executeWithRetry } from '../config/db.js'
+import { executeWithRetry } from '../config/prisma.js'
 
 const parseServices = (value) => {
   const parsed = parseMaybeJson(value, null)

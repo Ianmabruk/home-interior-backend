@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { prisma, executeWithRetry } from '../config/db.js'
+import { prisma, executeWithRetry } from '../config/prisma.js'
 import { ApiError } from '../utils/ApiError.js'
 import { uploadImage, uploadVideo, deleteMedia } from '../services/uploadService.js'
 import { sendSuccess } from '../utils/sendSuccess.js'

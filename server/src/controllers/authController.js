@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import { z } from 'zod'
-import { prisma } from '../config/db.js'
+import { prisma } from '../config/prisma.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { signAccessToken, signRefreshToken, verifyRefreshToken, setRefreshCookie, clearRefreshCookie, REFRESH_COOKIE_NAME } from '../utils/tokens.js'

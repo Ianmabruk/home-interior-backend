@@ -6,7 +6,7 @@ import { createMockPrisma, resetMockPrisma } from './helpers.js'
 
 const mockPrisma = createMockPrisma()
 
-jest.unstable_mockModule('../src/config/db.js', () => ({
+jest.unstable_mockModule('../src/config/prisma.js', () => ({
   prisma: mockPrisma,
   executeWithRetry: jest.fn((fn) => fn()),
   checkDatabaseHealth: jest.fn().mockResolvedValue({ database: 'connected', prisma: 'connected' }),

@@ -1,9 +1,9 @@
 import { asyncHandler } from '../utils/asyncHandler.js'
-import { prisma } from '../config/db.js'
+import { prisma } from '../config/prisma.js'
 import { ApiError } from '../utils/ApiError.js'
 import { uploadImage, deleteMedia } from '../services/uploadService.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
-import { executeWithRetry } from '../config/db.js'
+import { executeWithRetry } from '../config/prisma.js'
 import { withId, withIdArray, sortByOrderThenDate, orderValue, toBoolean } from '../utils/helpers.js'
 import { prismaSafeWrite } from '../utils/prismaSafeWrite.js'
 
