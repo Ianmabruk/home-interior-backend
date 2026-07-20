@@ -35,6 +35,7 @@ export const VirtualDesignDashboard = () => {
   const [isDragOverMain, setIsDragOverMain] = useState(false)
   const [isDragOverGallery, setIsDragOverGallery] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [error, setError] = useState('')
   const mainFileRef = useRef(null)
   const videoRef = useRef(null)
   const galleryFileRef = useRef(null)
@@ -104,6 +105,7 @@ export const VirtualDesignDashboard = () => {
     setGalleryFiles([])
     setGalleryPreviews([])
     setShowForm(false)
+    setError('')
   }
 
   const handleDragOver = useCallback((e) => {
@@ -139,6 +141,7 @@ export const VirtualDesignDashboard = () => {
   const submit = async (e) => {
     e.preventDefault()
     setLoading(true)
+    setError('')
     try {
       const payload = new FormData()
       payload.append('title', form.title)
@@ -170,6 +173,8 @@ export const VirtualDesignDashboard = () => {
       emitAdminDataChanged({ type: 'virtual-changed' })
     } catch (err) {
       console.error('Submit error:', err)
+      const message = err?.response?.data?.message || err?.message || 'Failed to save virtual design'
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -180,11 +185,14 @@ export const VirtualDesignDashboard = () => {
     try {
       await api.delete(`/content/virtual-design/${deleteId}`)
       setDeleteId(null)
+      setError('')
       const res = await api.get('/content/virtual-design')
       setItems(Array.isArray(res.data) ? res.data : res.data?.items || [])
       emitAdminDataChanged({ type: 'virtual-changed' })
     } catch (err) {
       console.error('Delete error:', err)
+      const message = err?.response?.data?.message || err?.message || 'Failed to delete virtual design'
+      setError(message)
     }
   }
 
@@ -319,6 +327,15 @@ export const VirtualDesignDashboard = () => {
             onSubmit={submit}
             className="bg-white/80 backdrop-blur-xl border border-[var(--border)]/60 rounded-2xl p-5 shadow-[0_10px_40px_rgba(42,36,31,0.06)] space-y-5 mb-6"
           >
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-[var(--error)]/10 border border-[var(--error)]/20 text-[var(--error)] rounded-xl px-4 py-3 text-sm"
+              >
+                {error}
+              </motion.div>
+            )}
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-display text-xl text-[var(--primary)]">

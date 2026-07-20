@@ -106,7 +106,9 @@ export const virtualDesignController = {
       }
 
       if (!payload.mediaUrl) {
-        return res.status(400).json({ success: false, message: 'Media (image or video) is required' })
+        payload.mediaUrl = 'https://via.placeholder.com/800x600?text=No+Image'
+        payload.cloudinaryId = null
+        payload.mediaType = payload.mediaType || 'image'
       }
 
       if (!payload.mediaType) {
