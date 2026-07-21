@@ -20,9 +20,9 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        value: postgresql://postgres.amcaogrlsrwxbvuglyle:kS9ClvVanb63ru30@aws-1-eu-west-2.pooler.supabase.com:6543/postgres?sslmode=require&connect_timeout=15&pgbouncer=true&statement_cache_size=0
+        value: postgresql://postgres:kS9ClvVanb63ru30@db.amcaogrlsrwxbvuglyle.supabase.co:5432/postgres?pgbouncer=true&connection_limit=1
       - key: DIRECT_URL
-        value: postgresql://postgres:kS9ClvVanb63ru30@db.amcaogrlsrwxbvuglyle.supabase.co:5432/postgres?sslmode=require&connect_timeout=15
+        value: postgresql://postgres:kS9ClvVanb63ru30@db.amcaogrlsrwxbvuglyle.supabase.co:5432/postgres
       - key: JWT_ACCESS_SECRET
         value: 4549201ef63a5517aa42bf414e7f7d4d
       - key: JWT_REFRESH_SECRET

@@ -20,6 +20,17 @@ jest.unstable_mockModule('../src/config/cloudinary.js', () => ({
   default: {},
 }))
 
+const mockUploadImage = jest.fn().mockResolvedValue({
+  secure_url: 'https://test.cloudinary.com/product-image.jpg',
+  public_id: 'product-image-id',
+})
+const mockUploadVideo = jest.fn().mockResolvedValue({
+  secure_url: 'https://test.cloudinary.com/product-video.mp4',
+  public_id: 'product-video-id',
+  resource_type: 'video',
+})
+const mockDeleteMedia = jest.fn().mockResolvedValue({ result: 'ok' })
+
 jest.unstable_mockModule('../src/services/uploadService.js', () => ({
   uploadImage: mockUploadImage,
   uploadVideo: mockUploadVideo,
