@@ -215,7 +215,7 @@ model VirtualDesign {
   mediaType    String
   mediaUrl     String           @map("media_url")
   featuredImage String?         @map("featured_image")
-  galleryMedia Json?            @default([]) @map("gallery_media")
+  galleryMedia Json?            @map("gallery_media")
   cloudinaryId String?          @map("cloudinary_id")
   featured     Boolean          @default(false)
   createdAt    DateTime         @default(now()) @map("created_at")
