@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon --env-file=.env src/index.js",
-    "start": "node --env-file=.env src/index.js",
+    "start": "node src/index.js",
     "build": "prisma generate",
     "postinstall": "prisma generate",
     "fixFailedMigration": "node scripts/fixFailedMigration.js",
