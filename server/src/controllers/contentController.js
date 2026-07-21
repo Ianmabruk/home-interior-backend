@@ -224,6 +224,7 @@ export const homepageFeed = asyncHandler(async (req, res) => {
   let testimonials = []
   let services = []
   let heroImages = []
+  let heroMedia = []
   let featuredProject = null
 
   try {
@@ -365,7 +366,7 @@ export const homepageFeed = asyncHandler(async (req, res) => {
       { maxRetries: 2, timeout: 5000 }
     )
 
-    const heroMedia = await executeWithRetry(
+    heroMedia = await executeWithRetry(
       () => prisma.heroMedia.findMany({
         where: { isActive: true },
         orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],

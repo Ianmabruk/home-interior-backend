@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "nodemon src/index.js",
-    "start": "node src/index.js",
+    "dev": "nodemon --env-file=.env src/index.js",
+    "start": "node --env-file=.env src/index.js",
     "build": "prisma generate",
     "postinstall": "prisma generate",
     "fixFailedMigration": "node scripts/fixFailedMigration.js",
