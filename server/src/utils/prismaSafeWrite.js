@@ -45,7 +45,10 @@ export const prismaSafeWrite = async (operation, payload, label) => {
       const isMissingColumn =
         err?.code === 'P2022' ||
         (err?.name === 'PrismaClientKnownRequestError' && err?.message?.includes('does not exist'))
-      if (!isValidation && !isMissingColumn) throw err
+      const isJsonConversion =
+        err?.code === 'P2023' ||
+        (err?.name === 'PrismaClientKnownRequestError' && err?.message?.includes('Could not convert value'))
+      if (!isValidation && !isMissingColumn && !isJsonConversion) throw err
 
       let field = extractUnknownField(err.message)
       if ((!field || !(field in current)) && isMissingColumn && 'mediaSettings' in current) {
@@ -56,6 +59,10 @@ export const prismaSafeWrite = async (operation, payload, label) => {
         if (col) {
           field = COLUMN_TO_FIELD[col] || col
         }
+      }
+      if ((!field || !(field in current)) && isJsonConversion) {
+        const m = err.message.match(/field\s+[`']?(\w+)[`']?/i)
+        if (m) field = m[1]
       }
       if (!field || !(field in current)) {
         console.error(`[${label}] Prisma write failed, unrecoverable by field stripping:`, err?.message)

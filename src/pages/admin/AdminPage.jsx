@@ -333,7 +333,7 @@ const { user, logout, updateProfile } = useAuth()
           </motion.div>
         </header>
 
-        <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8" style={{ marginLeft: isMobile ? 0 : sidebarWidth, width: isMobile ? '100%' : `calc(100% - ${sidebarWidth}px)` }}>
+        <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8 transition-all duration-300 ease-[0.22,1,0.36,1]" style={{ marginLeft: isMobile ? 0 : sidebarWidth, width: isMobile ? '100%' : `calc(100% - ${sidebarWidth}px)` }}>
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}

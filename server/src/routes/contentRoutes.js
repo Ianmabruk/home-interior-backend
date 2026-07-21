@@ -114,8 +114,8 @@ router.get('/testimonials', testimonialController.listPublic)
 
 router.get('/virtual-design', virtualDesignController.list)
 router.get('/virtual-design/:id', virtualDesignController.get)
-router.post('/virtual-design', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, validateVirtualDesignBody, virtualDesignController.create)
-router.patch('/virtual-design/:id', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, validateVirtualDesignBody, virtualDesignController.update)
+router.post('/virtual-design', auth, authorize('admin'), writeLimiter, auditLog, upload.fields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }]), validateUpload, validateGalleryUpload, sanitizeInput, validateVirtualDesignBody, virtualDesignController.create)
+router.patch('/virtual-design/:id', auth, authorize('admin'), writeLimiter, auditLog, upload.fields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }]), validateUpload, validateGalleryUpload, sanitizeInput, validateVirtualDesignBody, virtualDesignController.update)
 router.delete('/virtual-design/:id', auth, authorize('admin'), writeLimiter, auditLog, virtualDesignController.remove)
 
 router.post('/virtual-design/:id/gallery', auth, authorize('admin'), writeLimiter, auditLog, upload.array('gallery', 10), validateGalleryUpload, sanitizeInput, virtualDesignController.addGalleryMedia)

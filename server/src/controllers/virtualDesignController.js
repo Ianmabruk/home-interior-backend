@@ -20,8 +20,26 @@ const stripUnknown = (obj, allowed) => {
 }
 
 const findFileByFieldname = (req, fieldname) => {
+  if (req.file && req.file.fieldname === fieldname) return req.file
   const files = Array.isArray(req.files) ? req.files : []
-  return files.find((f) => f.fieldname === fieldname) || null
+  const found = files.find((f) => f.fieldname === fieldname)
+  if (found) return found
+  if (req.files && typeof req.files === 'object' && req.files[fieldname]) {
+    const arr = req.files[fieldname]
+    return Array.isArray(arr) ? arr[0] : arr
+  }
+  return null
+}
+
+const findFilesByFieldname = (req, fieldname) => {
+  if (Array.isArray(req.files)) {
+    return req.files.filter((f) => f.fieldname === fieldname)
+  }
+  if (req.files && typeof req.files === 'object' && req.files[fieldname]) {
+    const arr = req.files[fieldname]
+    return Array.isArray(arr) ? arr : [arr]
+  }
+  return []
 }
 
 export const virtualDesignController = {
@@ -91,7 +109,7 @@ export const virtualDesignController = {
       }
 
       // Handle gallery media
-      const galleryFiles = Array.isArray(req.files) ? req.files.filter(f => f.fieldname === 'gallery') : []
+      const galleryFiles = findFilesByFieldname(req, 'gallery')
       const galleryUrls = []
       
       for (const file of galleryFiles) {
@@ -170,7 +188,7 @@ export const virtualDesignController = {
       }
 
       // Handle gallery media
-      const galleryFiles = Array.isArray(req.files) ? req.files.filter(f => f.fieldname === 'gallery') : []
+      const galleryFiles = findFilesByFieldname(req, 'gallery')
       const galleryUrls = []
       
       for (const file of galleryFiles) {
@@ -254,7 +272,7 @@ export const virtualDesignController = {
         return res.status(404).json({ success: false, message: 'Virtual Design item not found' })
       }
 
-      const galleryFiles = Array.isArray(req.files) ? req.files : []
+      const galleryFiles = findFilesByFieldname(req, 'gallery')
       const galleryUrls = []
       
       for (const file of galleryFiles) {
@@ -313,6 +331,12 @@ export const virtualDesignController = {
         }
       } catch (e) {
         console.error('[VIRTUAL-DESIGN][REMOVE-GALLERY] Cloudinary delete failed:', e?.message)
+      }
+
+      if (updatedGallery.length === 0) {
+        await prisma.$executeRaw`UPDATE virtual_designs SET gallery_media = ${'[]'}::jsonb WHERE _id = ${req.params.id}`
+        const item = await prisma.virtualDesign.findUnique({ where: { id: req.params.id } })
+        return res.json(sendSuccess(withId(item)))
       }
 
       const item = await prismaSafeWrite(
