@@ -12,6 +12,7 @@ import { heroMediaController } from '../controllers/heroController.js'
 import { portfolioController } from '../controllers/portfolioController.js'
 import { virtualDesignController } from '../controllers/virtualDesignController.js'
 import { serviceController } from '../controllers/serviceController.js'
+import { createConsultation } from '../controllers/consultationController.js'
 import { auth, authorize } from '../middleware/auth.js'
 import { sanitizeInput, validateFileUpload } from '../middleware/validate.js'
 
@@ -57,7 +58,10 @@ router.get('/services', serviceController.list)
 router.get('/services/:id', serviceController.get)
 router.post('/services', auth, authorize('admin'), writeLimiter, upload.single('media'), validateUpload, sanitizeInput, serviceController.create)
 router.patch('/services/:id', auth, authorize('admin'), writeLimiter, upload.single('media'), validateUpload, sanitizeInput, serviceController.update)
+router.patch('/services/reorder', auth, authorize('admin'), writeLimiter, sanitizeInput, serviceController.reorder)
 router.delete('/services/:id', auth, authorize('admin'), writeLimiter, sanitizeInput, serviceController.remove)
+
+router.post('/consultations', writeLimiter, sanitizeInput, createConsultation)
 
 router.post('/test-upload', auth, authorize('admin'), writeLimiter, upload.single('media'), validateUpload, sanitizeInput, uploadMediaController)
 router.post('/media/upload', auth, authorize('admin'), writeLimiter, upload.single('media'), validateUpload, sanitizeInput, uploadMediaController)

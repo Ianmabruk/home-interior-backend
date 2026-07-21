@@ -9,7 +9,7 @@ const routes = [
   { method: 'GET', path: '/portfolio', auth: false },
   { method: 'GET', path: '/services', auth: false },
   { method: 'GET', path: '/about', auth: false },
-  { method: 'GET', path: '/virtual-designs', auth: false },
+  { method: 'GET', path: '/virtual-design', auth: false },
   { method: 'GET', path: '/products', auth: false },
   { method: 'GET', path: '/orders', auth: true },
   { method: 'GET', path: '/admin/overview', auth: true },

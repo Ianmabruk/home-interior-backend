@@ -56,9 +56,23 @@ export const createMockPrisma = () => ({
     create: jest.fn(),
     update: jest.fn(),
   },
+  wishlist: {
+    findFirst: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+  },
   service: {
     findMany: jest.fn(),
     findUnique: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  consultation: {
+    findMany: jest.fn(),
+    findFirst: jest.fn(),
+    findUnique: jest.fn(),
+    count: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),

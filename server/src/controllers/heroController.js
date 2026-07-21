@@ -32,16 +32,7 @@ export const heroMediaController = {
       const upload = await mediaService.upload({ buffer: req.file.buffer, mimeType: req.file.mimetype, folder: 'hok/homepage/hero', type: 'image' })
       data.imageUrl = upload.secure_url
       data.cloudinaryId = upload.public_id
-    }
-
-    const mediaFiles = req.file ? [req.file] : []
-    if (mediaFiles.length > 0) {
-      const mediaUrls = []
-      for (const file of mediaFiles) {
-        const upload = await mediaService.upload({ buffer: file.buffer, mimeType: file.mimetype, folder: 'hok/homepage/hero', type: 'image' })
-        mediaUrls.push(upload.secure_url)
-      }
-      data.mediaUrls = mediaUrls
+      data.mediaUrls = [upload.secure_url]
     }
 
     const bodyMediaUrls = req.body.mediaUrls
@@ -75,16 +66,7 @@ export const heroMediaController = {
       const upload = await mediaService.upload({ buffer: req.file.buffer, mimeType: req.file.mimetype, folder: 'hok/homepage/hero', type: 'image' })
       data.imageUrl = upload.secure_url
       data.cloudinaryId = upload.public_id
-    }
-
-    const mediaFiles = req.file ? [req.file] : []
-    if (mediaFiles.length > 0) {
-      const mediaUrls = []
-      for (const file of mediaFiles) {
-        const upload = await mediaService.upload({ buffer: file.buffer, mimeType: file.mimetype, folder: 'hok/homepage/hero', type: 'image' })
-        mediaUrls.push(upload.secure_url)
-      }
-      data.mediaUrls = mediaUrls
+      data.mediaUrls = [upload.secure_url]
     }
 
     const bodyMediaUrls = req.body.mediaUrls
