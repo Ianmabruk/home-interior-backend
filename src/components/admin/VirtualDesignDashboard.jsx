@@ -10,6 +10,7 @@ import {
   Star,
   UploadCloud,
   Images,
+  Loader2,
 } from 'lucide-react'
 import { api } from '../../services/api'
 import { emitAdminDataChanged } from '../../utils/adminEvents'
@@ -37,27 +38,35 @@ export const VirtualDesignDashboard = () => {
   const [isDragOverGallery, setIsDragOverGallery] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [error, setError] = useState('')
+  const [optimisticDeletes, setOptimisticDeletes] = useState(new Set())
   const mainFileRef = useRef(null)
   const videoRef = useRef(null)
   const galleryFileRef = useRef(null)
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await api.get('/content/virtual-design')
-        const data = Array.isArray(res.data) ? res.data : res.data?.items || []
-        setItems(data)
-      } catch {
-        setItems([])
-      }
+  const load = useCallback(async () => {
+    try {
+      const res = await api.get('/virtual-design')
+      const data = Array.isArray(res.data) ? res.data : res.data?.items || []
+      setItems(data)
+    } catch {
+      setItems([])
     }
-    load()
   }, [])
 
-  const handleFiles = useCallback((files, setter, previewSetter) => {
+  useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    const handler = () => { load() }
+    window.addEventListener('admin:data-changed', handler)
+    return () => window.removeEventListener('admin:data-changed', handler)
+  }, [load])
+
+  const handleMainFiles = useCallback((files) => {
     const validFiles = Array.from(files).filter(f => f.type.startsWith('image/') || f.type.startsWith('video/'))
-    setter(prev => [...prev, ...validFiles].slice(0, 1))
-    validFiles.forEach(f => previewSetter(prev => [...prev, URL.createObjectURL(f)]))
+    if (validFiles.length > 0) {
+      setMainMediaFiles([validFiles[0]])
+      setMainMediaPreviews([URL.createObjectURL(validFiles[0])])
+    }
   }, [])
 
   const handleGalleryFiles = useCallback((files) => {
@@ -67,9 +76,9 @@ export const VirtualDesignDashboard = () => {
     validFiles.forEach(f => setGalleryPreviews(prev => [...prev, URL.createObjectURL(f)]))
   }, [galleryFiles])
 
-  const removeMedia = useCallback((index, filesSetter, previewsSetter) => {
-    filesSetter(prev => prev.filter((_, i) => i !== index))
-    previewsSetter(prev => {
+  const removeMainMedia = useCallback((index) => {
+    setMainMediaFiles(prev => prev.filter((_, i) => i !== index))
+    setMainMediaPreviews(prev => {
       URL.revokeObjectURL(prev[index])
       return prev.filter((_, i) => i !== index)
     })
@@ -83,7 +92,7 @@ export const VirtualDesignDashboard = () => {
     })
   }, [])
 
-  const startEdit = (item) => {
+  const startEdit = useCallback((item) => {
     setEditingId(item.id)
     setForm({
       title: item.title,
@@ -94,12 +103,13 @@ export const VirtualDesignDashboard = () => {
     })
     setMainMediaFiles(item.mediaUrl ? [{ url: item.mediaUrl, type: item.mediaType }] : [])
     setMainMediaPreviews(item.mediaUrl ? [item.mediaUrl] : [])
-    setGalleryFiles(item.galleryMedia ? [{ url: item.galleryMedia[0]?.url, type: item.galleryMedia[0]?.type }] : [])
+    setGalleryFiles(item.galleryMedia ? item.galleryMedia.map(m => ({ url: m.url, type: m.type })) : [])
     setGalleryPreviews(item.galleryMedia ? item.galleryMedia.map(m => m.url) : [])
     setShowForm(true)
-  }
+    setError('')
+  }, [])
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setEditingId(null)
     setForm(INITIAL_FORM)
     setMainMediaFiles([])
@@ -108,14 +118,14 @@ export const VirtualDesignDashboard = () => {
     setGalleryPreviews([])
     setShowForm(false)
     setError('')
-  }
+  }, [])
 
-  const handleDragOver = useCallback((e) => {
+  const handleMainDragOver = useCallback((e) => {
     e.preventDefault()
     setIsDragOverMain(true)
   }, [])
 
-  const handleDragLeave = useCallback(() => {
+  const handleMainDragLeave = useCallback(() => {
     setIsDragOverMain(false)
   }, [])
 
@@ -128,11 +138,11 @@ export const VirtualDesignDashboard = () => {
     setIsDragOverGallery(false)
   }, [])
 
-  const handleDrop = useCallback((e, setter, previewSetter) => {
+  const handleMainDrop = useCallback((e) => {
     e.preventDefault()
     setIsDragOverMain(false)
-    handleFiles(e.dataTransfer.files, setter, previewSetter)
-  }, [handleFiles])
+    handleMainFiles(e.dataTransfer.files)
+  }, [handleMainFiles])
 
   const handleGalleryDrop = useCallback((e) => {
     e.preventDefault()
@@ -166,13 +176,12 @@ export const VirtualDesignDashboard = () => {
       }
 
       if (editingId) {
-        await api.patch(`/content/virtual-design/${editingId}`, payload)
+        await api.patch(`/virtual-design/${editingId}`, payload)
       } else {
-        await api.post('/content/virtual-design', payload)
+        await api.post('/virtual-design', payload)
       }
       resetForm()
-      const res = await api.get('/content/virtual-design')
-      setItems(Array.isArray(res.data) ? res.data : res.data?.items || [])
+      load()
       emitAdminDataChanged({ type: 'virtual-changed' })
     } catch (err) {
       console.error('Submit error:', err)
@@ -185,116 +194,50 @@ export const VirtualDesignDashboard = () => {
 
   const deleteItem = async () => {
     if (!deleteId) return
+    const id = deleteId
+    setDeleteId(null)
+
+    setOptimisticDeletes(prev => new Set(prev).add(id))
+    setItems(prev => prev.filter(item => item.id !== id))
+
     try {
-      await api.delete(`/content/virtual-design/${deleteId}`)
-      setDeleteId(null)
-      setError('')
-      const res = await api.get('/content/virtual-design')
-      setItems(Array.isArray(res.data) ? res.data : res.data?.items || [])
+      await api.delete(`/virtual-design/${id}`)
+      setOptimisticDeletes(prev => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+      load()
       emitAdminDataChanged({ type: 'virtual-changed' })
     } catch (err) {
       console.error('Delete error:', err)
+      setOptimisticDeletes(prev => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+      load()
       const message = err?.response?.data?.message || err?.message || 'Failed to delete virtual design'
       setError(message)
     }
   }
 
-  const handleImageClick = useCallback(() => {
-    mainFileRef.current?.click()
+  const isVideoType = useCallback((file) => {
+    if (file && typeof file === 'object' && file.type) return file.type.startsWith('video/')
+    return false
   }, [])
 
-  const renderMediaUpload = useCallback(({ label, accept, previews, isDragOver, setFiles, setPreviews, onFileClick }) => (
-    <button
-      type="button"
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={(e) => handleDrop(e, setFiles, setPreviews)}
-      onClick={onFileClick}
-      className={`relative border-2 border-dashed rounded-2xl transition-all duration-300 w-full focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 ${
-        isDragOver ? 'border-[var(--accent)] bg-[var(--accent)]/5' : 'border-[var(--border)] bg-[var(--bg)]/30'
-      }`}
-      style={{ padding: 0 }}
-    >
-      <motion.div
-        whileHover={{ scale: 1.01 }}
-        className="w-full h-full"
-      >
-      {previews.length > 0 ? (
-        <div className="p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-[var(--primary)]">{label} (1 max)</p>
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              type="button"
-              onClick={onFileClick}
-              className="text-xs text-[var(--accent)] hover:text-[var(--primary)] font-medium"
-            >
-              Replace
-            </motion.button>
-          </div>
-          <div className="relative rounded-xl overflow-hidden group">
-            {previews[0] && (
-              <>
-                {accept === 'video/*' ? (
-                  <video src={previews[0]} className="h-40 w-full object-cover" autoPlay muted loop controls />
-                ) : (
-                  <img src={previews[0]} alt={`${label} preview`} className="h-40 w-full object-cover" />
-                )}
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); removeMedia(0, setFiles, setPreviews) }}
-                  className="absolute top-2 right-2 bg-[var(--primary)]/90 backdrop-blur-sm text-white p-2 rounded-full hover:bg-[var(--primary)] shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X size={14} />
-                </motion.button>
-              </>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center gap-3 py-8">
-          <motion.div
-            animate={{ y: [0, -5, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--accent)]/10 to-[var(--secondary)]/10 flex items-center justify-center text-[var(--accent)]"
-          >
-            {accept === 'video/*' ? <Video size={28} /> : <Image size={28} />}
-          </motion.div>
-          <div>
-            <p className="text-sm font-medium text-[var(--primary)]">Drop {accept === 'video/*' ? 'video' : 'image'} here or click to browse</p>
-            <p className="text-[10px] text-[var(--primary)]/50 mt-1">{accept === 'video/*' ? 'MP4, MOV, WebM up to 50MB' : 'PNG, JPG, WebP up to 10MB'}</p>
-          </div>
-        </div>
-)}
-      </motion.div>
-    </button>
-  ), [handleDragOver, handleDragLeave, handleDrop, removeMedia])
-
-  // Pre-render upload components with useMemo to avoid ESLint false positive about ref access during render
-  // eslint-disable-next-line react-hooks/refs -- Ref accessed in event handler, not during render
-  const mainMediaUpload = useMemo(() => renderMediaUpload({
-    label: 'Main Media',
-    accept: 'image/*,video/*',
-    previews: mainMediaPreviews,
-    onFileClick: handleImageClick,
-    isDragOver: isDragOverMain,
-    setFiles: setMainMediaFiles,
-    setPreviews: setMainMediaPreviews,
-  }), [mainMediaPreviews, isDragOverMain, handleImageClick, renderMediaUpload])
-
-  // eslint-disable-next-line react-hooks/refs -- Ref accessed in event handler, not during render
-  const galleryMediaUpload = useMemo(() => renderMediaUpload({
-    label: 'Gallery Media',
-    accept: 'image/*,video/*',
-    previews: galleryPreviews,
-    onFileClick: () => galleryFileRef.current?.click(),
-    isDragOver: isDragOverGallery,
-    setFiles: setGalleryFiles,
-    setPreviews: setGalleryPreviews,
-  }), [galleryPreviews, isDragOverGallery, renderMediaUpload])
+  const mainMediaPreview = useMemo(() => {
+    if (mainMediaPreviews.length === 0) return null
+    const src = mainMediaPreviews[0]
+    const file = mainMediaFiles[0]
+    if (file && isVideoType(file)) {
+      return (
+        <video src={src} className="h-40 w-full object-cover" autoPlay muted loop controls />
+      )
+    }
+    return <img src={src} alt="Main media preview" className="h-40 w-full object-cover" />
+  }, [mainMediaPreviews, mainMediaFiles, isVideoType])
 
   return (
     <div className="space-y-6">
@@ -302,20 +245,20 @@ export const VirtualDesignDashboard = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col gap-4"
+        className="flex flex-col md:flex-row md:items-end justify-between gap-4"
       >
         <div>
           <h2 className="font-display text-3xl text-[var(--primary)]">Virtual Designs</h2>
-          <p className="text-sm text-[var(--primary)]/50 mt-1">Manage virtual design projects - images and videos</p>
+          <p className="text-sm text-[var(--primary)]/50 mt-1">{items.length} projects</p>
         </div>
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => { setEditingId(null); setForm(INITIAL_FORM); setMainMediaFiles([]); setMainMediaPreviews([]); setGalleryFiles([]); setGalleryPreviews([]); setShowForm(true) }}
-          className="btn-luxury-primary flex items-center gap-2"
+          className="btn-luxury-primary flex items-center gap-2 whitespace-nowrap"
         >
           <Plus size={18} strokeWidth={2} />
-          Add Virtual Design Project
+          Add Virtual Design
         </motion.button>
       </motion.div>
 
@@ -328,7 +271,7 @@ export const VirtualDesignDashboard = () => {
             exit={{ opacity: 0, height: 0, y: -20 }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
             onSubmit={submit}
-            className="bg-white/80 backdrop-blur-xl border border-[var(--border)]/60 rounded-2xl p-5 shadow-[0_10px_40px_rgba(42,36,31,0.06)] space-y-5 mb-6"
+            className="bg-white/80 backdrop-blur-xl border border-[var(--border)]/60 rounded-2xl p-5 shadow-[0_10px_40px_rgba(42,36,31,0.06)] space-y-5 mb-6 overflow-hidden"
           >
             {error && (
               <motion.div
@@ -418,25 +361,67 @@ export const VirtualDesignDashboard = () => {
               </div>
             </div>
 
-{/* Main Media Upload */}
+            {/* Main Media Upload */}
             <div className="space-y-2">
               <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70 flex items-center gap-2">
                 <Video size={14} strokeWidth={1.5} />
                 Main Media (Image or Video, 1 max)
               </label>
-              <input ref={mainFileRef} type="file" accept="image/*,video/*" onChange={(e) => handleFiles(e.target.files, setMainMediaFiles, setMainMediaPreviews)} className="hidden" />
-              <input ref={videoRef} type="file" accept="video/*" onChange={(e) => handleFiles(e.target.files, setMainMediaFiles, setMainMediaPreviews)} className="hidden" />
-              {mainMediaUpload}
-            </div>
-
-            {/* Gallery Media Upload */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70 flex items-center gap-2">
-                <Images size={14} strokeWidth={1.5} />
-                Gallery Media (up to 10)
-              </label>
-              <input ref={galleryFileRef} type="file" accept="image/*,video/*" multiple onChange={(e) => handleGalleryFiles(e.target.files)} className="hidden" />
-              {galleryMediaUpload}
+              <input ref={mainFileRef} type="file" accept="image/*,video/*" onChange={(e) => handleMainFiles(e.target.files)} className="hidden" />
+              <input ref={videoRef} type="file" accept="video/*" onChange={(e) => handleMainFiles(e.target.files)} className="hidden" />
+              <motion.div
+                whileHover={{ scale: 1.01 }}
+                onDrop={handleMainDrop}
+                onDragOver={handleMainDragOver}
+                onDragLeave={handleMainDragLeave}
+                onClick={() => mainFileRef.current?.click()}
+                className={`relative border-2 border-dashed rounded-2xl transition-all duration-300 ${
+                  isDragOverMain ? 'border-[var(--accent)] bg-[var(--accent)]/5' : 'border-[var(--border)] bg-[var(--bg)]/30'
+                }`}
+              >
+                {mainMediaPreview ? (
+                  <div className="p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-[var(--primary)]">Main Media (1 max)</p>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        type="button"
+                        onClick={() => mainFileRef.current?.click()}
+                        className="text-xs text-[var(--accent)] hover:text-[var(--primary)] font-medium"
+                      >
+                        Replace
+                      </motion.button>
+                    </div>
+                    <div className="relative rounded-xl overflow-hidden group">
+                      {mainMediaPreview}
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); removeMainMedia(0) }}
+                        className="absolute top-2 right-2 bg-[var(--primary)]/90 backdrop-blur-sm text-white p-2 rounded-full hover:bg-[var(--primary)] shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X size={14} />
+                      </motion.button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-3 py-8">
+                    <motion.div
+                      animate={{ y: [0, -5, 0] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--accent)]/10 to-[var(--secondary)]/10 flex items-center justify-center text-[var(--accent)]"
+                    >
+                      {form.mediaType === 'video' ? <Video size={28} /> : <Image size={28} />}
+                    </motion.div>
+                    <div>
+                      <p className="text-sm font-medium text-[var(--primary)]">Drop {form.mediaType === 'video' ? 'video' : 'image'} here or click to browse</p>
+                      <p className="text-[10px] text-[var(--primary)]/50 mt-1">{form.mediaType === 'video' ? 'MP4, MOV, WebM up to 50MB' : 'PNG, JPG, WebP up to 10MB'}</p>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
             </div>
 
             {/* Gallery Media Upload */}
@@ -498,11 +483,11 @@ export const VirtualDesignDashboard = () => {
                       transition={{ duration: 2, repeat: Infinity }}
                       className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--accent)]/10 to-[var(--secondary)]/10 flex items-center justify-center text-[var(--accent)]"
                     >
-                      <UploadCloud size={28} />
+                      <Images size={28} />
                     </motion.div>
                     <div>
-                      <p className="text-sm font-medium text-[var(--primary)]">Drop images/videos here or click to browse</p>
-                      <p className="text-[10px] text-[var(--primary)]/50 mt-1">PNG, JPG, WebP up to 10MB | MP4, MOV, WebM up to 50MB (max 10)</p>
+                      <p className="text-sm font-medium text-[var(--primary)]">Drop images or videos here or click to browse</p>
+                      <p className="text-[10px] text-[var(--primary)]/50 mt-1">PNG, JPG, MP4, MOV, WebM up to 10MB each (max 10)</p>
                     </div>
                   </div>
                 )}
@@ -522,9 +507,11 @@ export const VirtualDesignDashboard = () => {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="flex-1 rounded-full bg-[var(--primary)] text-white py-3 text-[11px] font-semibold uppercase tracking-wider transition-all duration-300 hover:bg-[var(--primary)]/90 hover:shadow-lg"
+                className="flex-1 rounded-full bg-[var(--primary)] text-white py-3 text-[11px] font-semibold uppercase tracking-wider transition-all duration-300 hover:bg-[var(--primary)]/90 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 disabled={loading}
+                type="submit"
               >
+                {loading && <Loader2 size={14} className="animate-spin" />}
                 {loading ? 'Saving...' : editingId ? 'Update Project' : 'Upload Project'}
               </motion.button>
             </div>
@@ -533,92 +520,108 @@ export const VirtualDesignDashboard = () => {
       </AnimatePresence>
 
       {/* Items Grid */}
-      <div className="grid gap-5 sm:grid-cols-2">
-        {items.map((item, i) => (
-          <motion.div
-            layout
-            key={item.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className="bg-white/80 backdrop-blur-xl border border-[var(--border)]/60 rounded-2xl p-5 shadow-[0_10px_40px_rgba(42,36,31,0.06)] overflow-hidden group"
-          >
-            <div className="relative">
-              {item.mediaUrl && item.mediaType === 'video' ? (
-                <video
-                  src={getOptimizedVideoUrl(item.mediaUrl, { width: 480 })}
-                  poster={getVideoPosterUrl(item.mediaUrl, { width: 480 })}
-                  className="h-44 w-full object-cover"
-                  autoPlay
-                  muted
-                  loop
-                />
-              ) : item.mediaUrl && item.mediaType === 'image' ? (
-                <img
-                  src={getOptimizedUrl(item.mediaUrl, { width: 480 })}
-                  alt={item.title}
-                  className="h-44 w-full object-cover"
-                />
-              ) : (
-                <div className="h-44 w-full bg-[var(--secondary)]/60 flex items-center justify-center text-[var(--primary)]/30">
-                  <Video size={40} />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+      >
+        {items.map((item, i) => {
+          const isOptimistic = optimisticDeletes.has(item.id)
+          return (
+            <motion.div
+              layout
+              key={item.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: isOptimistic ? 0.4 : 1, y: 0 }}
+              transition={{ delay: i * 0.05, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              className="bg-white/80 backdrop-blur-xl border border-[var(--border)]/60 rounded-2xl overflow-hidden shadow-[0_10px_40px_rgba(42,36,31,0.06)] group"
+            >
+              <div className="relative">
+                {item.mediaUrl && item.mediaType === 'video' ? (
+                  <video
+                    src={getOptimizedVideoUrl(item.mediaUrl, { width: 480 })}
+                    poster={getVideoPosterUrl(item.mediaUrl, { width: 480 })}
+                    className="h-44 w-full object-cover"
+                    autoPlay
+                    muted
+                    loop
+                  />
+                ) : item.mediaUrl && item.mediaType === 'image' ? (
+                  <img
+                    src={getOptimizedUrl(item.mediaUrl, { width: 480 })}
+                    alt={item.title}
+                    className="h-44 w-full object-cover"
+                  />
+                ) : (
+                  <div className="h-44 w-full bg-[var(--secondary)]/60 flex items-center justify-center text-[var(--primary)]/30">
+                    <Video size={40} />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-[var(--primary)]/0 transition-all duration-300 group-hover:bg-[var(--primary)]/30" />
+
+                {/* Media Type Badge */}
+                {item.mediaType && (
+                  <div className={`absolute top-3 left-3 px-2 py-1 rounded text-[10px] font-medium uppercase ${
+                    item.mediaType === 'video' ? 'bg-blue-500/90 text-white' : 'bg-green-500/90 text-white'
+                  }`}>
+                    {item.mediaType}
+                  </div>
+                )}
+
+                {/* Gallery Count Badge */}
+                {item.galleryMedia && item.galleryMedia.length > 0 && (
+                  <div className="absolute top-3 right-3 z-10">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--primary)]/90 backdrop-blur-sm text-white text-[10px] font-semibold uppercase tracking-widest rounded-full shadow-lg">
+                      <Images size={10} strokeWidth={2} />
+                      {item.galleryMedia.length} media
+                    </span>
+                  </div>
+                )}
+
+                {/* Quick Actions */}
+                <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => startEdit(item)}
+                    className="p-2 bg-white/90 backdrop-blur-sm rounded-xl text-[var(--primary)] hover:bg-white shadow-lg"
+                    aria-label="Edit project"
+                  >
+                    <Edit size={14} />
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setDeleteId(item.id)}
+                    className="p-2 bg-[var(--error)]/90 backdrop-blur-sm rounded-xl text-white hover:bg-[var(--error)] shadow-lg"
+                    aria-label="Delete project"
+                  >
+                    <Trash2 size={14} />
+                  </motion.button>
                 </div>
-              )}
-              <div className="absolute inset-0 bg-[var(--primary)]/0 transition-all duration-300 group-hover:bg-[var(--primary)]/30" />
-              <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => startEdit(item)}
-                  className="p-2 bg-white/90 backdrop-blur-sm rounded-xl text-[var(--primary)] hover:bg-white shadow-lg"
-                >
-                  <Edit size={14} />
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => setDeleteId(item.id)}
-                  className="p-2 bg-[var(--error)]/90 backdrop-blur-sm rounded-xl text-white hover:bg-[var(--error)] shadow-lg"
-                >
-                  <Trash2 size={14} />
-                </motion.button>
               </div>
-              {item.mediaType && (
-                <div className={`absolute top-3 left-3 px-2 py-1 rounded text-[10px] font-medium uppercase ${
-                  item.mediaType === 'video' ? 'bg-blue-500/90 text-white' : 'bg-green-500/90 text-white'
-                }`}>
-                  {item.mediaType}
-                </div>
-              )}
-              {/* Gallery count badge */}
-              {item.galleryMedia && item.galleryMedia.length > 0 && (
-                <div className="absolute top-3 right-3 z-10">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--primary)]/90 backdrop-blur-sm text-white text-[10px] font-semibold uppercase tracking-widest rounded-full shadow-lg">
-                    <Images size={10} strokeWidth={2} />
-                    {item.galleryMedia.length} media
+
+              <div className="p-5">
+                <h3 className="font-display text-lg text-[var(--primary)]">{item.title}</h3>
+                {item.category && (
+                  <span className="inline-block mt-1.5 px-2.5 py-1 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] text-[10px] font-semibold uppercase tracking-wider">
+                    {item.category}
                   </span>
-                </div>
-              )}
-            </div>
-            <div className="p-5">
-              <h3 className="font-display text-lg text-[var(--primary)]">{item.title}</h3>
-              {item.category && (
-                <span className="inline-block mt-1.5 px-2.5 py-1 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] text-[10px] font-semibold uppercase tracking-wider">
-                  {item.category}
-                </span>
-              )}
-              <p className="text-xs text-[var(--primary)]/50 mt-1.5 line-clamp-2 leading-relaxed">
-                {item.description}
-              </p>
-              {item.featured && (
-                <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--accent)] text-white text-[10px] font-semibold uppercase tracking-widest rounded-full shadow-lg">
-                  <Star size={10} strokeWidth={2} />
-                  Featured
-                </div>
-              )}
-            </div>
-          </motion.div>
-        ))}
+                )}
+                <p className="text-xs text-[var(--primary)]/50 mt-1.5 line-clamp-2 leading-relaxed">
+                  {item.description}
+                </p>
+                {item.featured && (
+                  <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--accent)] text-white text-[10px] font-semibold uppercase tracking-widest rounded-full shadow-lg">
+                    <Star size={10} strokeWidth={2} />
+                    Featured
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )
+        })}
         {items.length === 0 && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -629,9 +632,10 @@ export const VirtualDesignDashboard = () => {
               <Video size={32} />
             </div>
             <p className="font-display text-xl text-[var(--primary)]/30">No projects yet</p>
+            <p className="text-sm text-[var(--primary)]/40 mt-2">Click "Add Virtual Design" to get started</p>
           </motion.div>
         )}
-      </div>
+      </motion.div>
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
@@ -670,7 +674,7 @@ export const VirtualDesignDashboard = () => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={deleteItem}
-                  className="rounded-full bg-[var(--error)] px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-white transition hover:bg-[var(--error)] hover:shadow-lg"
+                  className="rounded-full bg-[var(--error)] px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-white transition hover:bg-[var(--error)]/90 hover:shadow-lg"
                 >
                   Delete
                 </motion.button>

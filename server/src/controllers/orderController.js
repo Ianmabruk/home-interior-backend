@@ -8,6 +8,16 @@ import { parseBody } from '../utils/helpers.js'
 const withId = (item) => (item == null ? item : { ...item, _id: item.id })
 const withIdArray = (items) => items.map((item) => withId(item))
 
+const normalizeShippingAddress = (addr) => {
+  if (!addr || typeof addr !== 'object') return addr
+  const out = { ...addr }
+  if (out.address && !out.line1) out.line1 = out.address
+  if (out.fullName) out.fullName = out.fullName
+  if (out.email) out.email = out.email
+  if (out.phone) out.phone = out.phone
+  return out
+}
+
 const orderSchema = z.object({
   items: z.array(
     z.object({
@@ -20,14 +30,20 @@ const orderSchema = z.object({
     }),
   ),
   shippingAddress: z.object({
-    line1: z.string().min(2),
+    fullName: z.string().optional(),
+    email: z.string().optional(),
+    phone: z.string().optional(),
+    line1: z.string().optional(),
     line2: z.string().optional(),
-    city: z.string().min(2),
+    address: z.string().optional(),
+    city: z.string().optional(),
     state: z.string().optional(),
-    postalCode: z.string().min(2),
-    country: z.string().min(2),
-  }),
-})
+    postalCode: z.string().optional(),
+    country: z.string().optional(),
+  }).passthrough(),
+  paymentMethod: z.string().optional(),
+  paymentDetails: z.any().optional(),
+}).passthrough()
 
 export const createOrder = asyncHandler(async (req, res) => {
   const user = await prisma.user.findUnique({ where: { id: req.user.userId } })
@@ -80,6 +96,8 @@ export const createOrder = asyncHandler(async (req, res) => {
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const total = subtotal
 
+  const shippingAddress = normalizeShippingAddress(data.shippingAddress)
+
   const order = await prisma.$transaction(async (tx) => {
     const created = await tx.order.create({
       data: {
@@ -87,7 +105,7 @@ export const createOrder = asyncHandler(async (req, res) => {
         items,
         subtotal,
         total,
-        shippingAddress: data.shippingAddress,
+        shippingAddress,
       },
     })
 

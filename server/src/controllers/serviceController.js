@@ -1,7 +1,7 @@
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { prisma } from '../config/prisma.js'
 import { ApiError } from '../utils/ApiError.js'
-import { uploadImage, deleteMedia } from '../services/uploadService.js'
+import { mediaService } from '../services/media.service.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { executeWithRetry } from '../config/prisma.js'
 import { withId, withIdArray, sortByOrderThenDate, orderValue, toBoolean } from '../utils/helpers.js'
@@ -115,7 +115,7 @@ export const serviceController = {
 
       const mediaFile = findFileByFieldname(req, 'media')
       if (mediaFile) {
-        const upload = await uploadImage(mediaFile.buffer, 'hok/services', mediaFile.mimetype)
+        const upload = await mediaService.upload({ buffer: mediaFile.buffer, mimeType: mediaFile.mimetype, folder: 'hok/services', type: 'image' })
         payload.imageUrl = upload.secure_url
         payload.cloudinaryId = upload.public_id
       }
@@ -163,9 +163,9 @@ export const serviceController = {
       const mediaFile = findFileByFieldname(req, 'media')
       if (mediaFile) {
         if (existing.cloudinaryId) {
-          await deleteMedia(existing.cloudinaryId, 'image')
+          await mediaService.delete(existing.cloudinaryId, 'image')
         }
-        const upload = await uploadImage(mediaFile.buffer, 'hok/services', mediaFile.mimetype)
+        const upload = await mediaService.upload({ buffer: mediaFile.buffer, mimeType: mediaFile.mimetype, folder: 'hok/services', type: 'image' })
         payload.imageUrl = upload.secure_url
         payload.cloudinaryId = upload.public_id
       }
@@ -213,7 +213,7 @@ export const serviceController = {
     const existing = await prisma.service.findUnique({ where: { id: req.params.id } })
     if (existing) {
       if (existing.cloudinaryId) {
-        await deleteMedia(existing.cloudinaryId, 'image')
+          await mediaService.delete(existing.cloudinaryId, 'image')
       }
     }
     await prisma.service.delete({ where: { id: req.params.id } })

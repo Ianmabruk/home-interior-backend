@@ -33,13 +33,13 @@ api.interceptors.response.use(
     const originalRequest = error.config
 
     if (status !== 401 || originalRequest._retry || originalRequest.url?.includes('/auth/refresh')) {
-      return Promise.reject(error)
+      const message = error?.response?.data?.message || error?.message || 'Request failed'
+      return Promise.reject(new Error(message))
     }
 
-    // If a previous refresh attempt failed, stop retrying to avoid hitting
-    // rate limits and causing infinite loops. The user must log in again.
     if (refreshFailed) {
-      return Promise.reject(error)
+      const message = error?.response?.data?.message || error?.message || 'Session expired'
+      return Promise.reject(new Error(message))
     }
 
     if (!refreshingPromise) {

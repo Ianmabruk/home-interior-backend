@@ -26,7 +26,7 @@ export const AboutDashboard = () => {
 
   const loadAbout = useCallback(async () => {
     try {
-      const res = await api.get('/content/about')
+      const res = await api.get('/about')
       setForm({
         story: res.data?.story || '',
         mission: res.data?.mission || '',
@@ -75,7 +75,7 @@ export const AboutDashboard = () => {
       payload.append('contactEmail', form.contactEmail || '')
       payload.append('socials', form.socialLinks || '{}')
       if (aboutImageFile) payload.append('media', aboutImageFile)
-      await api.put('/content/about', payload)
+      await api.put('/about', payload)
       await loadAbout()
       emitAdminDataChanged({ type: 'about-changed' })
     } catch {

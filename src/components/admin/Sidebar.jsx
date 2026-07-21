@@ -12,6 +12,8 @@ import {
   Star,
   UploadCloud,
   Layers,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 
 const tabs = [
@@ -27,8 +29,9 @@ const tabs = [
   { id: 'settings', label: 'Settings', icon: SettingsIcon },
 ]
 
-export const Sidebar = ({ activeTab, onTabChange, mobileOpen, onCloseMobile, isCollapsed, user, onLogout }) => {
+export const Sidebar = ({ activeTab, onTabChange, mobileOpen, onCloseMobile, isCollapsed, setIsCollapsed, user, onLogout }) => {
   const [isMobile, setIsMobile] = useState(false)
+  const [hoveredItem, setHoveredItem] = useState(null)
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024)
@@ -61,32 +64,68 @@ export const Sidebar = ({ activeTab, onTabChange, mobileOpen, onCloseMobile, isC
         animate={{
           width: isMobile ? (mobileOpen ? 300 : 0) : (isCollapsed ? 88 : 300),
         }}
-        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
         className={`fixed inset-y-0 left-0 z-40 flex flex-col bg-[#1B1714] text-white border-r border-white/10 shadow-2xl overflow-hidden backdrop-blur-xl bg-opacity-90 ${
           isMobile ? 'transform transition-transform duration-300' : ''
         } ${mobileOpen && isMobile ? 'translate-x-0' : isMobile ? '-translate-x-full' : ''}`}
       >
+        {/* Brand / Logo Area */}
+        <div className="flex items-center justify-between p-4 border-b border-white/10 flex-shrink-0">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent)] flex items-center justify-center text-white font-bold text-lg shadow-lg flex-shrink-0">
+              H
+            </div>
+            <AnimatePresence>
+              {sidebarOpen && !isMobile && (
+                <motion.span
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="font-display text-xl font-semibold text-white whitespace-nowrap"
+                >
+                  HOK Admin
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </div>
+            {!isMobile && (
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setIsCollapsed((c) => !c)}
+              className="p-1.5 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition hidden lg:flex"
+            >
+              {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            </motion.button>
+          )}
+        </div>
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-hide">
           {tabs.map((item, idx) => {
             const Icon = item.icon
             const isActive = activeTab === item.id
+            const isHovered = hoveredItem === item.id
             return (
               <motion.button
                 key={item.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.04, duration: 0.3 }}
+                transition={{ delay: idx * 0.03, duration: 0.3 }}
                 onClick={() => {
                   onTabChange(item.id)
                   onCloseMobile()
                 }}
+                onMouseEnter={() => setHoveredItem(item.id)}
+                onMouseLeave={() => setHoveredItem(null)}
                 className={`relative w-full flex items-center ${
                   sidebarOpen && !isCollapsed && !isMobile ? 'gap-3 px-4' : 'justify-center px-2'
                 } py-3 text-sm font-medium transition-all duration-200 rounded-xl ${
                   isActive
-                    ? 'text-[var(--accent)] bg-white/10 rounded-xl shadow-sm font-semibold'
+                    ? 'text-[var(--accent)] bg-white/10 shadow-sm font-semibold'
+                    : isHovered
+                    ? 'text-white bg-white/5'
                     : 'text-white/75 hover:bg-white/5 hover:text-white'
                 }`}
                 title={(!sidebarOpen || isCollapsed || isMobile) && !isActive ? item.label : undefined}

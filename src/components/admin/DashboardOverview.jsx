@@ -109,7 +109,7 @@ export const DashboardOverview = ({ overview, onNavigate }) => {
 
   useEffect(() => {
     Promise.all([
-      api.get('/content/portfolio', { params: { sort: '-createdAt', limit: 6 } }),
+      api.get('/portfolio', { params: { sort: '-createdAt', limit: 6 } }),
       api.get('/orders').catch(() => ({ data: [] })),
     ])
       .then(([portfolioRes, ordersRes]) => {

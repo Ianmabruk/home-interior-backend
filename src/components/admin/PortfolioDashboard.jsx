@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { UploadCloud, X, Edit, Trash2, Images, Eye, Plus, Star, Image } from 'lucide-react'
+import { UploadCloud, X, Edit, Trash2, Images, Eye, Plus, Star, Image, Loader2 } from 'lucide-react'
 import { api } from '../../services/api'
 import { emitAdminDataChanged } from '../../utils/adminEvents'
 
@@ -25,20 +25,27 @@ export const PortfolioDashboard = () => {
   const [isDragOverMain, setIsDragOverMain] = useState(false)
   const [isDragOverGallery, setIsDragOverGallery] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [optimisticUpdates, setOptimisticUpdates] = useState(new Set())
   const mainFileRef = useRef(null)
   const galleryFileRef = useRef(null)
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await api.get('/content/portfolio')
-        setPortfolio(Array.isArray(res.data) ? res.data : res.data?.items || [])
-      } catch {
-        setPortfolio([])
-      }
+  const load = useCallback(async () => {
+    try {
+      const res = await api.get('/portfolio')
+      const data = Array.isArray(res.data) ? res.data : res.data?.items || []
+      setPortfolio(data)
+    } catch {
+      setPortfolio([])
     }
-    load()
   }, [])
+
+  useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    const handler = () => { load() }
+    window.addEventListener('admin:data-changed', handler)
+    return () => window.removeEventListener('admin:data-changed', handler)
+  }, [load])
 
   const handleMainFiles = (files) => {
     const validFiles = Array.from(files).filter(f => f.type.startsWith('image/'))
@@ -144,13 +151,12 @@ export const PortfolioDashboard = () => {
       }
 
       if (editingId) {
-        await api.patch(`/content/portfolio/${editingId}`, payload)
+        await api.patch(`/portfolio/${editingId}`, payload)
       } else {
-        await api.post('/content/portfolio', payload)
+        await api.post('/portfolio', payload)
       }
       resetForm()
-      const res = await api.get('/content/portfolio')
-      setPortfolio(Array.isArray(res.data) ? res.data : res.data?.items || [])
+      load()
       emitAdminDataChanged({ type: 'portfolio-changed' })
     } catch (err) {
       console.error('Submit error:', err)
@@ -161,14 +167,31 @@ export const PortfolioDashboard = () => {
 
   const deleteItem = async () => {
     if (!deleteId) return
+    const id = deleteId
+    setDeleteId(null)
+
+    // Optimistic update
+    setPortfolio(prev => prev.filter(item => item.id !== id))
+    setOptimisticUpdates(prev => new Set(prev).add(id))
+
     try {
-      await api.delete(`/content/portfolio/${deleteId}`)
-      setDeleteId(null)
-      const res = await api.get('/content/portfolio')
-      setPortfolio(Array.isArray(res.data) ? res.data : res.data?.items || [])
+      await api.delete(`/portfolio/${id}`)
+      setOptimisticUpdates(prev => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+      load()
       emitAdminDataChanged({ type: 'portfolio-changed' })
     } catch (err) {
       console.error('Delete error:', err)
+      // Rollback on error
+      setOptimisticUpdates(prev => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+      load()
     }
   }
 
@@ -204,7 +227,7 @@ export const PortfolioDashboard = () => {
             exit={{ opacity: 0, height: 0, y: -20 }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
             onSubmit={submit}
-            className="bg-white/80 backdrop-blur-xl border border-[var(--border)]/60 rounded-2xl p-5 shadow-[0_10px_40px_rgba(42,36,31,0.06)] space-y-5 mb-6"
+            className="bg-white/80 backdrop-blur-xl border border-[var(--border)]/60 rounded-2xl p-5 shadow-[0_10px_40px_rgba(42,36,31,0.06)] space-y-5 mb-6 overflow-hidden"
           >
             <div className="flex items-center justify-between">
               <div>
@@ -432,9 +455,11 @@ export const PortfolioDashboard = () => {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="flex-1 rounded-full bg-[var(--primary)] text-white py-3 text-[11px] font-semibold uppercase tracking-wider transition-all duration-300 hover:bg-[var(--primary)]/90 hover:shadow-lg"
+                className="flex-1 rounded-full bg-[var(--primary)] text-white py-3 text-[11px] font-semibold uppercase tracking-wider transition-all duration-300 hover:bg-[var(--primary)]/90 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 disabled={loading}
+                type="submit"
               >
+                {loading && <Loader2 size={14} className="animate-spin" />}
                 {loading ? 'Saving...' : editingId ? 'Update Project' : 'Upload Project'}
               </motion.button>
             </div>
@@ -449,117 +474,120 @@ export const PortfolioDashboard = () => {
         transition={{ duration: 0.5 }}
         className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
       >
-        {portfolio.map((item, i) => (
-          <motion.article
-            layout
-            key={item.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="group bg-white rounded-3xl overflow-hidden shadow-[0_2px_16px_rgba(42,36,31,0.04)] hover:shadow-[0_20px_60px_rgba(42,36,31,0.08)] transition-all duration-500"
-          >
-            <div className="relative aspect-[3/4] overflow-hidden">
-              {item.imageUrl ? (
-                <img
-                  src={item.imageUrl}
-                  alt={item.title}
-                  className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="h-full w-full bg-gradient-to-br from-[var(--bg)] to-[var(--secondary)]/30 flex items-center justify-center text-[var(--primary)]/30">
-                  <Images size={40} />
+        {portfolio.map((item, i) => {
+          const isOptimistic = optimisticUpdates.has(item.id)
+          return (
+            <motion.article
+              layout
+              key={item.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: isOptimistic ? 0.5 : 1, y: 0 }}
+              transition={{ delay: i * 0.05, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              className="group bg-white rounded-3xl overflow-hidden shadow-[0_2px_16px_rgba(42,36,31,0.04)] hover:shadow-[0_20px_60px_rgba(42,36,31,0.08)] transition-all duration-500"
+            >
+              <div className="relative aspect-[3/4] overflow-hidden">
+                {item.imageUrl ? (
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="h-full w-full bg-gradient-to-br from-[var(--bg)] to-[var(--secondary)]/30 flex items-center justify-center text-[var(--primary)]/30">
+                    <Images size={40} />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-[var(--primary)]/85 via-[var(--primary)]/40 to-transparent opacity-100" />
+
+                {/* Featured Badge - Top Left */}
+                {item.featured && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="absolute top-3 left-3 z-10"
+                  >
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--accent)] text-white text-[10px] font-semibold uppercase tracking-widest rounded-full shadow-lg">
+                      <Star size={10} strokeWidth={2} />
+                      Featured
+                    </span>
+                  </motion.div>
+                )}
+
+                {/* Gallery Count Badge - Top Right */}
+                {item.galleryImages && item.galleryImages.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="absolute top-3 right-3 z-10"
+                  >
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--primary)]/90 backdrop-blur-sm text-white text-[10px] font-semibold uppercase tracking-widest rounded-full shadow-lg">
+                      <Images size={10} strokeWidth={2} />
+                      {item.galleryImages.length} photos
+                    </span>
+                  </motion.div>
+                )}
+
+                {/* View Project Button - Bottom Center */}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => window.location.href = `/portfolio/${item.id}`}
+                  className="absolute bottom-6 left-1/2 -translate-x-1/2 btn-luxury-primary group flex items-center gap-2 text-[10px] px-5 py-2.5 rounded-full opacity-0 translate-y-4 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0"
+                >
+                  View Project
+                  <Eye size={12} strokeWidth={1.5} className="transition-transform duration-300 group-hover:scale-110" />
+                </motion.button>
+
+                {/* Quick Actions - Top Right */}
+                <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => startEdit(item)}
+                    className="p-2 bg-white/90 backdrop-blur-sm rounded-xl text-[var(--primary)] hover:bg-white shadow-lg"
+                    aria-label="Edit project"
+                  >
+                    <Edit size={14} />
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setDeleteId(item.id)}
+                    className="p-2 bg-[var(--error)]/90 backdrop-blur-sm rounded-xl text-white hover:bg-[var(--error)] shadow-lg"
+                    aria-label="Delete project"
+                  >
+                    <Trash2 size={14} />
+                  </motion.button>
                 </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-[var(--primary)]/85 via-[var(--primary)]/40 to-transparent opacity-100" />
-
-              {/* Featured Badge - Top Left */}
-              {item.featured && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="absolute top-3 left-3 z-10"
-                >
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--accent)] text-white text-[10px] font-semibold uppercase tracking-widest rounded-full shadow-lg">
-                    <Star size={10} strokeWidth={2} />
-                    Featured
-                  </span>
-                </motion.div>
-              )}
-
-              {/* Gallery Count Badge - Top Right */}
-              {item.galleryImages && item.galleryImages.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="absolute top-3 right-3 z-10"
-                >
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--primary)]/90 backdrop-blur-sm text-white text-[10px] font-semibold uppercase tracking-widest rounded-full shadow-lg">
-                    <Images size={10} strokeWidth={2} />
-                    {item.galleryImages.length} photos
-                  </span>
-                </motion.div>
-              )}
-
-              {/* View Project Button - Bottom Center */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => window.location.href = `/portfolio/${item.id}`}
-                className="absolute bottom-6 left-1/2 -translate-x-1/2 btn-luxury-primary group flex items-center gap-2 text-[10px] px-5 py-2.5 rounded-full opacity-0 translate-y-4 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0"
-              >
-                View Project
-                <Eye size={12} strokeWidth={1.5} className="transition-transform duration-300 group-hover:scale-110" />
-              </motion.button>
-
-              {/* Quick Actions - Top Right */}
-              <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => startEdit(item)}
-                  className="p-2 bg-white/90 backdrop-blur-sm rounded-xl text-[var(--primary)] hover:bg-white shadow-lg"
-                  aria-label="Edit project"
-                >
-                  <Edit size={14} />
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => setDeleteId(item.id)}
-                  className="p-2 bg-[var(--error)]/90 backdrop-blur-sm rounded-xl text-white hover:bg-[var(--error)] shadow-lg"
-                  aria-label="Delete project"
-                >
-                  <Trash2 size={14} />
-                </motion.button>
               </div>
-            </div>
 
-            {/* Info Card at Bottom */}
-            <div className="p-5 md:p-6 border-t border-[var(--border)]/40 bg-white">
-              <motion.h3
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 }}
-                className="font-display text-xl md:text-2xl font-normal text-[var(--primary)] leading-tight"
-              >
-                {item.title}
-              </motion.h3>
-              {(item.galleryImages && item.galleryImages.length > 0) && (
-                <motion.p
+              {/* Info Card at Bottom */}
+              <div className="p-5 md:p-6 border-t border-[var(--border)]/40 bg-white">
+                <motion.h3
                   initial={{ opacity: 0, y: 10 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: 0.15 }}
-                  className="mt-2 text-sm leading-relaxed text-[var(--primary)]/60"
+                  transition={{ delay: 0.1 }}
+                  className="font-display text-xl md:text-2xl font-normal text-[var(--primary)] leading-tight"
                 >
-                  {item.galleryImages.length} gallery image{item.galleryImages.length > 1 ? 's' : ''}
-                </motion.p>
-              )}
-            </div>
-          </motion.article>
-        ))}
+                  {item.title}
+                </motion.h3>
+                {(item.galleryImages && item.galleryImages.length > 0) && (
+                  <motion.p
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.15 }}
+                    className="mt-2 text-sm leading-relaxed text-[var(--primary)]/60"
+                  >
+                    {item.galleryImages.length} gallery image{item.galleryImages.length > 1 ? 's' : ''}
+                  </motion.p>
+                )}
+              </div>
+            </motion.article>
+          )
+        })}
 
         {portfolio.length === 0 && (
           <motion.div

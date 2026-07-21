@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { prisma } from '../config/prisma.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
-import { uploadImage, deleteMedia } from '../services/uploadService.js'
+import { mediaService } from '../services/media.service.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { withId, withIdArray } from '../utils/helpers.js'
 import { prismaSafeWrite } from '../utils/prismaSafeWrite.js'
@@ -65,7 +65,7 @@ export const create = asyncHandler(async (req, res) => {
   let photoUrl
   let photoPublicId
   if (req.file) {
-    const upload = await uploadImage(req.file.buffer, 'hok/testimonials', req.file.mimetype)
+    const upload = await mediaService.upload({ buffer: req.file.buffer, mimeType: req.file.mimetype, folder: 'hok/testimonials', type: 'image' })
     photoUrl = upload.secure_url
     photoPublicId = upload.public_id
   }
@@ -104,9 +104,9 @@ export const update = asyncHandler(async (req, res) => {
   if (body.isActive !== undefined) payload.isActive = body.isActive
 
   if (req.file) {
-    const upload = await uploadImage(req.file.buffer, 'hok/testimonials', req.file.mimetype)
+    const upload = await mediaService.upload({ buffer: req.file.buffer, mimeType: req.file.mimetype, folder: 'hok/testimonials', type: 'image' })
     if (existing.photoPublicId) {
-      try { await deleteMedia(existing.photoPublicId, 'image') } catch { /* ignore */ }
+      try {       await mediaService.delete(existing.photoPublicId, 'image') } catch { /* ignore */ }
     }
     payload.photoUrl = upload.secure_url
     payload.photoPublicId = upload.public_id
@@ -125,7 +125,7 @@ export const remove = asyncHandler(async (req, res) => {
   const existing = await prisma.testimonial.findUnique({ where: { id: req.params.id } })
   if (!existing) throw new ApiError(404, 'Testimonial not found')
   if (existing.photoPublicId) {
-    try { await deleteMedia(existing.photoPublicId, 'image') } catch { /* ignore */ }
+    try {       await mediaService.delete(existing.photoPublicId, 'image') } catch { /* ignore */ }
   }
   await prisma.testimonial.delete({ where: { id: req.params.id } })
   res.json(sendSuccess({ message: 'Testimonial deleted' }))

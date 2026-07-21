@@ -90,11 +90,11 @@ export const TestimonialDashboard = () => {
       })
 
       if (editing) {
-        await api.patch(`/admin/testimonials/${editing}`, formData, {
+        await api.patch(`/testimonials/${editing}`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
       } else {
-        await api.post('/admin/testimonials', formData, {
+        await api.post('/testimonials', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
       }
@@ -128,7 +128,7 @@ export const TestimonialDashboard = () => {
   const handleDelete = async () => {
     if (!deleteId) return
     try {
-      await api.delete(`/admin/testimonials/${deleteId}`)
+      await api.delete(`/testimonials/${deleteId}`)
       setDeleteId(null)
       load()
       emitAdminDataChanged({ type: 'testimonials-changed' })

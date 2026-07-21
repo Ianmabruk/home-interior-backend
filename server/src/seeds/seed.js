@@ -33,13 +33,6 @@ const seed = async () => {
       }
     }
 
-    const projectCount = await prisma.project.count()
-    if (projectCount === 0) {
-      for (const item of projectsSeed) {
-        await prisma.project.create({ data: item })
-      }
-    }
-
     const productCount = await prisma.product.count()
     if (productCount === 0) {
       for (const item of productsSeed) {

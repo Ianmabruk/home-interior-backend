@@ -28,7 +28,7 @@ export const VirtualDesignPage = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await api.get('/content/virtual-design')
+        const res = await api.get('/virtual-design')
         const data = Array.isArray(res.data) ? res.data : res.data?.items || []
         setItems(data)
       } catch (err) {
@@ -45,7 +45,7 @@ export const VirtualDesignPage = () => {
     const handler = () => {
       const load = async () => {
         try {
-          const res = await api.get('/content/virtual-design')
+          const res = await api.get('/virtual-design')
           const data = Array.isArray(res.data) ? res.data : res.data?.items || []
           setItems(data)
         } catch (err) {

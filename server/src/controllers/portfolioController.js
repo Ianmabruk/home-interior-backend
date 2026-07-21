@@ -1,7 +1,7 @@
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { prisma } from '../config/prisma.js'
 import { ApiError } from '../utils/ApiError.js'
-import { uploadImage, deleteMedia } from '../services/uploadService.js'
+import { mediaService } from '../services/media.service.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { executeWithRetry } from '../config/prisma.js'
 import { withId, withIdArray, sortByOrderThenDate, orderValue, toBoolean } from '../utils/helpers.js'
@@ -105,7 +105,7 @@ export const portfolioController = {
       const galleryUrls = []
       
       for (const file of galleryFiles) {
-        const upload = await uploadImage(file.buffer, 'hok/portfolio/gallery', file.mimetype)
+        const upload = await mediaService.upload({ buffer: file.buffer, mimeType: file.mimetype, folder: 'hok/portfolio/gallery', type: 'image' })
         galleryUrls.push(upload.secure_url)
       }
       
@@ -115,7 +115,7 @@ export const portfolioController = {
 
       const mediaFile = findFileByFieldname(req, 'media')
       if (mediaFile) {
-        const upload = await uploadImage(mediaFile.buffer, 'hok/portfolio', mediaFile.mimetype)
+        const upload = await mediaService.upload({ buffer: mediaFile.buffer, mimeType: mediaFile.mimetype, folder: 'hok/portfolio', type: 'image' })
         payload.imageUrl = upload.secure_url
         payload.cloudinaryId = upload.public_id
       }
@@ -168,7 +168,7 @@ export const portfolioController = {
       const galleryUrls = []
       
       for (const file of galleryFiles) {
-        const upload = await uploadImage(file.buffer, 'hok/portfolio/gallery', file.mimetype)
+        const upload = await mediaService.upload({ buffer: file.buffer, mimeType: file.mimetype, folder: 'hok/portfolio/gallery', type: 'image' })
         galleryUrls.push(upload.secure_url)
       }
       
@@ -181,9 +181,9 @@ export const portfolioController = {
       const mediaFile = findFileByFieldname(req, 'media')
       if (mediaFile) {
         if (existing.cloudinaryId) {
-          await deleteMedia(existing.cloudinaryId, 'image')
+          await mediaService.delete(existing.cloudinaryId, 'image')
         }
-        const upload = await uploadImage(mediaFile.buffer, 'hok/portfolio', mediaFile.mimetype)
+        const upload = await mediaService.upload({ buffer: mediaFile.buffer, mimeType: mediaFile.mimetype, folder: 'hok/portfolio', type: 'image' })
         payload.imageUrl = upload.secure_url
         payload.cloudinaryId = upload.public_id
       }
@@ -231,7 +231,7 @@ export const portfolioController = {
     const existing = await prisma.portfolio.findUnique({ where: { id: req.params.id } })
     if (existing) {
       if (existing.cloudinaryId) {
-        await deleteMedia(existing.cloudinaryId, 'image')
+        await mediaService.delete(existing.cloudinaryId, 'image')
       }
       // Delete gallery images
       if (existing.galleryImages && existing.galleryImages.length > 0) {
@@ -240,7 +240,7 @@ export const portfolioController = {
             // Extract public ID from URL and delete
             const publicId = imageUrl.split('/').pop()?.split('.')[0]
             if (publicId) {
-              await deleteMedia(publicId, 'image')
+              await mediaService.delete(publicId, 'image')
             }
           } catch (e) {
             console.error('[PORTFOLIO][DELETE] gallery image delete failed:', e?.message)
@@ -263,7 +263,7 @@ export const portfolioController = {
       const galleryUrls = []
       
       for (const file of galleryFiles) {
-        const upload = await uploadImage(file.buffer, 'hok/portfolio/gallery', file.mimetype)
+        const upload = await mediaService.upload({ buffer: file.buffer, mimeType: file.mimetype, folder: 'hok/portfolio/gallery', type: 'image' })
         galleryUrls.push(upload.secure_url)
       }
       
@@ -309,7 +309,7 @@ export const portfolioController = {
       try {
         const publicId = imageUrl.split('/').pop()?.split('.')[0]
         if (publicId) {
-          await deleteMedia(publicId, 'image')
+          await mediaService.delete(publicId, 'image')
         }
       } catch (e) {
         console.error('[PORTFOLIO][REMOVE-GALLERY] Cloudinary delete failed:', e?.message)

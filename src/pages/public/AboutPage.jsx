@@ -35,7 +35,7 @@ export const AboutPage = () => {
   const heroOpacity = useTransform(scrollY, [0, 500], [1, 0.3])
 
   const loadAbout = () => {
-    api.get('/content/about')
+    api.get('/about')
       .then((res) => setAbout(res.data))
       .catch(() => setAbout(null))
       .finally(() => setLoading(false))

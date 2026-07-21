@@ -1,7 +1,7 @@
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { prisma } from '../config/prisma.js'
 import { ApiError } from '../utils/ApiError.js'
-import { uploadImage, uploadVideo, deleteMedia } from '../services/uploadService.js'
+import { mediaService } from '../services/media.service.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { executeWithRetry } from '../config/prisma.js'
 import { withId, withIdArray, sortByOrderThenDate, orderValue, toBoolean } from '../utils/helpers.js'
@@ -100,9 +100,7 @@ export const virtualDesignController = {
       
       const mediaFile = findFileByFieldname(req, 'media')
       if (mediaFile) {
-        const upload = isVideo
-          ? await uploadVideo(mediaFile.buffer, 'hok/virtual-design', mediaFile.mimetype)
-          : await uploadImage(mediaFile.buffer, 'hok/virtual-design', mediaFile.mimetype)
+        const upload = await mediaService.upload({ buffer: mediaFile.buffer, mimeType: mediaFile.mimetype, folder: 'hok/virtual-design', type: isVideo ? 'video' : 'image' })
         payload.mediaUrl = upload.secure_url
         payload.cloudinaryId = upload.public_id
         payload.mediaType = isVideo ? 'video' : 'image'
@@ -114,9 +112,7 @@ export const virtualDesignController = {
       
       for (const file of galleryFiles) {
         const isVideoFile = file.mimetype.startsWith('video/')
-        const upload = isVideoFile
-          ? await uploadVideo(file.buffer, 'hok/virtual-design/gallery', file.mimetype)
-          : await uploadImage(file.buffer, 'hok/virtual-design/gallery', file.mimetype)
+        const upload = await mediaService.upload({ buffer: file.buffer, mimeType: file.mimetype, folder: 'hok/virtual-design/gallery', type: isVideoFile ? 'video' : 'image' })
         galleryUrls.push({ url: upload.secure_url, type: isVideoFile ? 'video' : 'image' })
       }
       
@@ -177,11 +173,9 @@ export const virtualDesignController = {
       const mediaFile = findFileByFieldname(req, 'media')
       if (mediaFile) {
         if (existing.cloudinaryId) {
-          await deleteMedia(existing.cloudinaryId, existing.mediaType === 'video' ? 'video' : 'image')
+          await mediaService.delete(existing.cloudinaryId, existing.mediaType === 'video' ? 'video' : 'image')
         }
-        const upload = isVideo
-          ? await uploadVideo(mediaFile.buffer, 'hok/virtual-design', mediaFile.mimetype)
-          : await uploadImage(mediaFile.buffer, 'hok/virtual-design', mediaFile.mimetype)
+        const upload = await mediaService.upload({ buffer: mediaFile.buffer, mimeType: mediaFile.mimetype, folder: 'hok/virtual-design', type: isVideo ? 'video' : 'image' })
         payload.mediaUrl = upload.secure_url
         payload.cloudinaryId = upload.public_id
         payload.mediaType = isVideo ? 'video' : 'image'
@@ -193,9 +187,7 @@ export const virtualDesignController = {
       
       for (const file of galleryFiles) {
         const isVideoFile = file.mimetype.startsWith('video/')
-        const upload = isVideoFile
-          ? await uploadVideo(file.buffer, 'hok/virtual-design/gallery', file.mimetype)
-          : await uploadImage(file.buffer, 'hok/virtual-design/gallery', file.mimetype)
+        const upload = await mediaService.upload({ buffer: file.buffer, mimeType: file.mimetype, folder: 'hok/virtual-design/gallery', type: isVideoFile ? 'video' : 'image' })
         galleryUrls.push({ url: upload.secure_url, type: isVideoFile ? 'video' : 'image' })
       }
       
@@ -239,7 +231,7 @@ export const virtualDesignController = {
 
     if (existing.cloudinaryId) {
       try {
-        await deleteMedia(existing.cloudinaryId, existing.mediaType === 'video' ? 'video' : 'image')
+        await mediaService.delete(existing.cloudinaryId, existing.mediaType === 'video' ? 'video' : 'image')
       } catch (e) {
         console.error('[VIRTUAL-DESIGN][DELETE] main media delete failed:', e?.message)
       }
@@ -250,7 +242,7 @@ export const virtualDesignController = {
         try {
           const publicId = media.url.split('/').pop()?.split('.')[0]
           if (publicId) {
-            await deleteMedia(publicId, media.type === 'video' ? 'video' : 'image')
+            await mediaService.delete(publicId, media.type === 'video' ? 'video' : 'image')
           }
         } catch (e) {
           console.error('[VIRTUAL-DESIGN][DELETE] gallery media delete failed:', e?.message)
@@ -287,9 +279,7 @@ export const virtualDesignController = {
       
       for (const file of galleryFiles) {
         const isVideoFile = file.mimetype.startsWith('video/')
-        const upload = isVideoFile
-          ? await uploadVideo(file.buffer, 'hok/virtual-design/gallery', file.mimetype)
-          : await uploadImage(file.buffer, 'hok/virtual-design/gallery', file.mimetype)
+        const upload = await mediaService.upload({ buffer: file.buffer, mimeType: file.mimetype, folder: 'hok/virtual-design/gallery', type: isVideoFile ? 'video' : 'image' })
         galleryUrls.push({ url: upload.secure_url, type: isVideoFile ? 'video' : 'image' })
       }
       
@@ -337,7 +327,7 @@ export const virtualDesignController = {
         if (publicId) {
           // Find the media type from the gallery
           const media = existingGallery.find(m => m.url === mediaUrl)
-          await deleteMedia(publicId, media?.type === 'video' ? 'video' : 'image')
+          await mediaService.delete(publicId, media?.type === 'video' ? 'video' : 'image')
         }
       } catch (e) {
         console.error('[VIRTUAL-DESIGN][REMOVE-GALLERY] Cloudinary delete failed:', e?.message)

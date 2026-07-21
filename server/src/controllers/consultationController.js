@@ -80,7 +80,7 @@ export const listConsultations = asyncHandler(async (req, res) => {
 
 export const updateConsultationStatus = asyncHandler(async (req, res) => {
   const { status } = req.body
-  const allowed = ['new', 'read', 'archived', 'completed']
+  const allowed = ['new', 'read', 'replied', 'closed']
   if (!allowed.includes(status)) {
     throw new ApiError(400, 'Invalid consultation status')
   }

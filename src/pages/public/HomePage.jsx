@@ -22,7 +22,7 @@ export const HomePage = () => {
     try {
       // Use the combined homepage endpoint for all data
       const [homepageRes, productsRes] = await Promise.all([
-        api.get('/content/homepage'),
+        api.get('/homepage'),
         api.get('/products?limit=8&featured=true'),
       ])
       

@@ -33,7 +33,7 @@ export const PortfolioDetailPage = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await api.get(`/content/portfolio/${id}`)
+        const res = await api.get(`/portfolio/${id}`)
         setProject(res.data)
       } catch (err) {
         console.warn('[PORTFOLIO DETAIL] Failed to load:', err?.message)

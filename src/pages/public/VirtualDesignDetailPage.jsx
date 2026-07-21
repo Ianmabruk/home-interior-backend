@@ -14,7 +14,6 @@ export const VirtualDesignDetailPage = () => {
   const [imageFullscreen, setImageFullscreen] = useState(null)
   const [videoFullscreen, setVideoFullscreen] = useState(null)
 
-  // Zoom state
   const [zoomScale, setZoomScale] = useState(1)
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 })
   const isDragging = useRef(false)
@@ -24,7 +23,7 @@ export const VirtualDesignDetailPage = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await api.get(`/content/virtual-design/${id}`)
+        const res = await api.get(`/virtual-design/${id}`)
         setProject(res.data)
       } catch (err) {
         console.warn('[VIRTUAL DETAIL] Failed to load:', err?.message)
@@ -57,7 +56,6 @@ export const VirtualDesignDetailPage = () => {
 
   const closeVideoModal = () => { setVideoFullscreen(null) }
 
-  // Reset zoom when image changes
   useEffect(() => {
     setTimeout(() => {
       setZoomScale(1)
@@ -66,11 +64,9 @@ export const VirtualDesignDetailPage = () => {
     }, 0)
   }, [galleryIndex])
 
-  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!imageFullscreen) return
-
       switch (e.key) {
         case 'Escape':
           e.preventDefault()
@@ -86,7 +82,6 @@ export const VirtualDesignDetailPage = () => {
           break
       }
     }
-
     if (imageFullscreen) {
       window.addEventListener('keydown', handleKeyDown)
     }
@@ -95,7 +90,6 @@ export const VirtualDesignDetailPage = () => {
     }
   }, [imageFullscreen, closeImageModal])
 
-  // Touch/swipe navigation
   const touchStartX = useRef(null)
   const touchStartY = useRef(null)
 
@@ -107,12 +101,10 @@ export const VirtualDesignDetailPage = () => {
 
   const handleTouchEnd = (e) => {
     if (!imageFullscreen || touchStartX.current === null) return
-
     const touchEndX = e.changedTouches[0].clientX
     const touchEndY = e.changedTouches[0].clientY
     const diffX = touchStartX.current - touchEndX
     const diffY = touchStartY.current - touchEndY
-
     if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
       if (diffX > 0) {
         setGalleryIndex((prev) => (prev === 0 ? 0 : prev - 1))
@@ -120,12 +112,10 @@ export const VirtualDesignDetailPage = () => {
         setGalleryIndex((prev) => (prev === 0 ? 0 : prev + 1))
       }
     }
-
     touchStartX.current = null
     touchStartY.current = null
   }
 
-  // Zoom handlers
   const handleWheel = (e) => {
     if (!imageFullscreen) return
     if (e.ctrlKey || e.metaKey) {
@@ -175,6 +165,67 @@ export const VirtualDesignDetailPage = () => {
             >
               <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--accent)]/80 mb-4">Virtual Designs</p>
               <h1 className="font-display text-5xl font-normal leading-tight text-white md:text-7xl lg:text-8xl">Loading...</h1>
+            </motion.div>
+          </div>
+        </section>
+      </main>
+    )
+  }
+
+  if (!project) {
+    return (
+      <main className="min-h-screen bg-[var(--bg)]">
+        <div className="container-wide px-6 md:px-12 lg:px-20 py-20 text-center">
+          <h1 className="font-display text-4xl text-[var(--primary)]">Project Not Found</h1>
+          <p className="mt-4 text-sm text-[var(--primary)]/55">The virtual design you are looking for does not exist.</p>
+          <Link to="/virtual-design" className="btn-luxury-primary mt-6 inline-block">Back to Virtual Designs</Link>
+        </div>
+      </main>
+    )
+  }
+
+  return (
+    <main className="min-h-screen bg-[var(--bg)]">
+      {/* Hero Section */}
+      <section className="relative h-[60vh] min-h-[500px] overflow-hidden">
+        <div className="absolute inset-0">
+          {project.mediaUrl && project.mediaType === 'image' && (
+            <img
+              src={getOptimizedUrl(project.mediaUrl, { width: 1920, crop: 'limit' })}
+              alt={project.title}
+              className="absolute inset-0 h-full w-full object-cover"
+              loading="eager"
+            />
+          )}
+          {project.mediaUrl && project.mediaType === 'video' && (
+            <video
+              src={getOptimizedVideoUrl(project.mediaUrl, { width: 1920 })}
+              poster={getVideoPosterUrl(project.mediaUrl, { width: 1920 })}
+              className="absolute inset-0 h-full w-full object-cover"
+              autoPlay
+              muted
+              loop
+              playsInline
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-br from-[var(--primary)] via-[var(--primary)]/90 to-[var(--primary)]/70" />
+        </div>
+        <div className="relative z-10 flex h-full items-center justify-center px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+            className="text-center max-w-5xl"
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--accent)]/80 mb-4">Virtual Design Project</p>
+            <h1 className="font-display text-5xl font-normal leading-tight text-white md:text-7xl lg:text-8xl tracking-tight">
+              {project.title}
+            </h1>
+            {project.description && (
+              <p className="mt-6 text-base md:text-lg text-white/70 leading-relaxed max-w-2xl mx-auto">
+                {project.description}
+              </p>
+            )}
           </motion.div>
         </div>
       </section>
@@ -222,6 +273,8 @@ export const VirtualDesignDetailPage = () => {
       )}
 
       {/* Project Details */}
+      <section className="section-pad bg-[var(--bg)]">
+        <div className="container-wide px-6 md:px-12 lg:px-20">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

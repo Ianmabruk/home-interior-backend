@@ -19,13 +19,13 @@ import {
 import { api } from '../../services/api'
 import { emitAdminDataChanged } from '../../utils/adminEvents'
 
-const STATUSES = ['new', 'read', 'archived', 'completed']
+const STATUSES = ['new', 'read', 'replied', 'closed']
 
 const STATUS_CONFIG = {
   new: { label: 'New', class: 'badge-neutral', color: 'text-[var(--primary)]/50 bg-[var(--primary)]/5 border-[var(--primary)]/10' },
   read: { label: 'Read', class: 'badge-warning', color: 'text-[var(--accent)] bg-[var(--accent)]/5 border-[var(--accent)]/10' },
-  archived: { label: 'Archived', class: 'badge-error', color: 'text-[var(--error)] bg-[var(--error)]/5 border-[var(--error)]/10' },
-  completed: { label: 'Completed', class: 'badge-success', color: 'text-[var(--success)] bg-[var(--success)]/5 border-[var(--success)]/10' },
+  replied: { label: 'Replied', class: 'badge-success', color: 'text-[var(--success)] bg-[var(--success)]/5 border-[var(--success)]/10' },
+  closed: { label: 'Closed', class: 'badge-error', color: 'text-[var(--error)] bg-[var(--error)]/5 border-[var(--error)]/10' },
 }
 
 export const ConsultationDashboard = () => {
@@ -102,7 +102,7 @@ export const ConsultationDashboard = () => {
     if (!viewItem || !replyText.trim()) return
     try {
       await api.patch(`/admin/consultations/${viewItem._id || viewItem.id}/status`, {
-        status: 'completed',
+        status: 'replied',
       })
       setViewItem(null)
       setReplyText('')
@@ -264,7 +264,7 @@ export const ConsultationDashboard = () => {
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => updateStatus(c._id || c.id, 'completed')}
+                          onClick={() => updateStatus(c._id || c.id, 'replied')}
                           className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-medium text-[var(--success)] hover:bg-[var(--success)]/10 transition"
                         >
                           <CheckCircle2 size={12} />

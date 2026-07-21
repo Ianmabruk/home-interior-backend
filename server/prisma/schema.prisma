@@ -148,14 +148,14 @@ model Portfolio {
   category           String?  @default("General") @map("category")
   imageUrl           String   @map("image_url")
   featuredImage      String?  @map("featured_image")
-  galleryImages      String[] @default([]) @map("gallery_images")
-  beforeAfterImages  Json?    @map("before_after_images")
   cloudinaryId       String?  @map("cloudinary_id")
   featured           Boolean  @default(false)
   published          Boolean  @default(true) @map("published")
   displayOrder       Int      @default(0) @map("display_order")
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
+  galleryImages      String[] @default([]) @map("gallery_images")
+  mediaSettings      Json?    @map("media_settings")
   media              PortfolioMedia[]
 
   @@index([featured])
@@ -171,6 +171,7 @@ model PortfolioMedia {
   portfolioId String   @map("portfolio_id")
   imageUrl    String   @map("image_url")
   publicId    String?  @map("public_id")
+  mediaType   String   @default("image") @map("media_type")
   sortOrder   Int      @default(0) @map("sort_order")
   createdAt   DateTime @default(now()) @map("created_at")
 
@@ -207,11 +208,11 @@ model VirtualDesign {
   mediaType     String
   mediaUrl      String           @map("media_url")
   featuredImage String?          @map("featured_image")
-  galleryMedia  Json?            @map("gallery_media")
   cloudinaryId  String?          @map("cloudinary_id")
   featured      Boolean          @default(false)
   createdAt     DateTime         @default(now()) @map("created_at")
   updatedAt     DateTime         @updatedAt @map("updated_at")
+  galleryMedia  Json?            @map("gallery_media")
   media         VirtualDesignMedia[]
 
   @@index([featured])
@@ -282,6 +283,23 @@ model HomepageContent {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@map("homepage_content")
+}
+
+model HeroMedia {
+  id          String   @id @default(uuid()) @map("_id")
+  imageUrl    String   @map("image_url")
+  publicId    String?  @map("public_id")
+  mediaType   String   @default("image") @map("media_type")
+  featured    Boolean  @default(false)
+  displayOrder Int     @default(0) @map("display_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([featured])
+  @@index([displayOrder])
+  @@index([isActive])
+  @@map("hero_media")
 }
 
 model Settings {

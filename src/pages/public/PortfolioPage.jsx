@@ -25,7 +25,7 @@ export const PortfolioPage = () => {
   const [page, setPage] = useState(1)
 
   const loadPortfolio = () => {
-    api.get('/content/portfolio')
+    api.get('/portfolio')
       .then((res) => setItems(res.data || []))
       .catch((err) => {
         console.warn('[PORTFOLIO] Failed to load:', err?.message)

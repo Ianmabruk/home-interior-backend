@@ -5,24 +5,20 @@ import { z } from 'zod'
 import {
   getAbout,
   homepageFeed,
-  getAnalytics,
   upsertAbout,
+  getAnalytics,
   upsertHomepageContent,
   deleteHeroImagesController,
 } from '../controllers/contentController.js'
 import { portfolioController } from '../controllers/portfolioController.js'
 import { virtualDesignController } from '../controllers/virtualDesignController.js'
 import { testimonialController } from '../controllers/testimonialController.js'
-import { serviceController } from '../controllers/serviceController.js'
 import { consultationController } from '../controllers/consultationController.js'
+import { serviceController } from '../controllers/serviceController.js'
+import { heroMediaController } from '../controllers/heroMediaController.js'
 import { auth, authorize } from '../middleware/auth.js'
 import { sanitizeInput, validateFileUpload, validateBody } from '../middleware/validate.js'
 import { auditLog } from '../middleware/auditLog.js'
-
-// Canonical, spec-aligned API surface (top-level /api/* paths).
-// These proxy to the existing, battle-tested controllers so the legacy
-// /api/content/* routes keep working while the frontend/standard clients
-// use the cleaner paths required by the rebuild.
 
 const router = Router()
 
@@ -73,8 +69,14 @@ const validateConsultationBody = validateBody(consultationSchema)
 router.get('/homepage', homepageFeed)
 router.put('/homepage', auth, authorize('admin'), writeLimiter, auditLog, upload.array('heroImages', 10), validateGalleryUpload, sanitizeInput, upsertHomepageContent)
 router.delete('/homepage/hero-images', auth, authorize('admin'), writeLimiter, auditLog, sanitizeInput, deleteHeroImagesController)
-
 router.get('/analytics', auth, getAnalytics)
+
+// ── Hero Media ─────────────────────────────────────────────────────────
+router.get('/hero-media', heroMediaController.list)
+router.post('/hero-media', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, heroMediaController.create)
+router.patch('/hero-media/:id', auth, authorize('admin'), writeLimiter, auditLog, upload.single('media'), validateUpload, sanitizeInput, heroMediaController.update)
+router.delete('/hero-media/:id', auth, authorize('admin'), writeLimiter, auditLog, heroMediaController.remove)
+router.patch('/hero-media/reorder', auth, authorize('admin'), writeLimiter, auditLog, sanitizeInput, heroMediaController.reorder)
 
 // ── Portfolio ───────────────────────────────────────────────────────────
 router.get('/portfolio', portfolioController.list)
@@ -86,7 +88,7 @@ router.delete('/portfolio/:id', auth, authorize('admin'), writeLimiter, auditLog
 router.post('/portfolio/:id/gallery', auth, authorize('admin'), writeLimiter, auditLog, upload.array('gallery', 10), validateGalleryUpload, sanitizeInput, portfolioController.addGalleryImages)
 router.delete('/portfolio/:id/gallery', auth, authorize('admin'), writeLimiter, auditLog, sanitizeInput, portfolioController.removeGalleryImage)
 
-// ── Virtual Designs (formerly "Virtual Interior Designs") ─────────────────
+// ── Virtual Designs ─────────────────────────────────────────────────────
 router.get('/virtual-design', virtualDesignController.list)
 router.get('/virtual-design/:id', virtualDesignController.get)
 router.post('/virtual-design', auth, authorize('admin'), writeLimiter, auditLog, upload.fields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }]), validateUpload, validateGalleryUpload, sanitizeInput, validateVirtualDesignBody, virtualDesignController.create)

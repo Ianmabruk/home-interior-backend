@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { prisma, executeWithRetry } from '../config/prisma.js'
 import { ApiError } from '../utils/ApiError.js'
-import { uploadImage, uploadVideo, deleteMedia } from '../services/uploadService.js'
+import { mediaService } from '../services/media.service.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { withId, withIdArray, parseMaybeJson, parseListField, parseMediaSettings, parseBody } from '../utils/helpers.js'
 import { prismaSafeWrite } from '../utils/prismaSafeWrite.js'
@@ -206,7 +206,7 @@ export const createProduct = async (req, res) => {
     const files = req.files || []
 
     const uploads = await Promise.all(
-        files.map((file) => uploadImage(file.buffer, 'hok/products', file.mimetype)),
+        files.map((file) => mediaService.upload({ buffer: file.buffer, mimeType: file.mimetype, folder: 'hok/products', type: 'image' })),
     )
 
     const colorVariantsRaw = Array.isArray(req.body.colorVariants)
@@ -280,9 +280,9 @@ export const updateProduct = async (req, res) => {
     const files = req.files || []
     if (files.length > 0) {
       const oldImages = Array.isArray(product.images) ? product.images : []
-      const oldDeletes = oldImages.map((img) => img.publicId ? deleteMedia(img.publicId, 'image') : Promise.resolve())
+      const oldDeletes = oldImages.map((img) => img.publicId ? mediaService.delete(img.publicId, 'image') : Promise.resolve())
       const uploads = await Promise.all(
-        files.map((file) => uploadImage(file.buffer, 'hok/products', file.mimetype)),
+        files.map((file) => mediaService.upload({ buffer: file.buffer, mimeType: file.mimetype, folder: 'hok/products', type: 'image' })),
       )
       data.images = uploads.map((item) => ({ url: item.secure_url, publicId: item.public_id }))
       await Promise.all(oldDeletes)
@@ -340,8 +340,8 @@ export const deleteProduct = async (req, res) => {
       throw new ApiError(404, 'Product not found')
     }
 
-    const imageDeletes = (product.images || []).map((img) => deleteMedia(img.publicId, 'image'))
-    const variantDeletes = (product.colorVariants || []).map((v) => deleteMedia(v.imagePublicId, 'image'))
+    const imageDeletes = (product.images || []).map((img) => img.publicId ? mediaService.delete(img.publicId, 'image') : Promise.resolve())
+    const variantDeletes = (product.colorVariants || []).map((v) => v.imagePublicId ? mediaService.delete(v.imagePublicId, 'image') : Promise.resolve())
     await Promise.all([...imageDeletes, ...variantDeletes])
 
     await prisma.product.delete({ where: { id: req.params.id } })
@@ -377,7 +377,7 @@ export const addColorVariant = async (req, res) => {
     if (!colorName) throw new ApiError(400, 'colorName is required')
     if (!req.file) throw new ApiError(400, 'Image file is required')
 
-    const upload = await uploadImage(req.file.buffer, 'hok/products/variants', req.file.mimetype)
+    const upload = await mediaService.upload({ buffer: req.file.buffer, mimeType: req.file.mimetype, folder: 'hok/products/variants', type: 'image' })
 
     const currentVariants = Array.isArray(product.colorVariants) ? product.colorVariants : []
     const filtered = currentVariants.filter((v) => v.colorName !== colorName)
@@ -487,7 +487,7 @@ export const removeColorVariant = async (req, res) => {
     const variant = currentVariants.find((v) => v.colorName === colorName)
     if (variant?.imagePublicId) {
       try {
-        await deleteMedia(variant.imagePublicId, 'image')
+        await mediaService.delete(variant.imagePublicId, 'image')
       } catch (deleteErr) {
         console.error('[PRODUCT][VARIANT_DELETE] delete old media failed:', deleteErr?.message)
       }

@@ -37,7 +37,7 @@ export const ServicesDashboard = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await api.get('/content/services')
+        const res = await api.get('/services')
         setServices(Array.isArray(res.data) ? res.data : res.data?.items || [])
       } catch {
         setServices([])
@@ -114,12 +114,12 @@ export const ServicesDashboard = () => {
       }
 
       if (editingId) {
-        await api.patch(`/content/services/${editingId}`, payload)
+        await api.patch(`/services/${editingId}`, payload)
       } else {
-        await api.post('/content/services', payload)
+        await api.post('/services', payload)
       }
       resetForm()
-      const res = await api.get('/content/services')
+      const res = await api.get('/services')
       setServices(Array.isArray(res.data) ? res.data : res.data?.items || [])
       emitAdminDataChanged({ type: 'services-changed' })
     } catch (err) {
@@ -132,9 +132,9 @@ export const ServicesDashboard = () => {
   const deleteItem = async () => {
     if (!deleteId) return
     try {
-      await api.delete(`/content/services/${deleteId}`)
+      await api.delete(`/services/${deleteId}`)
       setDeleteId(null)
-      const res = await api.get('/content/services')
+      const res = await api.get('/services')
       setServices(Array.isArray(res.data) ? res.data : res.data?.items || [])
       emitAdminDataChanged({ type: 'services-changed' })
     } catch (err) {
@@ -151,7 +151,7 @@ export const ServicesDashboard = () => {
     updated[newIndex] = temp
     const orderPayload = updated.map((s, i) => ({ id: s.id, displayOrder: i }))
     try {
-      await api.patch('/content/services/reorder', { order: orderPayload })
+      await api.patch('/services/reorder', { order: orderPayload })
       setServices(updated)
       emitAdminDataChanged({ type: 'services-changed' })
     } catch (err) {
@@ -161,7 +161,7 @@ export const ServicesDashboard = () => {
 
   const toggleActive = async (item) => {
     try {
-      await api.patch(`/content/services/${item.id}`, { isActive: !item.isActive })
+      await api.patch(`/services/${item.id}`, { isActive: !item.isActive })
       setServices(services.map(s => s.id === item.id ? { ...s, isActive: !s.isActive } : s))
       emitAdminDataChanged({ type: 'services-changed' })
     } catch (err) {

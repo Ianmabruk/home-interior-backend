@@ -23,13 +23,9 @@ export const HeroImagesDashboard = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await api.get('/content/homepage')
-        const data = res.data || {}
-        if (data.heroImages) {
-          setHeroImages(data.heroImages.map((url, index) => ({ url, order: index })))
-        }
-        if (data.title) setForm(f => ({ ...f, title: data.title }))
-        if (data.subtitle) setForm(f => ({ ...f, subtitle: data.subtitle }))
+        const res = await api.get('/hero-media')
+        const data = Array.isArray(res.data) ? res.data : res.data?.items || []
+        setHeroImages(data)
       } catch {
         setHeroImages([])
       }
@@ -82,17 +78,15 @@ export const HeroImagesDashboard = () => {
 
       mediaFiles.forEach((file) => {
         if (file instanceof File) {
-          payload.append('heroImages', file)
+          payload.append('media', file)
         }
       })
 
-      await api.put('/content/homepage', payload)
+      await api.post('/hero-media', payload)
       resetForm()
-      const res = await api.get('/content/homepage')
-      const data = res.data || {}
-      if (data.heroImages) {
-        setHeroImages(data.heroImages.map((url, index) => ({ url, order: index })))
-      }
+      const res = await api.get('/hero-media')
+      const data = Array.isArray(res.data) ? res.data : res.data?.items || []
+      setHeroImages(data)
       emitAdminDataChanged({ type: 'hero-images-changed' })
     } catch (err) {
       console.error('Submit error:', err)
@@ -104,13 +98,11 @@ export const HeroImagesDashboard = () => {
   const deleteItem = async () => {
     if (!deleteId) return
     try {
-      await api.delete('/content/homepage/hero-images', { data: { heroImages: [deleteId] } })
+      await api.delete(`/hero-media/${deleteId}`)
       setDeleteId(null)
-      const res = await api.get('/content/homepage')
-      const data = res.data || {}
-      if (data.heroImages) {
-        setHeroImages(data.heroImages.map((url, index) => ({ url, order: index })))
-      }
+      const res = await api.get('/hero-media')
+      const data = Array.isArray(res.data) ? res.data : res.data?.items || []
+      setHeroImages(data)
       emitAdminDataChanged({ type: 'hero-images-changed' })
     } catch (err) {
       console.error('Delete error:', err)
@@ -280,7 +272,7 @@ export const HeroImagesDashboard = () => {
         {heroImages.map((item, i) => (
           <motion.article
             layout
-            key={item.url}
+            key={item.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
@@ -288,7 +280,7 @@ export const HeroImagesDashboard = () => {
           >
             <div className="relative aspect-[16/9] overflow-hidden">
               <img
-                src={item.url}
+                src={item.imageUrl}
                 alt={`Hero image ${i + 1}`}
                 className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
                 loading="lazy"
@@ -313,7 +305,7 @@ export const HeroImagesDashboard = () => {
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => setDeleteId(item.url)}
+                  onClick={() => setDeleteId(item.id)}
                   className="p-2 bg-[var(--error)]/90 backdrop-blur-sm rounded-xl text-white hover:bg-[var(--error)] shadow-lg"
                   aria-label="Delete hero image"
                 >

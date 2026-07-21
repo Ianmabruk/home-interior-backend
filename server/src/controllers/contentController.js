@@ -1,7 +1,7 @@
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { prisma } from '../config/prisma.js'
 import { ApiError } from '../utils/ApiError.js'
-import { uploadImage, uploadVideo, deleteMedia } from '../services/uploadService.js'
+import { mediaService } from '../services/media.service.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { env } from '../config/env.js'
 import { withId, withIdArray, parseMaybeJson, parseMediaSettings, DEFAULT_MEDIA_SETTINGS } from '../utils/helpers.js'
@@ -21,9 +21,7 @@ const handleFileUpload = async (req, folder, defaultKind = 'image') => {
   const kind = req.body.resourceType === 'video' ? 'video' : defaultKind
   const mimeType = req.file.mimetype
   console.log('[UPLOAD] File upload request:', { fieldname: req.file.fieldname, kind, mimeType, size: req.file.size })
-  const result = kind === 'video'
-    ? await uploadVideo(req.file.buffer, folder, mimeType)
-    : await uploadImage(req.file.buffer, folder, mimeType)
+  const result = await mediaService.upload({ buffer: req.file.buffer, mimeType, folder, type: kind })
   return { url: result.secure_url, publicId: result.public_id, kind }
 }
 
@@ -32,8 +30,7 @@ const handleMultipleUploads = async (files, folder, defaultKind = 'image') => {
   const results = await Promise.all(
     files.map((file) => {
       const kind = file.mimetype?.startsWith('video/') ? 'video' : defaultKind
-      const uploadFn = kind === 'video' ? uploadVideo : uploadImage
-      return uploadFn(file.buffer, folder, file.mimetype)
+      return mediaService.upload({ buffer: file.buffer, mimeType: file.mimetype, folder, type: kind })
     }),
   )
   return results.map((result) => ({ url: result.secure_url, publicId: result.public_id, kind: result.resource_type || 'image' }))
@@ -177,7 +174,7 @@ export const upsertAbout = async (req, res) => {
 
     if (payload.aboutImagePublicId && existing.aboutImagePublicId && payload.aboutImagePublicId !== existing.aboutImagePublicId) {
       try {
-        await deleteMedia(existing.aboutImagePublicId, 'image')
+        await mediaService.delete(existing.aboutImagePublicId, 'image')
       } catch (deleteErr) {
         console.error('[ABOUT][UPDATE] delete old media failed:', deleteErr?.message)
       }
@@ -367,11 +364,31 @@ export const homepageFeed = asyncHandler(async (req, res) => {
       'HOMEPAGE-CONTENT',
       { maxRetries: 2, timeout: 5000 }
     )
+
+    const heroMedia = await executeWithRetry(
+      () => prisma.heroMedia.findMany({
+        where: { isActive: true },
+        orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
+        select: {
+          id: true,
+          imageUrl: true,
+          publicId: true,
+          mediaType: true,
+          featured: true,
+          displayOrder: true,
+          title: true,
+          subtitle: true,
+        },
+      }),
+      'HOMEPAGE-HERO-MEDIA',
+      { maxRetries: 2, timeout: 5000 }
+    )
+
     if (homepageContent) {
       heroImages = homepageContent.heroImages || []
     }
   } catch (err) {
-    console.error('[HOMEPAGE] heroImages query failed:', err?.message)
+    console.error('[HOMEPAGE] content/hero-media query failed:', err?.message)
     heroImages = []
   }
 
@@ -419,6 +436,7 @@ export const homepageFeed = asyncHandler(async (req, res) => {
     featuredPortfolio: withIdArray(featuredPortfolio),
     featuredVirtualDesigns: withIdArray(featuredVirtualDesigns),
     heroImages: heroImages,
+    heroMedia: heroMedia.map(item => withId(item)),
     featuredProject: featuredProject ? withId(featuredProject) : null,
   }))
 })
@@ -434,7 +452,7 @@ export const testUpload = asyncHandler(async (req, res) => {
   }
 
   const file = req.file
-  const result = await uploadImage(file.buffer, 'hok/test-uploads', file.mimetype)
+  const result = await mediaService.upload({ buffer: file.buffer, mimeType: file.mimetype, folder: 'hok/test-uploads', type: 'image' })
 
   res.status(200).json(sendSuccess({
     message: 'Upload successful',
@@ -458,8 +476,8 @@ export const uploadMediaController = asyncHandler(async (req, res) => {
   const kind = req.body.resourceType === 'video' ? 'video' : 'image'
   const mimeType = req.file.mimetype
   const result = kind === 'video'
-    ? await uploadVideo(req.file.buffer, folder, mimeType)
-    : await uploadImage(req.file.buffer, folder, mimeType)
+    ? await mediaService.upload({ buffer: req.file.buffer, mimeType, folder, type: 'video' })
+    : await mediaService.upload({ buffer: req.file.buffer, mimeType, folder, type: 'image' })
   res.status(200).json(sendSuccess({
     url: result.secure_url,
     publicId: result.public_id,
@@ -472,7 +490,7 @@ export const deleteMediaController = asyncHandler(async (req, res) => {
   if (!publicId) {
     return res.status(400).json({ message: 'publicId is required' })
   }
-  const result = await deleteMedia(publicId, resourceType === 'video' ? 'video' : 'image')
+  const result = await mediaService.delete(publicId, resourceType === 'video' ? 'video' : 'image')
   res.json(sendSuccess({ result: result?.result || 'ok' }))
 })
 
@@ -486,7 +504,7 @@ export const upsertHomepageContent = asyncHandler(async (req, res) => {
     const uploadedImages = []
     if (req.files && Array.isArray(req.files)) {
       for (const file of req.files) {
-        const upload = await uploadImage(file.buffer, 'hok/homepage/hero', file.mimetype)
+        const upload = await mediaService.upload({ buffer: file.buffer, mimeType: file.mimetype, folder: 'hok/homepage/hero', type: 'image' })
         uploadedImages.push(upload.secure_url)
       }
     }
@@ -516,7 +534,7 @@ export const upsertHomepageContent = asyncHandler(async (req, res) => {
         try {
           const publicId = url.split('/').pop()?.split('.')[0]
           if (publicId) {
-            await deleteMedia(publicId, 'image')
+            await mediaService.delete(publicId, 'image')
           }
         } catch (e) {
           console.error('[HOMEPAGE] delete old hero image failed:', e?.message)
@@ -573,7 +591,7 @@ export const deleteHeroImagesController = asyncHandler(async (req, res) => {
       try {
         const publicId = url.split('/').pop()?.split('.')[0]
         if (publicId) {
-          await deleteMedia(publicId, 'image')
+            await mediaService.delete(publicId, 'image')
         }
       } catch (e) {
         console.error('[HOMEPAGE] delete hero image failed:', e?.message)

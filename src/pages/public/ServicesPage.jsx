@@ -22,7 +22,7 @@ export const ServicesPage = () => {
 
   const loadServices = async () => {
     try {
-      const res = await api.get('/content/services')
+      const res = await api.get('/services')
       setServices(Array.isArray(res.data) ? res.data : res.data?.items || [])
     } catch (err) {
       console.warn('[SERVICES] Failed to load:', err?.message)
