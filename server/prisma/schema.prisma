@@ -61,7 +61,7 @@ model Product {
   description   String
   price         Float
   discountPrice Float?   @map("discount_price")
-  colorVariants Json?
+  colorVariants Json?    @map("color_variants")
   sku           String?
   images        Json
   category      String

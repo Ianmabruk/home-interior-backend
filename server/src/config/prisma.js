@@ -9,9 +9,7 @@ export const prisma =
     log: ['error', 'warn'],
   })
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma
-}
+globalForPrisma.prisma = globalForPrisma.prisma || prisma
 
 export const connectDB = async () => {
   console.log('Connecting to PostgreSQL...')
