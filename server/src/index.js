@@ -1,5 +1,5 @@
 import { app } from './app.js'
-import { prisma } from './config/prisma.js'
+import { prisma, connectDB } from './config/prisma.js'
 import { verifyCloudinaryConfig } from './config/cloudinary.js'
 import { env } from './config/env.js'
 
@@ -36,8 +36,7 @@ const start = async () => {
   console.log('')
 
   try {
-    await prisma.$connect()
-    console.log('📝 Prisma Client connected to PostgreSQL')
+    await connectDB()
     verifyCloudinaryConfig().catch(() => {})
     app.listen(env.port, "0.0.0.0", () => {
       console.log(`Server listening on port ${env.port}`)

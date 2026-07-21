@@ -7,6 +7,20 @@ const extractUnknownField = (message = '') => {
   return m ? m[1] : null
 }
 
+// Extract the column name from a P2022 error, e.g.
+// "The column `last_login_at` does not exist in the current database."
+const extractMissingColumn = (message = '') => {
+  const m = message.match(/column\s+[`']?(\w+)[`']?\s+does not exist/i)
+  return m ? m[1] : null
+}
+
+const COLUMN_TO_FIELD = {
+  refresh_token: 'refreshToken',
+  password_reset_token: 'passwordResetToken',
+  password_reset_expires: 'passwordResetExpires',
+  last_login_at: 'lastLoginAt',
+}
+
 /**
  * Wraps a Prisma write operation (create/update) with automatic schema-mismatch
  * recovery. If the deployed Prisma client reports an unknown field or a missing
@@ -36,6 +50,12 @@ export const prismaSafeWrite = async (operation, payload, label) => {
       let field = extractUnknownField(err.message)
       if ((!field || !(field in current)) && isMissingColumn && 'mediaSettings' in current) {
         field = 'mediaSettings'
+      }
+      if ((!field || !(field in current)) && isMissingColumn) {
+        const col = extractMissingColumn(err.message)
+        if (col) {
+          field = COLUMN_TO_FIELD[col] || col
+        }
       }
       if (!field || !(field in current)) {
         console.error(`[${label}] Prisma write failed, unrecoverable by field stripping:`, err?.message)

@@ -16,16 +16,22 @@ const updateMeSchema = z.object({
 }).partial()
 
 export const me = asyncHandler(async (req, res) => {
-  const user = await executeWithRetry(
-    () =>
-      prisma.user.findUnique({
-        where: { id: req.user.userId },
-      }),
-    'USER][ME',
-    { maxRetries: 2, timeout: 10000 },
-  )
+  let user
+  try {
+    user = await executeWithRetry(
+      () =>
+        prisma.user.findUnique({
+          where: { id: req.user.userId },
+        }),
+      'USER][ME',
+      { maxRetries: 2, timeout: 10000 },
+    )
+  } catch (err) {
+    console.error('[USER][me] DB error:', err)
+    return res.status(500).json({ success: false, message: 'Database error fetching user profile.' })
+  }
   if (!user) {
-    throw new ApiError(404, 'User not found')
+    return res.status(404).json({ success: false, message: 'User not found' })
   }
 
   const { passwordHash, refreshToken, ...safe } = user
