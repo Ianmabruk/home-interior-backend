@@ -9,9 +9,16 @@ export const prisma =
     log: ['error', 'warn'],
     datasources: {
       db: {
-        url: env.databaseUrl.includes('prepared_statements=false') 
-          ? env.databaseUrl 
-          : env.databaseUrl + (env.databaseUrl.includes('?') ? '&' : '?') + 'prepared_statements=false',
+        url: (() => {
+          let url = env.databaseUrl
+          if (!url.includes('prepared_statements=false')) {
+            url += (url.includes('?') ? '&' : '?') + 'prepared_statements=false'
+          }
+          if (!url.includes('statement_cache_size=0')) {
+            url += (url.includes('?') ? '&' : '?') + 'statement_cache_size=0'
+          }
+          return url
+        })(),
       },
     },
   })
