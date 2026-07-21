@@ -8,7 +8,6 @@ import {
   Plus,
   Image,
   Star,
-  UploadCloud,
   Images,
   Loader2,
 } from 'lucide-react'
@@ -51,9 +50,7 @@ export const VirtualDesignDashboard = () => {
     } catch {
       setItems([])
     }
-  }, [])
-
-  useEffect(() => { load() }, [load])
+   }, [])
 
   useEffect(() => {
     const handler = () => { load() }

@@ -1,10 +1,9 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useParams, Link } from 'react-router-dom'
-import { X, Maximize2, Play, CalendarCheck, ArrowRight } from 'lucide-react'
+import { X, Play, CalendarCheck, ArrowRight } from 'lucide-react'
 import { api } from '../../services/api'
 import { getOptimizedUrl, getOptimizedVideoUrl, getVideoPosterUrl } from '../../utils/cloudinaryHelpers'
-import LazyVideo from '../../components/common/LazyVideo'
 
 export const VirtualDesignDetailPage = () => {
   const { id } = useParams()

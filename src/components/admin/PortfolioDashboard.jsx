@@ -37,8 +37,10 @@ export const PortfolioDashboard = () => {
     } catch {
       setPortfolio([])
     }
-  }, [])
+   }, [])
 
+  // Initial data load on mount
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- load() populates initial state from API
   useEffect(() => { load() }, [load])
 
   useEffect(() => {

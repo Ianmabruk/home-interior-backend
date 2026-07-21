@@ -4,6 +4,7 @@ import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { parseBody } from '../utils/helpers.js'
+import { emailService } from '../services/emailService.js'
 
 const withId = (item) => (item == null ? item : { ...item, _id: item.id })
 const withIdArray = (items) => items.map((item) => withId(item))
@@ -119,7 +120,12 @@ export const createOrder = asyncHandler(async (req, res) => {
     return created
   })
 
-  console.log(`[EMAIL DISABLED] Order confirmation for order ${order.id.slice(-8)} to ${user.email || req.user.email}`)
+  void emailService.send({
+    to: user.email || req.user.email,
+    subject: `Order Confirmation #${order.id.slice(-8)}`,
+    text: `Dear ${user.fullName || 'Customer'},\n\nThank you for your order #${order.id.slice(-8)}. Total: $${total.toFixed(2)}.\n\nWe will notify you when your order ships.\n\nBest regards,\nHOK Interior Designs`,
+    html: `<p>Dear ${user.fullName || 'Customer'},</p><p>Thank you for your order <strong>#${order.id.slice(-8)}</strong>. Total: <strong>$${total.toFixed(2)}</strong>.</p><p>We will notify you when your order ships.</p><p>Best regards,<br>HOK Interior Designs</p>`,
+  })
 
   res.status(201).json(sendSuccess(withId(order)))
 })

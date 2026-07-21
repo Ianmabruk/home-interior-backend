@@ -4,7 +4,8 @@ import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { withId, withIdArray, parseBody } from '../utils/helpers.js'
-import { prismaSafeWrite } from '../utils/prismaSafeWrite.js'
+import { env } from '../config/env.js'
+import { emailService } from '../services/emailService.js'
 
 const messageSchema = z.object({
   name: z.string().min(2),
@@ -28,53 +29,45 @@ const replySchema = z.object({
 
 export const createMessage = asyncHandler(async (req, res) => {
   const payload = parseBody(messageSchema, req.body)
-  const created = await prismaSafeWrite(
-    (data) => prisma.message.create({ data }),
-    payload,
-    'MESSAGE][CREATE',
-  )
+  const created = await prisma.message.create({ data: payload })
   res.status(201).json(sendSuccess(withId(created)))
 })
 
 export const createQuote = asyncHandler(async (req, res) => {
   const payload = parseBody(quoteSchema, req.body)
-  const created = await prismaSafeWrite(
-    (data) => prisma.message.create({
-      data: {
-        ...data,
-        subject: `Quote Request: ${data.projectType}`,
-        content: data.message,
-        isRead: false,
-      },
-    }),
-    payload,
-    'MESSAGE][QUOTE',
-  )
+  const created = await prisma.message.create({
+    data: {
+      ...payload,
+      subject: `Quote Request: ${payload.projectType}`,
+      content: payload.message,
+      isRead: false,
+    },
+  })
 
   try {
     const admin = await prisma.user.findFirst({ where: { role: 'admin' } })
     if (admin) {
-      console.log(`[EMAIL DISABLED] Quote notification to ${admin.email} for ${payload.projectType}`)
+      void emailService.send({
+        to: admin.email,
+        subject: `New Quote Request: ${payload.projectType}`,
+        text: `Full Name: ${payload.fullName}\nEmail: ${payload.email}\nProject Type: ${payload.projectType}\nBudget: ${payload.budget}\nMessage: ${payload.message}`,
+        html: `<p><strong>Full Name:</strong> ${payload.fullName}</p><p><strong>Email:</strong> ${payload.email}</p><p><strong>Project Type:</strong> ${payload.projectType}</p><p><strong>Budget:</strong> ${payload.budget}</p><p><strong>Message:</strong> ${payload.message}</p>`,
+      })
     }
-  } catch (err) {
-    console.error('Quote notification email failed:', err)
+  } catch {
+    // ignore
   }
 
   res.status(201).json(sendSuccess(withId(created)))
 })
 
 export const listMessages = asyncHandler(async (req, res) => {
-  try {
-    const limit = Math.min(Number(req.query.limit) || 100, 200)
-    const messages = await prisma.message.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-    })
-    res.json(sendSuccess(withIdArray(messages)))
-  } catch (error) {
-    console.error('[MESSAGES][LIST] db query failed:', error?.message)
-    res.json(sendSuccess([]))
-  }
+  const limit = Math.min(Number(req.query.limit) || 100, 200)
+  const messages = await prisma.message.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+  })
+  res.json(sendSuccess(withIdArray(messages)))
 })
 
 export const replyToMessage = asyncHandler(async (req, res) => {
@@ -84,21 +77,22 @@ export const replyToMessage = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: 'Message not found' })
   }
 
-  await prismaSafeWrite(
-    () => prisma.message.update({
-      where: { id: messageId },
-      data: { isRead: true },
-    }),
-    { isRead: true },
-    'MESSAGE][REPLY',
-  )
+  await prisma.message.update({
+    where: { id: messageId },
+    data: { isRead: true },
+  })
 
   try {
     if (message.email) {
-      console.log(`[EMAIL DISABLED] Reply to ${message.email} for message ${messageId}`)
+      void emailService.send({
+        to: message.email,
+        subject: `Re: ${message.subject}`,
+        text: reply,
+        html: `<p>${reply.replace(/\n/g, '</p><p>')}</p>`,
+      })
     }
-  } catch (err) {
-    console.error('Reply email failed:', err)
+  } catch {
+    // ignore
   }
 
   res.json(sendSuccess({ message: 'Reply sent', isRead: true }))

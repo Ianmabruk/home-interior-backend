@@ -69,7 +69,6 @@ export const AdminPage = () => {
     fullName: '',
     email: '',
   })
-  const [profileImage, setProfileImage] = useState(null)
   const [profilePreview, setProfilePreview] = useState(null)
   const [savingProfile, setSavingProfile] = useState(false)
   const fileRef = useRef(null)
@@ -144,9 +143,6 @@ export const AdminPage = () => {
     setSavingProfile(true)
     try {
       await api.patch('/users/me', { fullName: profileForm.fullName })
-      if (updateProfile) {
-        await updateProfile({ fullName: profileForm.fullName, email: profileForm.email, profileImage: profilePreview })
-      }
       setStatus('Profile updated successfully.')
       setTimeout(() => setStatus(''), 3000)
     } catch {
@@ -159,7 +155,6 @@ export const AdminPage = () => {
   const handleProfileImage = (e) => {
     const f = e.target.files?.[0] || null
     if (f?.type?.startsWith('image/')) {
-      setProfileImage(f)
       setProfilePreview(URL.createObjectURL(f))
     }
   }
@@ -168,7 +163,6 @@ export const AdminPage = () => {
     e.preventDefault()
     const f = e.dataTransfer.files?.[0] || null
     if (f?.type?.startsWith('image/')) {
-      setProfileImage(f)
       setProfilePreview(URL.createObjectURL(f))
     }
   }
@@ -180,7 +174,6 @@ export const AdminPage = () => {
   const handleProfileDragLeave = () => {}
 
   const removeProfileImage = () => {
-    setProfileImage(null)
     setProfilePreview(null)
   }
 

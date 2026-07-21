@@ -22,8 +22,8 @@ export const env = {
   databaseUrl: process.env.DATABASE_URL || '',
   directUrl: process.env.DIRECT_URL || '',
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
-  jwtAccessSecret: process.env.JWT_ACCESS_SECRET || '4549201ef63a5517aa42bf414e7f7d4d',
-  jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || '7a29ae8f489a3252be841287f383543a',
+  jwtAccessSecret: process.env.JWT_ACCESS_SECRET || '',
+  jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || '',
   accessTokenTtl: process.env.ACCESS_TOKEN_TTL || '15m',
   refreshTokenTtl: process.env.REFRESH_TOKEN_TTL || '30d',
   cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME || '',
@@ -31,4 +31,5 @@ export const env = {
   cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET || '',
   seedAdminEmail: process.env.SEED_ADMIN_EMAIL || 'admin@hokinterior.com',
   seedAdminPassword: process.env.SEED_ADMIN_PASSWORD || 'Admin123!',
+  sendgridApiKey: process.env.SENDGRID_API_KEY || '',
 }

@@ -9,11 +9,30 @@ export const api = axios.create({
   withCredentials: true,
 })
 
+const CONTENT_PATHS = [
+  '/homepage',
+  '/portfolio',
+  '/virtual-design',
+  '/services',
+  '/about',
+  '/hero-media',
+  '/consultations',
+  '/media',
+  '/test-upload',
+  '/analytics',
+]
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('hok_access_token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+
+  const url = config.url || ''
+  if (CONTENT_PATHS.some((p) => url === p || url.startsWith(p + '/'))) {
+    config.url = '/content' + url
+  }
+
   return config
 })
 

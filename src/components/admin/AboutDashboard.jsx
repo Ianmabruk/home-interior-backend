@@ -1,9 +1,8 @@
 import { useState, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { X, Plus, Trash2, Image as ImageIcon } from 'lucide-react'
+import { X, Plus, Image as ImageIcon } from 'lucide-react'
 import { api } from '../../services/api'
 import { emitAdminDataChanged } from '../../utils/adminEvents'
-import { getOptimizedUrl } from '../../utils/cloudinaryHelpers'
 
 const INITIAL_FORM = {
   story: '',

@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Instagram, Facebook, ArrowRight } from 'lucide-react'
 import { FaTiktok, FaPinterest } from 'react-icons/fa'
