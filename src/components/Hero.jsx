@@ -21,8 +21,7 @@ export const Hero = ({ onBookConsultation, heroImages = [] }) => {
   }, [heroImages])
 
   const currentImage = images[currentIndex]
-  const fallbackImage = 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1920&h=1080&fit=crop'
-  const activeImage = currentImage?.url || fallbackImage
+  const activeImage = currentImage?.url
 
   return (
     <section
@@ -31,16 +30,7 @@ export const Hero = ({ onBookConsultation, heroImages = [] }) => {
       aria-label="Hero image"
     >
       {!images.length && (
-        <div className="absolute inset-0">
-          <img
-            src={getOptimizedUrl(fallbackImage, { width: 1920, crop: 'limit' })}
-            alt="Luxury interior design"
-            className="h-full w-full object-cover"
-            loading="eager"
-            decoding="async"
-            style={{ transform: 'scale(1.15)' }}
-          />
-        </div>
+        <div className="absolute inset-0 bg-gradient-to-br from-[var(--primary)] via-[var(--primary)]/95 to-[var(--primary)]/80" />
       )}
       {images.length > 0 && (
         <div className="absolute inset-0">

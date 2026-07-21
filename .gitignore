@@ -13,3 +13,7 @@ coverage/
 server/coverage/
 
 /src/generated/prisma
+
+REBUILD_REPORTS/
+SYSTEM_AUDIT_REPORT.md
+backups/

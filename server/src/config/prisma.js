@@ -60,24 +60,28 @@ export const executeWithRetry = async (operation, label = 'DB', options = {}) =>
         setTimeout(() => reject(new Error(`${label} query timeout after ${timeout}ms`)), timeout),
       )
       return await Promise.race([operation(), timeoutPromise])
-    } catch (err) {
-      lastError = err
-      const isConnErr = isConnectionError(err)
-      const isStmtErr = isPreparedStatementError(err)
+     } catch (err) {
+       lastError = err
+       const isConnErr = isConnectionError(err)
+       const isStmtErr = isPreparedStatementError(err)
 
-      if (isConnErr || isStmtErr) {
-        const labelText = isStmtErr ? 'Prepared-statement' : 'Connection'
-        console.warn(`[${labelText}] ${label} attempt ${attempt}/${maxRetries}: ${err?.code || err?.name}: ${err?.message}`)
-        if (attempt < maxRetries) {
-          const delay = Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay)
-          await sleep(delay)
-          continue
-        }
-      } else {
-        console.error(`[${label}] Non-retryable error:`, err?.message)
-        throw err
-      }
-    }
+       if (isStmtErr) {
+         console.error(`[${label}] Non-retryable prepared-statement error:`, err?.code || err?.name, err?.message)
+         throw err
+       }
+
+       if (isConnErr) {
+         console.warn(`[Connection] ${label} attempt ${attempt}/${maxRetries}: ${err?.code || err?.name}: ${err?.message}`)
+         if (attempt < maxRetries) {
+           const delay = Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay)
+           await sleep(delay)
+           continue
+         }
+       } else {
+         console.error(`[${label}] Non-retryable error:`, err?.message)
+         throw err
+       }
+     }
   }
   throw lastError
 }
