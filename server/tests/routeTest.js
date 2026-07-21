@@ -9,15 +9,12 @@ const routes = [
   { method: 'GET', path: '/portfolio', auth: false },
   { method: 'GET', path: '/services', auth: false },
   { method: 'GET', path: '/about', auth: false },
-  { method: 'GET', path: '/testimonials', auth: false },
   { method: 'GET', path: '/virtual-designs', auth: false },
   { method: 'GET', path: '/products', auth: false },
   { method: 'GET', path: '/orders', auth: true },
   { method: 'GET', path: '/admin/overview', auth: true },
   { method: 'GET', path: '/admin/settings', auth: true },
   { method: 'GET', path: '/admin/messages', auth: true },
-  { method: 'GET', path: '/admin/consultations', auth: true },
-  { method: 'GET', path: '/analytics', auth: true },
 ]
 
 function request(method, path) {

@@ -120,6 +120,9 @@ describe('Content Management', () => {
       expect(response.status).toBe(201)
       expect(response.body.success).toBe(true)
       expect(response.body.data.description).toBe('Desc')
+
+      // image uploaded through shared service
+      expect(mockUploadImage).toHaveBeenCalledTimes(1)
     })
 
     it('should create portfolio with description when schema supports it', async () => {
@@ -131,7 +134,7 @@ describe('Content Management', () => {
         cloudinaryId: 'test-image-id',
         displayOrder: 0,
         featured: false,
-        galleryImages: [],
+        mediaUrls: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       })

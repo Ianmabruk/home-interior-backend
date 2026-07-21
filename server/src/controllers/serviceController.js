@@ -3,20 +3,7 @@ import { prisma } from '../config/prisma.js'
 import { ApiError } from '../utils/ApiError.js'
 import { mediaService } from '../services/media.service.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
-import { withId, withIdArray, sortByOrderThenDate, orderValue, toBoolean } from '../utils/helpers.js'
-
-const stripUnknown = (obj, allowed) => {
-  const out = {}
-  for (const key of Object.keys(obj)) {
-    if (allowed.has(key)) out[key] = obj[key]
-  }
-  return out
-}
-
-const findFileByFieldname = (req, fieldname) => {
-  const files = Array.isArray(req.files) ? req.files : []
-  return files.find((f) => f.fieldname === fieldname) || null
-}
+import { withId, withIdArray } from '../utils/helpers.js'
 
 export const serviceController = {
   list: asyncHandler(async (req, res) => {
@@ -30,7 +17,6 @@ export const serviceController = {
         icon: true,
         imageUrl: true,
         cloudinaryId: true,
-        mediaSettings: true,
         featured: true,
         displayOrder: true,
         isActive: true,
@@ -38,12 +24,12 @@ export const serviceController = {
         updatedAt: true,
       },
     })
-    res.json(sendSuccess(withIdArray(sortByOrderThenDate(items))))
+    res.json(sendSuccess(withIdArray(items)))
   }),
 
-  listAdmin: asyncHandler(async (req, res) => {
-    const items = await prisma.service.findMany({
-      orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
+  get: asyncHandler(async (req, res) => {
+    const item = await prisma.service.findUnique({
+      where: { id: req.params.id },
       select: {
         id: true,
         title: true,
@@ -51,7 +37,6 @@ export const serviceController = {
         icon: true,
         imageUrl: true,
         cloudinaryId: true,
-        mediaSettings: true,
         featured: true,
         displayOrder: true,
         isActive: true,
@@ -59,11 +44,6 @@ export const serviceController = {
         updatedAt: true,
       },
     })
-    res.json(sendSuccess(withIdArray(sortByOrderThenDate(items))))
-  }),
-
-  get: asyncHandler(async (req, res) => {
-    const item = await prisma.service.findUnique({ where: { id: req.params.id } })
     if (!item) {
       return res.status(404).json({ success: false, message: 'Service not found' })
     }
@@ -71,21 +51,22 @@ export const serviceController = {
   }),
 
   create: asyncHandler(async (req, res) => {
-    const allowed = new Set(['title', 'description', 'icon', 'imageUrl', 'cloudinaryId', 'mediaSettings', 'featured', 'displayOrder', 'isActive'])
-    const payload = stripUnknown({ ...req.body }, allowed)
-
-    if (payload.displayOrder !== undefined) payload.displayOrder = orderValue(payload.displayOrder)
-    payload.featured = toBoolean(req.body.featured, false)
-    payload.isActive = toBoolean(req.body.isActive, true)
-
-    const mediaFile = findFileByFieldname(req, 'media')
-    if (mediaFile) {
-      const upload = await mediaService.upload({ buffer: mediaFile.buffer, mimeType: mediaFile.mimetype, folder: 'hok/services', type: 'image' })
-      payload.imageUrl = upload.secure_url
-      payload.cloudinaryId = upload.public_id
+    const data = {
+      title: req.body.title || 'Untitled',
+      description: req.body.description || '',
+      icon: req.body.icon || 'LayoutGrid',
+      featured: req.body.featured === 'true' || req.body.featured === true,
+      displayOrder: Number(req.body.displayOrder) || 0,
+      isActive: req.body.isActive !== 'false' && req.body.isActive !== false,
     }
 
-    const item = await prisma.service.create({ data: payload })
+    if (req.file) {
+      const upload = await mediaService.upload({ buffer: req.file.buffer, mimeType: req.file.mimetype, folder: 'hok/services', type: 'image' })
+      data.imageUrl = upload.secure_url
+      data.cloudinaryId = upload.public_id
+    }
+
+    const item = await prisma.service.create({ data })
     res.status(201).json(sendSuccess(withId(item)))
   }),
 
@@ -95,24 +76,24 @@ export const serviceController = {
       return res.status(404).json({ success: false, message: 'Service not found' })
     }
 
-    const allowed = new Set(['title', 'description', 'icon', 'imageUrl', 'cloudinaryId', 'mediaSettings', 'featured', 'displayOrder', 'isActive'])
-    const payload = stripUnknown({ ...req.body }, allowed)
+    const data = {}
+    if (req.body.title !== undefined) data.title = req.body.title
+    if (req.body.description !== undefined) data.description = req.body.description
+    if (req.body.icon !== undefined) data.icon = req.body.icon
+    if (req.body.featured !== undefined) data.featured = req.body.featured === 'true' || req.body.featured === true
+    if (req.body.displayOrder !== undefined) data.displayOrder = Number(req.body.displayOrder) || 0
+    if (req.body.isActive !== undefined) data.isActive = req.body.isActive === 'true' || req.body.isActive === true
 
-    if (payload.displayOrder !== undefined) payload.displayOrder = orderValue(payload.displayOrder)
-    payload.featured = toBoolean(req.body.featured, existing.featured)
-    payload.isActive = toBoolean(req.body.isActive, existing.isActive)
-
-    const mediaFile = findFileByFieldname(req, 'media')
-    if (mediaFile) {
+    if (req.file) {
       if (existing.cloudinaryId) {
-        await mediaService.delete(existing.cloudinaryId, 'image')
+        try { await mediaService.delete(existing.cloudinaryId, 'image') } catch {}
       }
-      const upload = await mediaService.upload({ buffer: mediaFile.buffer, mimeType: mediaFile.mimetype, folder: 'hok/services', type: 'image' })
-      payload.imageUrl = upload.secure_url
-      payload.cloudinaryId = upload.public_id
+      const upload = await mediaService.upload({ buffer: req.file.buffer, mimeType: req.file.mimetype, folder: 'hok/services', type: 'image' })
+      data.imageUrl = upload.secure_url
+      data.cloudinaryId = upload.public_id
     }
 
-    const item = await prisma.service.update({ where: { id: req.params.id }, data: payload })
+    const item = await prisma.service.update({ where: { id: req.params.id }, data })
     res.json(sendSuccess(withId(item)))
   }),
 
@@ -121,8 +102,8 @@ export const serviceController = {
     if (!Array.isArray(order)) {
       return res.status(400).json({ success: false, message: 'Order must be an array of {id, displayOrder}' })
     }
-    const updates = order.map((item, index) =>
-      prisma.service.update({ where: { id: item.id }, data: { displayOrder: item.displayOrder ?? index } })
+    const updates = order.map((item) =>
+      prisma.service.update({ where: { id: item.id }, data: { displayOrder: item.displayOrder ?? 0 } })
     )
     await prisma.$transaction(updates)
     res.json(sendSuccess({ message: 'Services reordered' }))
@@ -132,7 +113,7 @@ export const serviceController = {
     const existing = await prisma.service.findUnique({ where: { id: req.params.id } })
     if (existing) {
       if (existing.cloudinaryId) {
-        await mediaService.delete(existing.cloudinaryId, 'image')
+        try { await mediaService.delete(existing.cloudinaryId, 'image') } catch {}
       }
     }
     await prisma.service.delete({ where: { id: req.params.id } })

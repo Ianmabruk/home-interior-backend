@@ -4,61 +4,25 @@ generator client {
 }
 
 datasource db {
-  provider     = "postgresql"
-  url          = env("DATABASE_URL")
-  directUrl    = env("DIRECT_URL")
-  relationMode = "prisma"
-}
-
-enum ProductCategory {
-  Mirrors
-  Frames
-  ThrowPillows @map("Throw Pillows")
-}
-
-enum OrderStatus {
-  pending
-  processing
-  shipped
-  delivered
-  cancelled
-}
-
-enum PaymentStatus {
-  pending
-  paid
-  failed
-  refunded
-}
-
-enum ConsultationStatus {
-  new
-  read
-  replied
-  closed
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id                   String    @id @default(uuid()) @map("_id")
-  fullName             String    @map("full_name")
-  email                String    @unique
-  passwordHash         String    @map("password_hash")
-  role                 String    @default("user")
-  avatarUrl            String?   @map("avatar_url")
-  phone                String?
-  refreshToken         String?   @map("refresh_token")
-  passwordResetToken   String?   @map("password_reset_token")
-  passwordResetExpires DateTime? @map("password_reset_expires")
-  isActive             Boolean?  @default(true) @map("is_active")
-  lastLoginAt          DateTime? @map("last_login_at")
-  cart                 Json?
-  addresses            Json?
-  createdAt            DateTime  @default(now()) @map("created_at")
-  updatedAt            DateTime  @updatedAt @map("updated_at")
-
-  wishlist     Wishlist?
-  orders       Order[]
-  sentMessages Message[] @relation("MessageSender")
+  id                   String     @id @default(uuid()) @map("_id")
+  fullName             String     @map("full_name")
+  email                String     @unique
+  passwordHash         String     @map("password_hash")
+  role                 String     @default("user")
+  isActive             Boolean?   @default(true) @map("is_active")
+  lastLoginAt          DateTime?  @map("last_login_at")
+  refreshToken         String?    @map("refresh_token")
+  passwordResetToken   String?    @map("password_reset_token")
+  passwordResetExpires DateTime?  @map("password_reset_expires")
+  createdAt            DateTime   @default(now()) @map("created_at")
+  updatedAt            DateTime   @updatedAt @map("updated_at")
+  orders               Order[]    @relation("UserOrders")
+  sentMessages         Message[]  @relation("MessageSender")
 
   @@index([email])
   @@index([role])
@@ -66,36 +30,25 @@ model User {
   @@map("users")
 }
 
-model Wishlist {
-  id        String   @id @default(uuid()) @map("_id")
-  userId    String   @unique @map("user_id")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  products  Json
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+model Portfolio {
+  id           String   @id @default(uuid()) @map("_id")
+  title        String?
+  description  String?
+  category     String?  @default("General") @map("category")
+  imageUrl     String?  @map("image_url")
+  mediaUrls    Json?    @map("media_urls")
+  cloudinaryId String?  @map("cloudinary_id")
+  featured     Boolean  @default(false)
+  displayOrder Int      @default(0) @map("display_order")
+  published    Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  @@map("wishlists")
-}
-
-model Order {
-  id              String        @id @default(uuid()) @map("_id")
-  userId          String        @map("user_id")
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items           Json
-  subtotal        Float
-  shippingFee     Float         @default(0) @map("shipping_fee")
-  total           Float
-  status          OrderStatus   @default(pending)
-  paymentStatus   PaymentStatus @default(pending) @map("payment_status")
-  shippingAddress Json?         @map("shipping_address")
-  createdAt       DateTime      @default(now()) @map("created_at")
-  updatedAt       DateTime      @updatedAt @map("updated_at")
-
-  @@index([userId])
-  @@index([status])
-  @@index([paymentStatus])
+  @@index([featured])
+  @@index([displayOrder])
+  @@index([published])
   @@index([createdAt])
-  @@map("orders")
+  @@map("portfolios")
 }
 
 model Product {
@@ -105,149 +58,48 @@ model Product {
   price         Float
   discountPrice Float?   @map("discount_price")
   images        Json
-  colorVariants Json     @map("color_variants")
-  styleVariants Json?    @map("style_variants")
-  category      ProductCategory
-  vendor        String?  @default("")
-  stock         Int
-  sku           String   @unique
-  tags          Json
-  mediaSettings Json?    @map("media_settings")
-  isFeatured    Boolean? @default(false) @map("is_featured")
-  isPublished   Boolean? @default(true) @map("is_published")
+  category      String
+  stock         Int      @default(0)
+  isPublished   Boolean  @default(true) @map("is_published")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
-  productImages ProductImage[]
 
   @@index([isPublished])
   @@index([category])
-  @@index([isFeatured])
   @@index([createdAt])
-  @@index([sku])
   @@map("products")
 }
 
-model ProductImage {
-  id        String   @id @default(uuid()) @map("_id")
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId String   @map("product_id")
-  imageUrl  String   @map("image_url")
-  publicId  String?  @map("public_id")
-  sortOrder Int      @default(0) @map("sort_order")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@index([productId])
-  @@index([sortOrder])
-  @@map("product_images")
-}
-
-model Portfolio {
-  id                 String   @id @default(uuid()) @map("_id")
-  title              String?
-  description        String?
-  category           String?  @default("General") @map("category")
-  imageUrl           String?  @map("image_url")
-  featuredImage      String?  @map("featured_image")
-  cloudinaryId       String?  @map("cloudinary_id")
-  featured           Boolean  @default(false)
-  published          Boolean  @default(true) @map("published")
-  displayOrder       Int      @default(0) @map("display_order")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-  galleryImages      Json     @map("gallery_images")
-  mediaSettings      Json?    @map("media_settings")
-  media              PortfolioMedia[]
-
-  @@index([featured])
-  @@index([published])
-  @@index([displayOrder])
-  @@index([createdAt])
-  @@map("portfolios")
-}
-
-model PortfolioMedia {
-  id          String   @id @default(uuid()) @map("_id")
-  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
-  portfolioId String   @map("portfolio_id")
-  imageUrl    String   @map("image_url")
-  publicId    String?  @map("public_id")
-  mediaType   String   @default("image") @map("media_type")
-  sortOrder   Int      @default(0) @map("sort_order")
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  @@index([portfolioId])
-  @@index([sortOrder])
-  @@map("portfolio_media")
-}
-
-model About {
-  id                 String   @id @default(uuid()) @map("_id")
-  aboutImageUrl      String?  @map("about_image_url")
-  aboutImagePublicId String?  @map("about_image_public_id")
-  mediaSettings      Json?    @map("media_settings")
-  story              String
-  companyDescription String   @map("company_description")
-  mission            String
-  vision             String
-  values             String?
-  location           String
-  contactEmail       String   @map("contact_email")
-  statistics         String?
-  socials            Json
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("abouts")
-}
-
 model VirtualDesign {
-  id            String           @id @default(uuid()) @map("_id")
-  title         String
-  description   String?
-  category      String           @default("General") @map("category")
-  mediaType     String
-  mediaUrl      String           @map("media_url")
-  featuredImage String?          @map("featured_image")
-  cloudinaryId  String?          @map("cloudinary_id")
-  featured      Boolean          @default(false)
-  createdAt     DateTime         @default(now()) @map("created_at")
-  updatedAt     DateTime         @updatedAt @map("updated_at")
-  galleryMedia  Json?            @map("gallery_media")
-  media         VirtualDesignMedia[]
+  id           String   @id @default(uuid()) @map("_id")
+  title        String
+  description  String?
+  category     String   @default("General") @map("category")
+  mediaUrl     String?  @map("media_url")
+  mediaType    String?  @default("image") @map("media_type")
+  mediaUrls    Json?    @map("media_urls")
+  cloudinaryId String?  @map("cloudinary_id")
+  featured     Boolean  @default(false)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@index([featured])
   @@index([createdAt])
   @@map("virtual_designs")
 }
 
-model VirtualDesignMedia {
-  id             String        @id @default(uuid()) @map("_id")
-  virtualDesign  VirtualDesign @relation(fields: [virtualDesignId], references: [id], onDelete: Cascade)
-  virtualDesignId String       @map("virtual_design_id")
-  imageUrl       String        @map("image_url")
-  publicId       String?       @map("public_id")
-  mediaType      String        @default("image") @map("media_type")
-  sortOrder      Int           @default(0) @map("sort_order")
-  createdAt      DateTime      @default(now()) @map("created_at")
-
-  @@index([virtualDesignId])
-  @@index([sortOrder])
-  @@map("virtual_design_media")
-}
-
 model Service {
-  id            String   @id @default(uuid()) @map("_id")
-  title         String
-  description   String
-  icon          String
-  imageUrl      String?  @map("image_url")
-  cloudinaryId  String?  @map("cloudinary_id")
-  mediaSettings Json?    @map("media_settings")
-  featured      Boolean  @default(false)
-  displayOrder  Int      @default(0) @map("display_order")
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(uuid()) @map("_id")
+  title        String
+  description  String
+  icon         String
+  imageUrl     String?  @map("image_url")
+  cloudinaryId String?  @map("cloudinary_id")
+  featured     Boolean  @default(false)
+  displayOrder Int      @default(0) @map("display_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@index([featured])
   @@index([displayOrder])
@@ -255,78 +107,34 @@ model Service {
   @@map("services")
 }
 
-model Testimonial {
-  id           String   @id @default(uuid()) @map("_id")
-  clientName   String   @map("client_name")
-  position     String?
-  company      String?
-  testimonial  String
-  photoUrl     String?  @map("photo_url")
-  photoPublicId String? @map("photo_public_id")
-  rating       Int      @default(5)
-  displayOrder Int      @default(0) @map("display_order")
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+model About {
+  id                 String   @id @default(uuid()) @map("_id")
+  aboutImageUrl      String?  @map("about_image_url")
+  aboutImagePublicId String?  @map("about_image_public_id")
+  story              String
+  companyDescription String   @map("company_description")
+  mission            String
+  vision             String
+  location           String
+  contactEmail       String   @map("contact_email")
+  socials            Json
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
-  @@index([displayOrder])
-  @@index([isActive])
-  @@map("testimonials")
+  @@map("abouts")
 }
 
-model HomepageContent {
+model Hero {
   id           String   @id @default(uuid()) @map("_id")
-  heroImages   Json?    @map("hero_images")
   title        String?
   subtitle     String?
+  imageUrl     String?  @map("image_url")
+  mediaUrls    Json?    @map("media_urls")
+  cloudinaryId String?  @map("cloudinary_id")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  @@map("homepage_content")
-}
-
-model HeroMedia {
-  id          String   @id @default(uuid()) @map("_id")
-  imageUrl    String   @map("image_url")
-  publicId    String?  @map("public_id")
-  mediaType   String   @default("image") @map("media_type")
-  featured    Boolean  @default(false)
-  displayOrder Int     @default(0) @map("display_order")
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  @@index([featured])
-  @@index([displayOrder])
-  @@index([isActive])
-  @@map("hero_media")
-}
-
-model Settings {
-  id              String   @id @default(uuid()) @map("_id")
-  siteName        String?  @default("HOK Interior Designs") @map("site_name")
-  supportEmail    String?  @default("info@hokinterior.com") @map("support_email")
-  maintenanceMode Boolean? @default(false) @map("maintenance_mode")
-  currency        String?  @default("USD")
-  shippingPolicy  String?  @default("") @map("shipping_policy")
-  returnPolicy    String?  @default("") @map("return_policy")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-
-  @@map("settings")
-}
-
-model Analytics {
-  id        String   @id @default(uuid()) @map("_id")
-  date      DateTime @unique
-  visits    Int?     @default(0)
-  revenue   Int?     @default(0)
-  orders    Int?     @default(0)
-  newUsers  Int?     @default(0) @map("new_users")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("analytics")
+  @@map("hero")
 }
 
 model Message {
@@ -346,19 +154,36 @@ model Message {
   @@map("messages")
 }
 
-model Consultation {
-  id            String              @id @default(uuid()) @map("_id")
-  name          String
-  email         String
-  phone         String?
-  message       String
-  preferredDate String?             @map("preferred_date")
-  preferredTime String?             @map("preferred_time")
-  status        ConsultationStatus  @default(new)
-  createdAt     DateTime            @default(now()) @map("created_at")
-  updatedAt     DateTime            @updatedAt @map("updated_at")
+model Order {
+  id              String   @id @default(uuid()) @map("_id")
+  userId          String   @map("user_id")
+  user            User     @relation("UserOrders", fields: [userId], references: [id], onDelete: Cascade)
+  items           Json
+  subtotal        Float
+  shippingFee     Float    @default(0) @map("shipping_fee")
+  total           Float
+  status          String   @default("pending")
+  paymentStatus   String   @default("pending") @map("payment_status")
+  shippingAddress Json?   @map("shipping_address")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
+  @@index([userId])
   @@index([status])
   @@index([createdAt])
-  @@map("consultations")
+  @@map("orders")
+}
+
+model Settings {
+  id              String   @id @default(uuid()) @map("_id")
+  siteName        String?  @default("HOK Interior Designs") @map("site_name")
+  supportEmail    String?  @default("info@hokinterior.com") @map("support_email")
+  maintenanceMode Boolean? @default(false) @map("maintenance_mode")
+  currency        String?  @default("USD")
+  shippingPolicy  String?  @default("") @map("shipping_policy")
+  returnPolicy    String?  @default("") @map("return_policy")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
 }

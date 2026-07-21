@@ -57,9 +57,8 @@ describe('Admin Management', () => {
       mockPrisma.order.findMany.mockResolvedValue([
         { id: 'order-1', total: 100, status: 'pending', createdAt: new Date(), items: [] }
       ])
-      mockPrisma.analytics.findMany.mockResolvedValue([])
       mockPrisma.portfolio.count.mockResolvedValue(5)
-      mockPrisma.project.count.mockResolvedValue(3)
+      mockPrisma.product.count.mockResolvedValue(3)
 
       const response = await request(app)
         .get('/api/admin/overview')

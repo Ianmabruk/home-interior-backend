@@ -85,9 +85,6 @@ describe('Admin Product Dashboard — image upload', () => {
       .field('price', '199')
       .field('category', 'Frames')
       .field('stock', '5')
-      .field('sku', 'CHAIR-001')
-      .field('tags', 'chair, living')
-      .field('mediaSettings', JSON.stringify({ position: 'center', zoom: 100, fit: 'cover' }))
       .attach('images', Buffer.from('fake-image-bytes'), {
         filename: 'chair.jpg',
         contentType: 'image/jpeg',
@@ -106,7 +103,6 @@ describe('Admin Product Dashboard — image upload', () => {
       url: 'https://test.cloudinary.com/product-image.jpg',
       publicId: 'product-image-id',
     })
-    expect(capturedCreate.tags).toEqual(['chair', 'living'])
     expect(capturedCreate.isPublished).toBe(true)
   })
 
@@ -118,9 +114,6 @@ describe('Admin Product Dashboard — image upload', () => {
         price: 199,
         category: 'Living Room',
         images: [{ url: 'https://test.cloudinary.com/product-image.jpg', publicId: 'x' }],
-        tags: ['chair'],
-        mediaSettings: { position: 'center' },
-        colorVariants: [],
         stock: 5,
         isPublished: true,
       },
@@ -152,7 +145,6 @@ describe('Admin Product Dashboard — image upload', () => {
       .field('price', '199')
       .field('category', 'Frames')
       .field('stock', '5')
-      .field('sku', 'CHAIR-001')
       .attach('images', Buffer.from('x'), { filename: 'chair.jpg', contentType: 'image/jpeg' })
 
     expect(response.status).toBe(403)

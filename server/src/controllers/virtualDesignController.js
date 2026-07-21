@@ -3,15 +3,7 @@ import { prisma } from '../config/prisma.js'
 import { ApiError } from '../utils/ApiError.js'
 import { mediaService } from '../services/media.service.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
-import { withId, withIdArray, sortByOrderThenDate, orderValue, toBoolean } from '../utils/helpers.js'
-
-const stripUnknown = (obj, allowed) => {
-  const out = {}
-  for (const key of Object.keys(obj)) {
-    if (allowed.has(key)) out[key] = obj[key]
-  }
-  return out
-}
+import { withId, withIdArray } from '../utils/helpers.js'
 
 const findFileByFieldname = (req, fieldname) => {
   if (req.file && req.file.fieldname === fieldname) return req.file
@@ -45,19 +37,35 @@ export const virtualDesignController = {
         title: true,
         description: true,
         category: true,
-        mediaType: true,
         mediaUrl: true,
+        mediaType: true,
+        mediaUrls: true,
         cloudinaryId: true,
         featured: true,
         createdAt: true,
         updatedAt: true,
       },
     })
-    res.json(sendSuccess(withIdArray(sortByOrderThenDate(items))))
+    res.json(sendSuccess(withIdArray(items)))
   }),
 
   get: asyncHandler(async (req, res) => {
-    const item = await prisma.virtualDesign.findUnique({ where: { id: req.params.id } })
+    const item = await prisma.virtualDesign.findUnique({
+      where: { id: req.params.id },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        category: true,
+        mediaUrl: true,
+        mediaType: true,
+        mediaUrls: true,
+        cloudinaryId: true,
+        featured: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    })
     if (!item) {
       return res.status(404).json({ success: false, message: 'Virtual Design item not found' })
     }
@@ -65,42 +73,47 @@ export const virtualDesignController = {
   }),
 
   create: asyncHandler(async (req, res) => {
-    const allowed = new Set(['title', 'description', 'category', 'mediaType', 'mediaUrl', 'galleryMedia', 'cloudinaryId', 'featured'])
-    const payload = stripUnknown({ ...req.body }, allowed)
-    payload.featured = toBoolean(req.body.featured, false)
-
-    const isVideo = req.body.mediaType === 'video' || req.body.resourceType === 'video'
+    const data = {
+      title: req.body.title || 'Untitled',
+      description: req.body.description || '',
+      category: req.body.category || 'General',
+      featured: req.body.featured === 'true' || req.body.featured === true,
+    }
 
     const mediaFile = findFileByFieldname(req, 'media')
     if (mediaFile) {
+      const isVideo = mediaFile.mimetype.startsWith('video/')
       const upload = await mediaService.upload({ buffer: mediaFile.buffer, mimeType: mediaFile.mimetype, folder: 'hok/virtual-design', type: isVideo ? 'video' : 'image' })
-      payload.mediaUrl = upload.secure_url
-      payload.cloudinaryId = upload.public_id
-      payload.mediaType = isVideo ? 'video' : 'image'
+      data.mediaUrl = upload.secure_url
+      data.cloudinaryId = upload.public_id
+      data.mediaType = isVideo ? 'video' : 'image'
+    } else if (req.body.mediaUrl) {
+      data.mediaUrl = req.body.mediaUrl
+      data.mediaType = req.body.mediaType || 'image'
     }
 
     const galleryFiles = findFilesByFieldname(req, 'gallery')
-    const galleryUrls = []
+    const mediaUrls = []
     for (const file of galleryFiles) {
       const isVideoFile = file.mimetype.startsWith('video/')
-      const upload = await mediaService.upload({ buffer: file.buffer, mimeType: file.mimetype, folder: 'hok/virtual-design/gallery', type: isVideoFile ? 'video' : 'image' })
-      galleryUrls.push({ url: upload.secure_url, type: isVideoFile ? 'video' : 'image' })
+      const upload = await mediaService.upload({ buffer: file.buffer, mimeType: file.mimetype, folder: 'hok/virtual-design', type: isVideoFile ? 'video' : 'image' })
+      mediaUrls.push({ url: upload.secure_url, type: isVideoFile ? 'video' : 'image' })
     }
-    if (galleryUrls.length > 0) {
-      payload.galleryMedia = galleryUrls
-    }
-
-    if (!payload.mediaUrl) {
-      payload.mediaUrl = 'https://via.placeholder.com/800x600?text=No+Image'
-      payload.cloudinaryId = null
-      payload.mediaType = payload.mediaType || 'image'
+    if (mediaUrls.length > 0) {
+      data.mediaUrls = mediaUrls
     }
 
-    if (!payload.mediaType) {
-      payload.mediaType = isVideo ? 'video' : 'image'
+    const bodyMediaUrls = req.body.mediaUrls
+    if (Array.isArray(bodyMediaUrls) && bodyMediaUrls.length > 0) {
+      data.mediaUrls = bodyMediaUrls
     }
 
-    const item = await prisma.virtualDesign.create({ data: payload })
+    if (!data.mediaUrl) {
+      data.mediaUrl = 'https://via.placeholder.com/800x600?text=No+Image'
+      data.mediaType = 'image'
+    }
+
+    const item = await prisma.virtualDesign.create({ data })
     res.status(201).json(sendSuccess(withId(item)))
   }),
 
@@ -110,35 +123,41 @@ export const virtualDesignController = {
       return res.status(404).json({ success: false, message: 'Virtual Design item not found' })
     }
 
-    const allowed = new Set(['title', 'description', 'category', 'mediaType', 'mediaUrl', 'galleryMedia', 'cloudinaryId', 'featured'])
-    const payload = stripUnknown({ ...req.body }, allowed)
-    payload.featured = toBoolean(req.body.featured, existing.featured)
-
-    const isVideo = req.body.mediaType === 'video' || req.body.resourceType === 'video'
+    const data = {}
+    if (req.body.title !== undefined) data.title = req.body.title
+    if (req.body.description !== undefined) data.description = req.body.description
+    if (req.body.category !== undefined) data.category = req.body.category
+    if (req.body.featured !== undefined) data.featured = req.body.featured === 'true' || req.body.featured === true
 
     const mediaFile = findFileByFieldname(req, 'media')
     if (mediaFile) {
       if (existing.cloudinaryId) {
-        await mediaService.delete(existing.cloudinaryId, existing.mediaType === 'video' ? 'video' : 'image')
+        try { await mediaService.delete(existing.cloudinaryId, existing.mediaType === 'video' ? 'video' : 'image') } catch {}
       }
+      const isVideo = mediaFile.mimetype.startsWith('video/')
       const upload = await mediaService.upload({ buffer: mediaFile.buffer, mimeType: mediaFile.mimetype, folder: 'hok/virtual-design', type: isVideo ? 'video' : 'image' })
-      payload.mediaUrl = upload.secure_url
-      payload.cloudinaryId = upload.public_id
-      payload.mediaType = isVideo ? 'video' : 'image'
+      data.mediaUrl = upload.secure_url
+      data.cloudinaryId = upload.public_id
+      data.mediaType = isVideo ? 'video' : 'image'
     }
 
     const galleryFiles = findFilesByFieldname(req, 'gallery')
-    const galleryUrls = []
-    for (const file of galleryFiles) {
-      const isVideoFile = file.mimetype.startsWith('video/')
-      const upload = await mediaService.upload({ buffer: file.buffer, mimeType: file.mimetype, folder: 'hok/virtual-design/gallery', type: isVideoFile ? 'video' : 'image' })
-      galleryUrls.push({ url: upload.secure_url, type: isVideoFile ? 'video' : 'image' })
-    }
-    if (galleryUrls.length > 0) {
-      payload.galleryMedia = [...(existing.galleryMedia || []), ...galleryUrls]
+    if (galleryFiles.length > 0) {
+      const mediaUrls = []
+      for (const file of galleryFiles) {
+        const isVideoFile = file.mimetype.startsWith('video/')
+        const upload = await mediaService.upload({ buffer: file.buffer, mimeType: file.mimetype, folder: 'hok/virtual-design', type: isVideoFile ? 'video' : 'image' })
+        mediaUrls.push({ url: upload.secure_url, type: isVideoFile ? 'video' : 'image' })
+      }
+      data.mediaUrls = [...(existing.mediaUrls || []), ...mediaUrls]
     }
 
-    const item = await prisma.virtualDesign.update({ where: { id: req.params.id }, data: payload })
+    const bodyMediaUrls = req.body.mediaUrls
+    if (Array.isArray(bodyMediaUrls)) {
+      data.mediaUrls = bodyMediaUrls
+    }
+
+    const item = await prisma.virtualDesign.update({ where: { id: req.params.id }, data })
     res.json(sendSuccess(withId(item)))
   }),
 
@@ -149,88 +168,20 @@ export const virtualDesignController = {
     }
 
     if (existing.cloudinaryId) {
-      try {
-        await mediaService.delete(existing.cloudinaryId, existing.mediaType === 'video' ? 'video' : 'image')
-      } catch {
-        // ignore
-      }
+      try { await mediaService.delete(existing.cloudinaryId, existing.mediaType === 'video' ? 'video' : 'image') } catch {}
     }
-    if (existing.galleryMedia && existing.galleryMedia.length > 0) {
-      for (const media of existing.galleryMedia) {
+    if (Array.isArray(existing.mediaUrls)) {
+      for (const media of existing.mediaUrls) {
         try {
-          const publicId = media.url.split('/').pop()?.split('.')[0]
+          const publicId = media.url?.split('/').pop()?.split('.')[0]
           if (publicId) {
             await mediaService.delete(publicId, media.type === 'video' ? 'video' : 'image')
           }
-        } catch {
-          // ignore
-        }
+        } catch {}
       }
     }
 
     await prisma.virtualDesign.delete({ where: { id: req.params.id } })
     res.json(sendSuccess({ message: 'Virtual Design item deleted' }))
-  }),
-
-  addGalleryMedia: asyncHandler(async (req, res) => {
-    const existing = await prisma.virtualDesign.findUnique({ where: { id: req.params.id } })
-    if (!existing) {
-      return res.status(404).json({ success: false, message: 'Virtual Design item not found' })
-    }
-
-    const galleryFiles = findFilesByFieldname(req, 'gallery')
-    const galleryUrls = []
-    for (const file of galleryFiles) {
-      const isVideoFile = file.mimetype.startsWith('video/')
-      const upload = await mediaService.upload({ buffer: file.buffer, mimeType: file.mimetype, folder: 'hok/virtual-design/gallery', type: isVideoFile ? 'video' : 'image' })
-      galleryUrls.push({ url: upload.secure_url, type: isVideoFile ? 'video' : 'image' })
-    }
-
-    if (galleryUrls.length === 0) {
-      return res.status(400).json({ success: false, message: 'No gallery media provided' })
-    }
-
-    const existingGallery = existing.galleryMedia || []
-    const updatedGallery = [...existingGallery, ...galleryUrls]
-    const item = await prisma.virtualDesign.update({ where: { id: req.params.id }, data: { galleryMedia: updatedGallery } })
-    res.json(sendSuccess(withId(item)))
-  }),
-
-  removeGalleryMedia: asyncHandler(async (req, res) => {
-    const { mediaUrl } = req.body
-    if (!mediaUrl) {
-      return res.status(400).json({ success: false, message: 'mediaUrl is required' })
-    }
-
-    const existing = await prisma.virtualDesign.findUnique({ where: { id: req.params.id } })
-    if (!existing) {
-      return res.status(404).json({ success: false, message: 'Virtual Design item not found' })
-    }
-
-    const existingGallery = existing.galleryMedia || []
-    const updatedGallery = existingGallery.filter(media => media.url !== mediaUrl)
-
-    if (updatedGallery.length === existingGallery.length) {
-      return res.status(404).json({ success: false, message: 'Media not found in gallery' })
-    }
-
-    try {
-      const publicId = mediaUrl.split('/').pop()?.split('.')[0]
-      if (publicId) {
-        const media = existingGallery.find(m => m.url === mediaUrl)
-        await mediaService.delete(publicId, media?.type === 'video' ? 'video' : 'image')
-      }
-    } catch {
-      // ignore
-    }
-
-    if (updatedGallery.length === 0) {
-      await prisma.$executeRaw`UPDATE virtual_designs SET gallery_media = ${'[]'}::jsonb WHERE _id = ${req.params.id}`
-      const item = await prisma.virtualDesign.findUnique({ where: { id: req.params.id } })
-      return res.json(sendSuccess(withId(item)))
-    }
-
-    const item = await prisma.virtualDesign.update({ where: { id: req.params.id }, data: { galleryMedia: updatedGallery } })
-    res.json(sendSuccess(withId(item)))
   }),
 }

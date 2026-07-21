@@ -86,7 +86,7 @@ describe('Product Management', () => {
       expect(mockPrisma.product.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            category: 'Living Room',
+            isPublished: true,
           }),
         })
       )
@@ -120,10 +120,6 @@ describe('Product Management', () => {
           price: 100,
           category: 'Mirrors',
           stock: 10,
-          sku: 'TEST-001',
-          images: [],
-          colorVariants: [],
-          tags: [],
         })
 
       expect(response.status).toBe(201)
