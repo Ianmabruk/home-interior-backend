@@ -81,16 +81,6 @@ export const connectDB = async () => {
     try {
       await prisma.$connect()
       console.log('📝 Prisma Client connected to PostgreSQL')
-      
-      // Verify critical columns exist to catch schema drift early
-      try {
-        await prisma.$queryRaw`SELECT 1 FROM "users" LIMIT 0`
-        console.log('✅ users table accessible')
-      } catch (err) {
-        console.error('❌ CRITICAL: users table check failed:', err.message)
-        if (env.nodeEnv !== 'production') throw err
-      }
-      
       return
     } catch (err) {
       if (isP1001(err) && attempt < maxStartupRetries) {
