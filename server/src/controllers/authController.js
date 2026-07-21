@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import { z } from 'zod'
-import { prisma } from '../config/prisma.js'
+import { prisma, executeWithRetry } from '../config/prisma.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { signAccessToken, signRefreshToken, verifyRefreshToken, setRefreshCookie, clearRefreshCookie, REFRESH_COOKIE_NAME } from '../utils/tokens.js'
@@ -71,7 +71,11 @@ export const register = asyncHandler(async (req, res) => {
 
 export const login = asyncHandler(async (req, res) => {
   const body = parseBody(loginSchema, req.body)
-  const user = await prisma.user.findUnique({ where: { email: body.email } })
+  const user = await executeWithRetry(
+    () => prisma.user.findUnique({ where: { email: body.email } }),
+    'AUTH][LOGIN-FIND',
+    { maxRetries: 2, timeout: 10000 },
+  )
   if (!user) {
     console.warn(`[AUTH][login] rejected: invalid credentials for ${body.email}`)
     throw new ApiError(401, 'Invalid credentials')
@@ -89,13 +93,18 @@ export const login = asyncHandler(async (req, res) => {
   }
 
   const tokens = makeAuthResponse(user)
-  await prismaSafeWrite(
-    (writeData) => prisma.user.update({
-      where: { id: user.id },
-      data: writeData,
-    }),
-    { refreshToken: tokens.refreshToken, lastLoginAt: new Date() },
-    'AUTH][LOGIN',
+  await executeWithRetry(
+    () =>
+      prismaSafeWrite(
+        (writeData) => prisma.user.update({
+          where: { id: user.id },
+          data: writeData,
+        }),
+        { refreshToken: tokens.refreshToken, lastLoginAt: new Date() },
+        'AUTH][LOGIN',
+      ),
+    'AUTH][LOGIN-UPDATE',
+    { maxRetries: 2, timeout: 10000 },
   )
 
   console.log(`[EMAIL DISABLED] Login alert for ${user.email}`)

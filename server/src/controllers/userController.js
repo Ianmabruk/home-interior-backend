@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { prisma } from '../config/prisma.js'
+import { prisma, executeWithRetry } from '../config/prisma.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
@@ -16,9 +16,14 @@ const updateMeSchema = z.object({
 }).partial()
 
 export const me = asyncHandler(async (req, res) => {
-  const user = await prisma.user.findUnique({
-    where: { id: req.user.userId },
-  })
+  const user = await executeWithRetry(
+    () =>
+      prisma.user.findUnique({
+        where: { id: req.user.userId },
+      }),
+    'USER][ME',
+    { maxRetries: 2, timeout: 10000 },
+  )
   if (!user) {
     throw new ApiError(404, 'User not found')
   }
