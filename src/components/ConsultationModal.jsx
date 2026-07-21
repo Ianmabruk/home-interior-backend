@@ -20,7 +20,7 @@ export const ConsultationModal = ({ isOpen, onClose }) => {
     setLoading(true)
     setStatus('')
     try {
-      await api.post('/content/consultations', form)
+      await api.post('/consultations', form)
       setStatus('success')
       setTimeout(() => { onClose(); setStatus('') }, 3000)
     } catch {

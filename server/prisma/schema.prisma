@@ -154,7 +154,7 @@ model Portfolio {
   displayOrder       Int      @default(0) @map("display_order")
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
-  galleryImages      String[] @default([]) @map("gallery_images")
+  galleryImages      Json     @map("gallery_images")
   mediaSettings      Json?    @map("media_settings")
   media              PortfolioMedia[]
 
@@ -276,7 +276,7 @@ model Testimonial {
 
 model HomepageContent {
   id           String   @id @default(uuid()) @map("_id")
-  heroImages   String[] @default([]) @map("hero_images")
+  heroImages   Json     @map("hero_images")
   title        String?
   subtitle     String?
   createdAt    DateTime @default(now()) @map("created_at")

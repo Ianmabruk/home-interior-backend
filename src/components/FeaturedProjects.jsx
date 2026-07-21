@@ -22,7 +22,7 @@ export const FeaturedProjects = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await api.get('/content/portfolio')
+        const res = await api.get('/portfolio')
         const sorted = [...(res.data || [])].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
         setProjects(sorted.slice(0, 8))
       } catch (err) {

@@ -10,7 +10,7 @@ export const AboutPreview = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await api.get('/content/about')
+        const res = await api.get('/about')
         setAboutData(res.data || null)
       } catch {
         setAboutData(null)
