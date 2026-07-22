@@ -4,14 +4,12 @@ services:
     runtime: node
     rootDir: backend
     buildCommand: npm install && npm run db:generate && npm run db:deploy && npm run seed
-    startCommand: npm run db:generate && npm run seed && npm start
+    startCommand: npm run db:generate && npm run db:deploy && npm run seed && npm start
     envVars:
       - key: NODE_ENV
         value: production
-      - key: SUPABASE_URL
-        value: https://amcaogrlsrwxbvuglyle.supabase.co
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtY2FvZ3Jsc3J3eGJ2dWdseWxlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDU0Mzg5MiwiZXhwIjoyMTAwMTE5ODkyfQ.dX0NzgtWLfnNWxJFM0-B-33Li6Cnhvw7n5cnfD9f_T8
+      - key: BASE_URL
+        value: https://home-interior-backend.onrender.com
       - key: JWT_ACCESS_SECRET
         value: 4549201ef63a5517aa42bf414e7f7d4d
       - key: JWT_REFRESH_SECRET
@@ -19,8 +17,8 @@ services:
       - key: CLIENT_URL
         value: https://homy-comfy.netlify.app
       - key: SEED_ADMIN_EMAIL
-        value: admin@hokinterior.com
+        value: admin@chatgpt.com
       - key: SEED_ADMIN_PASSWORD
-        value: Admin123!
+        value: admin123.
       - key: DATABASE_URL
         value: postgresql://postgres:OqdwDCf4ae8hZ7OY@db.amcaogrlsrwxbvuglyle.supabase.co:5432/postgres

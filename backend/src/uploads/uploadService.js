@@ -1,37 +1,42 @@
-import { supabase } from '../config/supabase.js'
+import fs from 'fs/promises'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
-export async function uploadFile(buffer, mimetype, folder, type = 'image') {
-  const ext = mimetype.split('/')[1] || 'bin'
-  const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const UPLOAD_DIR = path.join(__dirname, '..', '..', 'public', 'uploads')
 
-  const { data, error } = await supabase.storage
-    .from('media')
-    .upload(fileName, buffer, {
-      contentType: mimetype,
-      upsert: true,
-    })
-
-  if (error || !data) {
-    throw new Error(error?.message || 'Upload failed')
-  }
-
-  const { data: publicUrl } = supabase.storage.from('media').getPublicUrl(data.path)
-
-  return {
-    url: publicUrl.publicUrl,
-    path: data.path,
-    mimeType: mimetype,
-  }
+async function ensureDir(dir) {
+  await fs.mkdir(dir, { recursive: true })
 }
 
-export async function deleteFile(path) {
-  if (!path) return
-  const { error } = await supabase.storage.from('media').remove([path])
-  if (error) console.error('Delete file error:', error)
+export async function uploadFile(buffer, mimetype, folder) {
+  const ext = mimetype.split('/')[1] || 'bin'
+  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+  const saveDir = path.join(UPLOAD_DIR, folder)
+  const savePath = path.join(saveDir, fileName)
+
+  await ensureDir(saveDir)
+  await fs.writeFile(savePath, buffer)
+
+  const relativePath = path.join('/uploads', folder, fileName).replace(/\\/g, '/')
+  const baseUrl = process.env.BASE_URL || 'http://localhost:5000'
+  const url = `${baseUrl}${relativePath}`
+
+  return { url, path: relativePath, mimeType: mimetype }
+}
+
+export async function deleteFile(relativePath) {
+  if (!relativePath) return
+  const cleanPath = relativePath.replace(/^\/uploads\//, '')
+  const filePath = path.join(UPLOAD_DIR, cleanPath)
+  try {
+    await fs.unlink(filePath)
+  } catch (err) {
+    if (err.code !== 'ENOENT') console.error('Delete file error:', err)
+  }
 }
 
 export async function deleteFiles(paths) {
   if (!Array.isArray(paths) || paths.length === 0) return
-  const { error } = await supabase.storage.from('media').remove(paths)
-  if (error) console.error('Delete files error:', error)
+  await Promise.allSettled(paths.map(deleteFile))
 }

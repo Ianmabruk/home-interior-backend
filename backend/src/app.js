@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser'
 import rateLimit from 'express-rate-limit'
 import crypto from 'crypto'
 import dotenv from 'dotenv'
+import path from 'path'
 import { env } from './config/env.js'
 import { notFoundHandler, errorHandler } from './middleware/errorHandler.js'
 import routes from './routes/index.js'
@@ -78,6 +79,8 @@ app.use((req, res, next) => {
 app.get(['/api/health', '/health'], async (req, res) => {
   res.json({ database: 'ok', server: 'running' })
 })
+
+app.use('/uploads', express.static(path.join(__dirname, '..', 'public', 'uploads')))
 
 // TEMP DEV BYPASS - allows frontend to work without real auth in development
 if (process.env.NODE_ENV !== 'production') {
