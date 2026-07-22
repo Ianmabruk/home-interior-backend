@@ -1,9 +1,10 @@
-import bcrypt from 'bcryptjs'
 import dotenv from 'dotenv'
-import { supabase } from '../config/supabase.js'
-import { env } from '../config/env.js'
 
 dotenv.config()
+
+import bcrypt from 'bcryptjs'
+import { supabase } from '../config/supabase.js'
+import { env } from '../config/env.js'
 
 const seedAdmin = async () => {
   try {

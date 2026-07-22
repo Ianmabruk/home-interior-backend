@@ -62,7 +62,7 @@
 ## Authentication System Status ✓ WORKING
 
 - Admin user auto-created on server start
-- Credentials: admin@hokinterior.com / Admin123!
+- Credentials: admin@hokinterior.com / admin123!
 - JWT authentication working
 - Protected routes verified
 

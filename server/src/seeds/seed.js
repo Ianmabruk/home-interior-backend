@@ -1,5 +1,8 @@
-import bcrypt from 'bcryptjs'
 import dotenv from 'dotenv'
+
+dotenv.config()
+
+import bcrypt from 'bcryptjs'
 import { supabase } from '../config/supabase.js'
 import { env } from '../config/env.js'
 import {
@@ -9,8 +12,6 @@ import {
   servicesSeed,
   testimonialsSeed,
 } from './seedData.js'
-
-dotenv.config()
 
 const seed = async () => {
   try {

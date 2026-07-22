@@ -1,3 +1,6 @@
+import dotenv from 'dotenv'
+dotenv.config()
+
 import { app } from './app.js'
 import { verifyCloudinaryConfig } from './config/cloudinary.js'
 import { env } from './config/env.js'
