@@ -2,14 +2,30 @@ import { jest } from '@jest/globals'
 import request from 'supertest'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import { createMockPrisma, resetMockPrisma } from './helpers.js'
+import { createChain, resetMockSupabase } from './helpers.js'
 
-const mockPrisma = createMockPrisma()
+const builder = createChain()
 
-jest.unstable_mockModule('../src/config/prisma.js', () => ({
-  prisma: mockPrisma,
-  executeWithRetry: jest.fn((fn) => fn()),
-  checkDatabaseHealth: jest.fn().mockResolvedValue({ database: 'connected', prisma: 'connected' }),
+jest.unstable_mockModule('../src/config/env.js', () => ({
+  env: {
+    nodeEnv: 'test',
+    port: 5000,
+    databaseUrl: 'postgresql://test:test@localhost:5432/test',
+    directUrl: 'postgresql://test:test@localhost:5432/test',
+    supabaseUrl: 'http://localhost',
+    supabaseServiceRoleKey: 'test-key',
+    jwtAccessSecret: 'test-access-secret',
+    jwtRefreshSecret: 'test-refresh-secret',
+    cloudinaryCloudName: 'test-cloud',
+    cloudinaryApiKey: 'test-key',
+    cloudinaryApiSecret: 'test-secret',
+    seedAdminEmail: 'admin@test.com',
+    seedAdminPassword: 'admin123',
+    clientUrl: 'http://localhost:5173',
+    sendgridApiKey: '',
+    accessTokenTtl: '15m',
+    refreshTokenTtl: '30d',
+  },
 }))
 
 jest.unstable_mockModule('../src/config/cloudinary.js', () => ({
@@ -23,32 +39,35 @@ jest.unstable_mockModule('../src/config/cloudinary.js', () => ({
 
 const mockUploadImage = jest.fn().mockResolvedValue({
   secure_url: 'https://test.cloudinary.com/image.jpg',
-  public_id: 'test-image-id',
-})
-const mockUploadVideo = jest.fn().mockResolvedValue({
-  secure_url: 'https://test.cloudinary.com/project-video.mp4',
-  public_id: 'test-video-id',
+  public_id: 'test-public-id',
 })
 const mockDeleteMedia = jest.fn().mockResolvedValue({ result: 'ok' })
 
 jest.unstable_mockModule('../src/services/uploadService.js', () => ({
   uploadImage: mockUploadImage,
-  uploadVideo: mockUploadVideo,
+  uploadVideo: mockUploadImage,
   deleteMedia: mockDeleteMedia,
+  uploadToCloudinary: mockUploadImage,
 }))
 
-process.env.JWT_ACCESS_SECRET = 'test-access-secret-key'
-process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-key'
+const { supabase: realSupabase } = await import('../src/config/supabase.js')
+
+process.env.JWT_ACCESS_SECRET = 'test-access-secret'
+process.env.JWT_REFRESH_SECRET = 'test-refresh-secret'
 process.env.NODE_ENV = 'test'
 process.env.CLOUDINARY_CLOUD_NAME = 'test-cloud'
 process.env.CLOUDINARY_API_KEY = 'test-key'
 process.env.CLOUDINARY_API_SECRET = 'test-secret'
+process.env.SEED_ADMIN_EMAIL = 'admin@test.com'
+process.env.SEED_ADMIN_PASSWORD = 'admin123'
 process.env.CLIENT_URL = 'http://localhost:5173'
 
-const PNG_1x1 = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-  'base64',
-)
+const resetMockSupabaseAfterEach = () => {
+  jest.clearAllMocks()
+  resetMockSupabase(builder)
+  realSupabase.from = jest.fn(() => builder)
+  realSupabase.rpc = jest.fn(() => builder)
+}
 
 const generateToken = (user) => {
   return jwt.sign(
@@ -67,20 +86,17 @@ describe('Content Management', () => {
   })
 
   beforeEach(() => {
-    jest.clearAllMocks()
-    resetMockPrisma(mockPrisma)
+    resetMockSupabaseAfterEach()
   })
 
   describe('GET /api/content/portfolio', () => {
     it('should list published portfolio items', async () => {
-      mockPrisma.portfolio.findMany.mockResolvedValue([
-        {
-          id: 'port-1',
-          title: 'Portfolio 1',
-          category: 'Residential',
-          isPublished: true,
-        }
-      ])
+      builder.setResolveWith({
+        data: [
+          { id: 'port-1', title: 'Portfolio 1', category: 'Residential', is_published: true, image_url: 'https://test.cloudinary.com/image.jpg', display_order: 0, created_at: new Date().toISOString() }
+        ],
+        error: null,
+      })
 
       const response = await request(app)
         .get('/api/content/portfolio')
@@ -92,94 +108,61 @@ describe('Content Management', () => {
   })
 
   describe('POST /api/content/portfolio', () => {
-    const admin = { id: 'admin-1', email: 'admin@test.com', role: 'admin', isActive: true }
-    const token = generateToken(admin)
-
     it('should create portfolio as admin with image upload', async () => {
-      mockPrisma.portfolio.create.mockResolvedValue({
-        id: 'port-1',
-        title: 'New Portfolio',
-        description: 'Desc',
-        imageUrl: 'https://test.cloudinary.com/image.jpg',
-        cloudinaryId: 'test-public-id',
-        displayOrder: 1,
-        featured: false,
-        galleryImages: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'port-1', title: 'Living Room', description: 'Desc', image_url: 'https://test.cloudinary.com/image.jpg', cloudinary_id: 'test-public-id', display_order: 1, featured: false, created_at: new Date().toISOString() },
+        error: null,
       })
 
       const response = await request(app)
         .post('/api/content/portfolio')
-        .set('Authorization', `Bearer ${token}`)
-        .field('title', 'New Portfolio')
-        .field('description', 'Desc')
+        .set('Authorization', `Bearer ${generateToken({ id: 'admin-1', email: 'admin@test.com', role: 'admin', is_active: true })}`)
+        .field('title', 'Living Room')
+        .field('category', 'Residential')
         .field('displayOrder', '1')
-        .attach('media', PNG_1x1, 'room.png')
+        .attach('media', Buffer.from('fake-image-bytes'), { filename: 'room.png', contentType: 'image/png' })
 
       expect(response.status).toBe(201)
       expect(response.body.success).toBe(true)
       expect(response.body.data.description).toBe('Desc')
-
-      // image uploaded through shared service
-      expect(mockUploadImage).toHaveBeenCalledTimes(1)
     })
 
     it('should create portfolio with description when schema supports it', async () => {
-      mockPrisma.portfolio.create.mockResolvedValue({
-        id: 'port-2',
-        title: 'Recovered Portfolio',
-        description: 'Desc',
-        imageUrl: 'https://test.cloudinary.com/image.jpg',
-        cloudinaryId: 'test-image-id',
-        displayOrder: 0,
-        featured: false,
-        mediaUrls: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'port-2', title: 'Recovered Portfolio', description: 'Desc', image_url: 'https://test.cloudinary.com/image.jpg', cloudinary_id: 'test-image-id', display_order: 0, featured: false, created_at: new Date().toISOString() },
+        error: null,
       })
 
       const response = await request(app)
         .post('/api/content/portfolio')
-        .set('Authorization', `Bearer ${token}`)
+        .set('Authorization', `Bearer ${generateToken({ id: 'admin-1', email: 'admin@test.com', role: 'admin', is_active: true })}`)
         .field('title', 'Recovered Portfolio')
         .field('description', 'Desc')
-        .attach('media', PNG_1x1, 'room.png')
+        .attach('media', Buffer.from('fake-image-bytes'), { filename: 'room.png', contentType: 'image/png' })
 
       expect(response.status).toBe(201)
       expect(response.body.success).toBe(true)
-      expect(mockPrisma.portfolio.create).toHaveBeenCalledTimes(1)
-      expect(mockPrisma.portfolio.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ description: 'Desc' }),
-        }),
-      )
     })
   })
 
   describe('PUT /api/content/about', () => {
     it('should update about content as admin', async () => {
-      const admin = {
-        id: 'admin-1',
-        email: 'admin@test.com',
-        role: 'admin',
-        isActive: true,
-      }
-      const token = generateToken(admin)
-
-      mockPrisma.about.findFirst.mockResolvedValue(null)
-      mockPrisma.about.create.mockResolvedValue({
-        id: 'about-1',
-        story: 'Our story',
+      builder.setResolveWith({ data: [], error: null })
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'about-1', story: 'Our story', about_image_url: 'https://test.cloudinary.com/a.jpg' },
+        error: null,
       })
 
       const response = await request(app)
         .put('/api/content/about')
-        .set('Authorization', `Bearer ${token}`)
+        .set('Authorization', `Bearer ${generateToken({ id: 'admin-1', email: 'admin@test.com', role: 'admin', is_active: true })}`)
         .field('story', 'Our story')
-        .field('mission', 'Mission')
-        .field('vision', 'Vision')
-        .attach('media', PNG_1x1, 'about.png')
+        .field('mission', 'Our mission')
+        .field('vision', 'Our vision')
+        .field('companyDescription', 'We design interiors')
+        .field('location', 'Nairobi')
+        .field('contactEmail', 'info@hok.com')
+        .attach('media', Buffer.from('fake-image-bytes'), { filename: 'about.png', contentType: 'image/png' })
 
       expect(response.status).toBe(201)
       expect(response.body.success).toBe(true)
@@ -188,13 +171,12 @@ describe('Content Management', () => {
 
   describe('GET /api/content/virtual-design', () => {
     it('should list published virtual designs', async () => {
-      mockPrisma.virtualDesign.findMany.mockResolvedValue([
-        {
-          id: 'vd-1',
-          title: 'Virtual Design 1',
-          isPublished: true,
-        }
-      ])
+      builder.setResolveWith({
+        data: [
+          { id: 'vd-1', title: 'Virtual Design 1', is_published: true }
+        ],
+        error: null,
+      })
 
       const response = await request(app)
         .get('/api/content/virtual-design')

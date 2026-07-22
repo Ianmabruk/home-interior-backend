@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { prisma } from '../config/prisma.js'
+import { supabase } from '../config/supabase.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
@@ -18,7 +18,12 @@ const consultationSchema = z.object({
 
 export const createConsultation = asyncHandler(async (req, res) => {
   const payload = parseBody(consultationSchema, req.body)
-  const created = await prisma.consultation.create({ data: payload })
+  const { data: created, error } = await supabase
+    .from('consultations')
+    .insert([payload])
+    .single()
+
+  if (error) throw new ApiError(500, error.message)
 
   const adminTo = env.seedAdminEmail
   if (adminTo) {
@@ -52,37 +57,29 @@ export const listConsultations = asyncHandler(async (req, res) => {
   const search = typeof req.query.search === 'string' ? req.query.search : undefined
   const page = Math.max(1, Number(req.query.page) || 1)
   const pageSize = Math.min(50, Math.max(1, Number(req.query.pageSize) || 10))
+  const offset = (page - 1) * pageSize
 
-  const where = {
-    ...(status ? { status } : {}),
-    ...(search
-      ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } },
-            { message: { contains: search, mode: 'insensitive' } },
-          ],
-        }
-      : {}),
+  let query = supabase
+    .from('consultations')
+    .select('*', { count: 'exact' })
+
+  if (status) query = query.eq('status', status)
+  if (search) {
+    query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%,message.ilike.%${search}%`)
   }
 
-  const [items, total] = await Promise.all([
-    prisma.consultation.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.consultation.count({ where }),
-  ])
+  query = query.order('created_at', { ascending: false }).range(offset, offset + pageSize - 1)
+  const { data, count, error } = await query
+
+  if (error) throw new ApiError(500, error.message)
 
   res.json(
     sendSuccess({
-      items: withIdArray(items),
+      items: withIdArray(data || []),
       page,
       pageSize,
-      total,
-      totalPages: Math.ceil(total / pageSize),
+      total: count || 0,
+      totalPages: Math.ceil((count || 0) / pageSize),
     }),
   )
 })
@@ -94,29 +91,46 @@ export const updateConsultationStatus = asyncHandler(async (req, res) => {
     return res.status(400).json({ success: false, message: 'Invalid consultation status' })
   }
 
-  const updated = await prisma.consultation.update({
-    where: { id: req.params.id },
-    data: { status },
-  })
+  const { data: updated, error } = await supabase
+    .from('consultations')
+    .update({ status })
+    .eq('id', req.params.id)
+    .single()
+
+  if (error) throw new ApiError(500, error.message)
   res.json(sendSuccess(withId(updated)))
 })
 
 export const deleteConsultation = asyncHandler(async (req, res) => {
-  const existing = await prisma.consultation.findUnique({ where: { id: req.params.id } })
-  if (!existing) {
+  const { data: existing, error: existingError } = await supabase
+    .from('consultations')
+    .select('id')
+    .eq('id', req.params.id)
+    .single()
+
+  if (existingError || !existing) {
     return res.status(404).json({ success: false, message: 'Consultation not found' })
   }
-  await prisma.consultation.delete({ where: { id: req.params.id } })
+
+  const { error } = await supabase
+    .from('consultations')
+    .delete()
+    .eq('id', req.params.id)
+
+  if (error) throw new ApiError(500, error.message)
   res.json(sendSuccess({ message: 'Consultation deleted' }))
 })
 
 export const exportConsultationsCsv = asyncHandler(async (req, res) => {
-  const items = await prisma.consultation.findMany({
-    orderBy: { createdAt: 'desc' },
-  })
+  const { data: items, error } = await supabase
+    .from('consultations')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) throw new ApiError(500, error.message)
 
   const header = 'id,name,email,phone,message,status,created_at\n'
-  const rows = items
+  const rows = (items || [])
     .map(
       (item) =>
         [
@@ -126,7 +140,7 @@ export const exportConsultationsCsv = asyncHandler(async (req, res) => {
           (item.phone || '').replace(/"/g, '""'),
           (item.message || '').replace(/"/g, '""'),
           item.status,
-          item.createdAt.toISOString(),
+          item.created_at,
         ].join(','),
     )
     .join('\n')

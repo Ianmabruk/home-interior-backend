@@ -1,7 +1,0 @@
--- This migration adds missing models to Prisma schema that already existed
--- in the database from earlier migration runs:
---   consultations (20260715000003)
---   testimonials   (20260713160000)
---   wishlists      (20260706223040_init)
---
--- The tables are already present, so no DDL is required.

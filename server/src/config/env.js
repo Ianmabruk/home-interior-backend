@@ -32,4 +32,22 @@ export const env = {
   seedAdminEmail: process.env.SEED_ADMIN_EMAIL || 'admin@hokinterior.com',
   seedAdminPassword: process.env.SEED_ADMIN_PASSWORD || 'Admin123!',
   sendgridApiKey: process.env.SENDGRID_API_KEY || '',
+  supabaseUrl: process.env.SUPABASE_URL || '',
+  supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+}
+
+const required = [
+  'SUPABASE_URL',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'JWT_ACCESS_SECRET',
+  'JWT_REFRESH_SECRET',
+  'CLOUDINARY_CLOUD_NAME',
+  'CLOUDINARY_API_KEY',
+  'CLOUDINARY_API_SECRET',
+]
+
+for (const key of required) {
+  if (!process.env[key]) {
+    throw new Error(`Missing required environment variable: ${key}`)
+  }
 }

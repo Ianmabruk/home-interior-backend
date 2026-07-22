@@ -1,107 +1,126 @@
 import bcrypt from 'bcryptjs'
 import dotenv from 'dotenv'
-import { prisma } from '../config/prisma.js'
+import { supabase } from '../config/supabase.js'
 import { env } from '../config/env.js'
-import { ensureAdminUser } from '../config/prisma.js'
 import {
   aboutSeed,
-  analyticsSeed,
   portfolioSeed,
   productsSeed,
-  projectsSeed,
   servicesSeed,
-  settingsSeed,
   testimonialsSeed,
-  virtualDesignSeed,
 } from './seedData.js'
 
 dotenv.config()
 
 const seed = async () => {
   try {
-    const analyticsCount = await prisma.analytics.count()
-    if (analyticsCount === 0) {
-      for (const row of analyticsSeed) {
-        await prisma.analytics.create({ data: row })
-      }
-    }
+    const { data: portfolioCountRes } = await supabase
+      .from('portfolios')
+      .select('id', { count: 'exact', head: true })
 
-    const portfolioCount = await prisma.portfolio.count()
+    const portfolioCount = portfolioCountRes?.length || 0
     if (portfolioCount === 0) {
       for (const item of portfolioSeed) {
-        await prisma.portfolio.create({ data: item })
+        await supabase.from('portfolios').insert([item])
       }
     }
 
-    const productCount = await prisma.product.count()
+    const { data: productCountRes } = await supabase
+      .from('products')
+      .select('id', { count: 'exact', head: true })
+
+    const productCount = productCountRes?.length || 0
     if (productCount === 0) {
       for (const item of productsSeed) {
-        await prisma.product.create({ data: item })
+        await supabase.from('products').insert([item])
       }
     }
 
-    const virtualDesignCount = await prisma.virtualDesign.count()
-    if (virtualDesignCount === 0) {
-      for (const item of virtualDesignSeed) {
-        await prisma.virtualDesign.create({ data: item })
-      }
-    }
+    const { data: serviceCountRes } = await supabase
+      .from('services')
+      .select('id', { count: 'exact', head: true })
 
-    const serviceCount = await prisma.service.count()
+    const serviceCount = serviceCountRes?.length || 0
     if (serviceCount === 0) {
       for (const item of servicesSeed) {
-        await prisma.service.create({ data: item })
+        await supabase.from('services').insert([item])
       }
     }
 
-    const testimonialCount = await prisma.testimonial.count()
+    const { data: testimonialCountRes } = await supabase
+      .from('testimonials')
+      .select('id', { count: 'exact', head: true })
+
+    const testimonialCount = testimonialCountRes?.length || 0
     if (testimonialCount === 0) {
       for (const item of testimonialsSeed) {
-        await prisma.testimonial.create({ data: item })
+        await supabase.from('testimonials').insert([item])
       }
     }
 
-    const aboutCount = await prisma.about.count()
+    const { data: aboutCountRes } = await supabase
+      .from('abouts')
+      .select('id', { count: 'exact', head: true })
+
+    const aboutCount = aboutCountRes?.length || 0
     if (aboutCount === 0) {
-      await prisma.about.create({ data: aboutSeed })
+      await supabase.from('abouts').insert([aboutSeed])
     }
 
-    const settingsCount = await prisma.settings.count()
+    const { data: settingsCountRes } = await supabase
+      .from('settings')
+      .select('id', { count: 'exact', head: true })
+
+    const settingsCount = settingsCountRes?.length || 0
     if (settingsCount === 0) {
-      await prisma.settings.create({ data: settingsSeed })
+      await supabase.from('settings').insert([{
+        site_name: 'HOK Interior Designs',
+        support_email: 'info@hokinterior.com',
+        maintenance_mode: false,
+        currency: 'USD',
+        shipping_policy: '',
+        return_policy: '',
+      }])
     }
 
     const adminEmail = env.seedAdminEmail.toLowerCase()
     const adminPassword = env.seedAdminPassword
     const adminPasswordHash = await bcrypt.hash(adminPassword, 12)
 
-    await prisma.user.upsert({
-      where: { email: adminEmail },
-      update: {
-        fullName: 'HOK Platform Admin',
+    const { data: existingAdmin } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', adminEmail)
+      .single()
+
+    if (existingAdmin) {
+      await supabase
+        .from('users')
+        .update({
+          full_name: 'HOK Platform Admin',
+          email: adminEmail,
+          role: 'admin',
+          is_active: true,
+          password_hash: adminPasswordHash,
+        })
+        .eq('id', existingAdmin.id)
+    } else {
+      await supabase.from('users').insert([{
+        full_name: 'HOK Platform Admin',
         email: adminEmail,
         role: 'admin',
-        isActive: true,
-        passwordHash: adminPasswordHash,
-      },
-      create: {
-        fullName: 'HOK Platform Admin',
-        email: adminEmail,
-        role: 'admin',
-        isActive: true,
-        passwordHash: adminPasswordHash,
-      },
-    })
+        is_active: true,
+        password_hash: adminPasswordHash,
+      }])
+    }
 
     console.log('Seed completed successfully')
     console.log(`Admin email: ${adminEmail}`)
     console.log(`Admin password: ${adminPassword}`)
 
-    await prisma.$disconnect()
     process.exit(0)
   } catch (error) {
     console.error('Seed failed', error)
-    await prisma.$disconnect()
     process.exit(1)
   }
 }

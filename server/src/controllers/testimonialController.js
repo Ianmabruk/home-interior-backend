@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { prisma } from '../config/prisma.js'
+import { supabase } from '../config/supabase.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { mediaService } from '../services/media.service.js'
@@ -8,24 +8,32 @@ import { withId, withIdArray } from '../utils/helpers.js'
 
 const sortByOrder = (items) =>
   [...(items || [])].sort((a, b) => {
-    const o = (a.displayOrder || 0) - (b.displayOrder || 0)
+    const o = (a.display_order || 0) - (b.display_order || 0)
     if (o !== 0) return o
-    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+    return new Date(b.created_at || 0) - new Date(a.created_at || 0)
   })
 
 export const listPublic = asyncHandler(async (req, res) => {
-  const items = await prisma.testimonial.findMany({
-    where: { isActive: true },
-    orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
-  })
-  res.json(sendSuccess(withIdArray(sortByOrder(items))))
+  const { data, error } = await supabase
+    .from('testimonials')
+    .select('*')
+    .eq('is_active', true)
+    .order('display_order', { ascending: true })
+    .order('created_at', { ascending: false })
+
+  if (error) throw new ApiError(500, error.message)
+  res.json(sendSuccess(withIdArray(sortByOrder(data || []))))
 })
 
 export const listAdmin = asyncHandler(async (req, res) => {
-  const items = await prisma.testimonial.findMany({
-    orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
-  })
-  res.json(sendSuccess(withIdArray(sortByOrder(items))))
+  const { data, error } = await supabase
+    .from('testimonials')
+    .select('*')
+    .order('display_order', { ascending: true })
+    .order('created_at', { ascending: false })
+
+  if (error) throw new ApiError(500, error.message)
+  res.json(sendSuccess(withIdArray(sortByOrder(data || []))))
 })
 
 const testimonialSchema = z.object({
@@ -51,68 +59,106 @@ export const create = asyncHandler(async (req, res) => {
     photoPublicId = upload.public_id
   }
 
-  const item = await prisma.testimonial.create({
-    data: {
-      clientName: body.clientName,
+  const { data: item, error } = await supabase
+    .from('testimonials')
+    .insert([{
+      client_name: body.clientName,
       position: body.position ?? null,
       company: body.company ?? null,
       testimonial: body.testimonial,
       rating: body.rating ?? 5,
-      displayOrder: body.displayOrder ?? 0,
-      isActive: body.isActive ?? true,
-      photoUrl,
-      photoPublicId,
-    },
-  })
+      display_order: body.displayOrder ?? 0,
+      is_active: body.isActive ?? true,
+      photo_url: photoUrl,
+      photo_public_id: photoPublicId,
+    }])
+    .single()
+
+  if (error) throw new ApiError(500, error.message)
 
   res.status(201).json(sendSuccess(withId(item)))
 })
 
 export const update = asyncHandler(async (req, res) => {
-  const existing = await prisma.testimonial.findUnique({ where: { id: req.params.id } })
-  if (!existing) throw new ApiError(404, 'Testimonial not found')
+  const { data: existing, error: existingError } = await supabase
+    .from('testimonials')
+    .select('*')
+    .eq('id', req.params.id)
+    .single()
+
+  if (existingError || !existing) throw new ApiError(404, 'Testimonial not found')
 
   const body = testimonialSchema.partial().parse(req.body)
   const payload = {}
-  if (body.clientName !== undefined) payload.clientName = body.clientName
+  if (body.clientName !== undefined) payload.client_name = body.clientName
   if (body.position !== undefined) payload.position = body.position
   if (body.company !== undefined) payload.company = body.company
   if (body.testimonial !== undefined) payload.testimonial = body.testimonial
   if (body.rating !== undefined) payload.rating = body.rating
-  if (body.displayOrder !== undefined) payload.displayOrder = body.displayOrder
-  if (body.isActive !== undefined) payload.isActive = body.isActive
+  if (body.displayOrder !== undefined) payload.display_order = body.displayOrder
+  if (body.isActive !== undefined) payload.is_active = body.isActive
 
   if (req.file) {
     const upload = await mediaService.upload({ buffer: req.file.buffer, mimeType: req.file.mimetype, folder: 'hok/testimonials', type: 'image' })
-    if (existing.photoPublicId) {
-      try { await mediaService.delete(existing.photoPublicId, 'image') } catch { /* ignore */ }
+    if (existing.photo_public_id) {
+      try { await mediaService.delete(existing.photo_public_id, 'image') } catch { /* ignore */ }
     }
-    payload.photoUrl = upload.secure_url
-    payload.photoPublicId = upload.public_id
+    payload.photo_url = upload.secure_url
+    payload.photo_public_id = upload.public_id
   }
 
-  const item = await prisma.testimonial.update({ where: { id: req.params.id }, data: payload })
+  const { data: item, error } = await supabase
+    .from('testimonials')
+    .update(payload)
+    .eq('id', req.params.id)
+    .single()
+
+  if (error) throw new ApiError(500, error.message)
   res.json(sendSuccess(withId(item)))
 })
 
 export const remove = asyncHandler(async (req, res) => {
-  const existing = await prisma.testimonial.findUnique({ where: { id: req.params.id } })
-  if (!existing) throw new ApiError(404, 'Testimonial not found')
-  if (existing.photoPublicId) {
-    try { await mediaService.delete(existing.photoPublicId, 'image') } catch { /* ignore */ }
+  const { data: existing, error: existingError } = await supabase
+    .from('testimonials')
+    .select('*')
+    .eq('id', req.params.id)
+    .single()
+
+  if (existingError || !existing) throw new ApiError(404, 'Testimonial not found')
+  if (existing.photo_public_id) {
+    try { await mediaService.delete(existing.photo_public_id, 'image') } catch { /* ignore */ }
   }
-  await prisma.testimonial.delete({ where: { id: req.params.id } })
+
+  const { error } = await supabase
+    .from('testimonials')
+    .delete()
+    .eq('id', req.params.id)
+
+  if (error) throw new ApiError(500, error.message)
   res.json(sendSuccess({ message: 'Testimonial deleted' }))
 })
 
 export const reorder = asyncHandler(async (req, res) => {
   const incoming = Array.isArray(req.body.order) ? req.body.order : []
   if (!incoming.length) throw new ApiError(400, 'order array is required')
-  await prisma.$transaction(
-    incoming.map((id, index) => prisma.testimonial.update({ where: { id: String(id) }, data: { displayOrder: index } })),
-  )
-  const items = await prisma.testimonial.findMany({ orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }] })
-  res.json(sendSuccess(withIdArray(sortByOrder(items))))
+
+  for (const id of incoming) {
+    const { error } = await supabase
+      .from('testimonials')
+      .update({ display_order: incoming.indexOf(id) })
+      .eq('id', String(id))
+
+    if (error) throw new ApiError(500, error.message)
+  }
+
+  const { data: items, error } = await supabase
+    .from('testimonials')
+    .select('*')
+    .order('display_order', { ascending: true })
+    .order('created_at', { ascending: false })
+
+  if (error) throw new ApiError(500, error.message)
+  res.json(sendSuccess(withIdArray(sortByOrder(items || []))))
 })
 
 export const testimonialController = {

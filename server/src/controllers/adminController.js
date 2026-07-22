@@ -1,4 +1,4 @@
-import { prisma } from '../config/prisma.js'
+import { supabase } from '../config/supabase.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { env } from '../config/env.js'
@@ -7,16 +7,29 @@ import { withId, withIdArray } from '../utils/helpers.js'
 import { emailService } from '../services/emailService.js'
 
 export const dashboardOverview = asyncHandler(async (req, res) => {
-  const [products, userCount, orders, portfolioCount, users] = await Promise.all([
-    prisma.product.findMany(),
-    prisma.user.count(),
-    prisma.order.findMany(),
-    prisma.portfolio.count(),
-    prisma.user.findMany({ select: { id: true, fullName: true, email: true } }),
+  const [
+    productsRes,
+    usersRes,
+    ordersRes,
+    portfolioCountRes,
+  ] = await Promise.all([
+    supabase.from('products').select('*'),
+    supabase.from('users').select('id', { count: 'exact', head: false }),
+    supabase.from('orders').select('*'),
+    supabase.from('portfolios').select('id', { count: 'exact', head: true }),
   ])
 
+  for (const r of [productsRes, usersRes, ordersRes, portfolioCountRes]) {
+    if (r.error) throw new ApiError(500, r.error.message)
+  }
+
+  const products = productsRes.data || []
+  const users = usersRes.data || []
+  const orders = ordersRes.data || []
+  const portfolioCount = portfolioCountRes.count || 0
+
   const userById = new Map(users.map((u) => [u.id, u]))
-  const sortedOrders = [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  const sortedOrders = [...orders].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 
   const totalSales = sortedOrders
     .filter((order) => order.status !== 'cancelled')
@@ -27,13 +40,13 @@ export const dashboardOverview = asyncHandler(async (req, res) => {
     thisMonth.setDate(1)
     thisMonth.setHours(0, 0, 0, 0)
     return sortedOrders
-      .filter((order) => order.status !== 'cancelled' && new Date(order.createdAt) >= thisMonth)
+      .filter((order) => order.status !== 'cancelled' && new Date(order.created_at) >= thisMonth)
       .reduce((sum, order) => sum + (Number(order.total) || 0), 0)
   })()
 
   const recentOrders = sortedOrders.slice(0, 10).map((o) => {
-    const u = userById.get(o.userId)
-    return { ...o, _id: o.id, customerName: u?.fullName || u?.email || 'Customer' }
+    const u = userById.get(o.user_id)
+    return { ...o, _id: o.id, customerName: u?.full_name || u?.email || 'Customer' }
   })
 
   res.json(sendSuccess({
@@ -42,7 +55,7 @@ export const dashboardOverview = asyncHandler(async (req, res) => {
     monthlySales,
     visits: 0,
     productCount: products.length,
-    userCount,
+    userCount: users.length,
     ordersCount: orders.length,
     portfolioCount,
     charts: [],
@@ -58,50 +71,66 @@ export const dashboardOverview = asyncHandler(async (req, res) => {
 
 export const listUsers = asyncHandler(async (req, res) => {
   const limit = Math.min(Number(req.query.limit) || 200, 500)
-  const users = await prisma.user.findMany({
-    select: { id: true, fullName: true, email: true, role: true, isActive: true, createdAt: true, lastLoginAt: true },
-    orderBy: { createdAt: 'desc' },
-    take: limit,
-  })
-  res.json(sendSuccess(withIdArray(users)))
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, full_name, email, role, is_active, created_at, last_login_at')
+    .order('created_at', { ascending: false })
+    .range(0, limit - 1)
+
+  if (error) throw new ApiError(500, error.message)
+  res.json(sendSuccess(withIdArray(data || [])))
 })
 
 export const manageUser = asyncHandler(async (req, res) => {
   const { action } = req.params
-  const user = await prisma.user.findUnique({ where: { id: req.params.id } })
-  if (!user) {
+  const { data: user, error: userError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', req.params.id)
+    .single()
+
+  if (userError || !user) {
     return res.status(404).json({ success: false, message: 'User not found' })
   }
 
   if (action === 'suspend') {
-    await prisma.user.update({ where: { id: user.id }, data: { isActive: false } })
+    const { error } = await supabase.from('users').update({ is_active: false }).eq('id', user.id)
+    if (error) throw new ApiError(500, error.message)
   } else if (action === 'activate') {
-    await prisma.user.update({ where: { id: user.id }, data: { isActive: true } })
+    const { error } = await supabase.from('users').update({ is_active: true }).eq('id', user.id)
+    if (error) throw new ApiError(500, error.message)
   } else {
     return res.status(400).json({ success: false, message: 'Invalid action' })
   }
 
-  const updated = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { id: true, fullName: true, email: true, role: true, isActive: true, createdAt: true },
-  })
+  const { data: updated } = await supabase
+    .from('users')
+    .select('id, full_name, email, role, is_active, created_at')
+    .eq('id', user.id)
+    .single()
+
   res.json(sendSuccess({ message: `User ${action}d successfully`, user: withId(updated) }))
 })
 
 export const listAllOrders = asyncHandler(async (req, res) => {
   const limit = Math.min(Number(req.query.limit) || 100, 200)
-  const [orders, users] = await Promise.all([
-    prisma.order.findMany({ orderBy: { createdAt: 'desc' }, take: limit }),
-    prisma.user.findMany({ select: { id: true, fullName: true, email: true } }),
+  const [{ data: orders, error: ordersError }, { data: users, error: usersError }] = await Promise.all([
+    supabase.from('orders').select('*').order('created_at', { ascending: false }).range(0, limit - 1),
+    supabase.from('users').select('id, full_name, email'),
   ])
-  const userById = new Map(users.map((u) => [u.id, u]))
 
-  const enriched = orders.map((o) => {
-    const u = userById.get(o.userId)
-    return { ...withId(o), customerName: u?.fullName || 'Guest', customerEmail: u?.email || '' }
+  for (const r of [ordersError, usersError]) {
+    if (r) throw new ApiError(500, r.message)
+  }
+
+  const userById = new Map((users || []).map((u) => [u.id, u]))
+
+  const enriched = (orders || []).map((o) => {
+    const u = userById.get(o.user_id)
+    return { ...withId(o), customerName: u?.full_name || 'Guest', customerEmail: u?.email || '' }
   })
 
-  const sorted = enriched.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  const sorted = enriched.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
   res.json(sendSuccess(sorted))
 })
 
@@ -112,75 +141,116 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
     return res.status(400).json({ success: false, message: `Invalid status. Allowed: ${allowedStatuses.join(', ')}` })
   }
 
-  const order = await prisma.order.findUnique({ where: { id: req.params.id } })
-  if (!order) {
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('id', req.params.id)
+    .single()
+
+  if (orderError || !order) {
     return res.status(404).json({ success: false, message: 'Order not found' })
   }
 
-  const updated = await prisma.order.$transaction(async (tx) => {
-    const data = { status }
+  const updatePayload = { status }
+  if (status === 'cancelled' && order.status !== 'cancelled') {
+    const items = Array.isArray(order.items) ? order.items : []
+    for (const item of items) {
+      const productId = item.product
+      const qty = Number(item.quantity) || 0
+      if (productId && qty > 0) {
+        const { data: product } = await supabase
+          .from('products')
+          .select('stock')
+          .eq('id', productId)
+          .single()
 
-    if (status === 'cancelled' && order.status !== 'cancelled') {
-      const items = Array.isArray(order.items) ? order.items : []
-      for (const item of items) {
-        const productId = item.product
-        const qty = Number(item.quantity) || 0
-        if (productId && qty > 0) {
-          await tx.product.update({ where: { id: productId }, data: { stock: { increment: qty } } })
-        }
+        await supabase
+          .from('products')
+          .update({ stock: (product?.stock || 0) + qty })
+          .eq('id', productId)
       }
-      data.paymentStatus = 'refunded'
     }
+    updatePayload.payment_status = 'refunded'
+  }
 
-    return tx.order.update({ where: { id: order.id }, data })
-  })
+  const { data: updated, error } = await supabase
+    .from('orders')
+    .update(updatePayload)
+    .eq('id', order.id)
+    .single()
 
+  if (error) throw new ApiError(500, error.message)
   res.json(sendSuccess(updated))
 })
 
 export const getSettings = async (req, res) => {
   try {
-    const settings = await prisma.settings.findFirst({ orderBy: { createdAt: 'desc' } })
-    if (!settings) {
+    const { data, error } = await supabase
+      .from('settings')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1)
+
+    if (error) throw new ApiError(500, error.message)
+
+    if (!data || data.length === 0) {
       return res.json(sendSuccess({
         id: null,
-        siteName: 'HOK Interior Designs',
-        supportEmail: 'info@hokinterior.com',
-        maintenanceMode: false,
+        site_name: 'HOK Interior Designs',
+        support_email: 'info@hokinterior.com',
+        maintenance_mode: false,
         currency: 'USD',
-        shippingPolicy: '',
-        returnPolicy: '',
+        shipping_policy: '',
+        return_policy: '',
       }))
     }
-    res.json(sendSuccess(withId(settings)))
+    res.json(sendSuccess(withId(data[0])))
   } catch (error) {
     console.error('[ADMIN][SETTINGS] error:', error?.message)
     res.json(sendSuccess({
       id: null,
-      siteName: 'HOK Interior Designs',
-      supportEmail: 'info@hokinterior.com',
-      maintenanceMode: false,
+      site_name: 'HOK Interior Designs',
+      support_email: 'info@hokinterior.com',
+      maintenance_mode: false,
       currency: 'USD',
-      shippingPolicy: '',
-      returnPolicy: '',
+      shipping_policy: '',
+      return_policy: '',
     }))
   }
 }
 
 export const updateSettings = asyncHandler(async (req, res) => {
-  const allowed = ['siteName', 'supportEmail', 'maintenanceMode', 'currency', 'shippingPolicy', 'returnPolicy']
+  const allowed = ['site_name', 'support_email', 'maintenance_mode', 'currency', 'shipping_policy', 'return_policy']
   const payload = {}
   for (const key of allowed) {
     if (req.body[key] !== undefined) payload[key] = req.body[key]
   }
 
-  const existing = await prisma.settings.findFirst()
-  if (!existing) {
-    const created = await prisma.settings.create({ data: payload })
+  const { data: existing, error: existingError } = await supabase
+    .from('settings')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+  if (existingError) throw new ApiError(500, existingError.message)
+
+  if (!existing || existing.length === 0) {
+    const { data: created, error } = await supabase
+      .from('settings')
+      .insert([payload])
+      .single()
+
+    if (error) throw new ApiError(500, error.message)
     return res.status(201).json(sendSuccess(withId(created)))
   }
 
-  const updated = await prisma.settings.update({ where: { id: existing.id }, data: payload })
+  const { data: updated, error } = await supabase
+    .from('settings')
+    .update(payload)
+    .eq('id', existing[0].id)
+    .single()
+
+  if (error) throw new ApiError(500, error.message)
   res.json(sendSuccess(withId(updated)))
 })
 

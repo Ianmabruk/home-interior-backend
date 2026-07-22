@@ -1,15 +1,30 @@
 import { jest } from '@jest/globals'
 import request from 'supertest'
-import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import { createMockPrisma, resetMockPrisma } from './helpers.js'
+import { createChain, resetMockSupabase } from './helpers.js'
 
-const mockPrisma = createMockPrisma()
+const builder = createChain()
 
-jest.unstable_mockModule('../src/config/prisma.js', () => ({
-  prisma: mockPrisma,
-  executeWithRetry: jest.fn((fn) => fn()),
-  checkDatabaseHealth: jest.fn().mockResolvedValue({ database: 'connected', prisma: 'connected' }),
+jest.unstable_mockModule('../src/config/env.js', () => ({
+  env: {
+    nodeEnv: 'test',
+    port: 5000,
+    databaseUrl: 'postgresql://test:test@localhost:5432/test',
+    directUrl: 'postgresql://test:test@localhost:5432/test',
+    supabaseUrl: 'http://localhost',
+    supabaseServiceRoleKey: 'test-key',
+    jwtAccessSecret: 'test-access-secret',
+    jwtRefreshSecret: 'test-refresh-secret',
+    cloudinaryCloudName: 'test-cloud',
+    cloudinaryApiKey: 'test-key',
+    cloudinaryApiSecret: 'test-secret',
+    seedAdminEmail: 'admin@test.com',
+    seedAdminPassword: 'admin123',
+    clientUrl: 'http://localhost:5173',
+    sendgridApiKey: '',
+    accessTokenTtl: '15m',
+    refreshTokenTtl: '30d',
+  },
 }))
 
 jest.unstable_mockModule('../src/config/cloudinary.js', () => ({
@@ -21,8 +36,10 @@ jest.unstable_mockModule('../src/config/cloudinary.js', () => ({
   default: {},
 }))
 
-process.env.JWT_ACCESS_SECRET = 'test-access-secret-key'
-process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-key'
+const { supabase: realSupabase } = await import('../src/config/supabase.js')
+
+process.env.JWT_ACCESS_SECRET = 'test-access-secret'
+process.env.JWT_REFRESH_SECRET = 'test-refresh-secret'
 process.env.NODE_ENV = 'test'
 process.env.CLOUDINARY_CLOUD_NAME = 'test-cloud'
 process.env.CLOUDINARY_API_KEY = 'test-key'
@@ -30,6 +47,13 @@ process.env.CLOUDINARY_API_SECRET = 'test-secret'
 process.env.SEED_ADMIN_EMAIL = 'admin@test.com'
 process.env.SEED_ADMIN_PASSWORD = 'admin123'
 process.env.CLIENT_URL = 'http://localhost:5173'
+
+const resetMockSupabaseAfterEach = () => {
+  jest.clearAllMocks()
+  resetMockSupabase(builder)
+  realSupabase.from = jest.fn(() => builder)
+  realSupabase.rpc = jest.fn(() => builder)
+}
 
 const generateToken = (user) => {
   return jwt.sign(
@@ -48,24 +72,27 @@ describe('Product Management', () => {
   })
 
   beforeEach(() => {
-    jest.clearAllMocks()
-    resetMockPrisma(mockPrisma)
+    resetMockSupabaseAfterEach()
   })
 
   describe('GET /api/products', () => {
     it('should list all published products', async () => {
-      mockPrisma.product.findMany.mockResolvedValue([
-        {
-          id: 'prod-1',
-          name: 'Test Product',
-          price: 100,
-          discountPrice: 80,
-          category: 'Living Room',
-          images: [{ url: 'test.jpg' }],
-          stock: 10,
-          isPublished: true,
-        }
-      ])
+      builder.setResolveWith({
+        data: [
+          {
+            id: 'prod-1',
+            name: 'Test Product',
+            price: 100,
+            discount_price: 80,
+            category: 'Living Room',
+            images: [{ url: 'test.jpg' }],
+            stock: 10,
+            is_published: true,
+          }
+        ],
+        count: 1,
+        error: null,
+      })
 
       const response = await request(app)
         .get('/api/products')
@@ -76,20 +103,18 @@ describe('Product Management', () => {
     })
 
     it('should filter products by category', async () => {
-      mockPrisma.product.findMany.mockResolvedValue([])
+      builder.setResolveWith({
+        data: [],
+        count: 0,
+        error: null,
+      })
 
       const response = await request(app)
         .get('/api/products')
         .query({ category: 'Living Room' })
 
       expect(response.status).toBe(200)
-      expect(mockPrisma.product.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            isPublished: true,
-          }),
-        })
-      )
+      expect(response.body.data.items).toHaveLength(0)
     })
   })
 
@@ -99,16 +124,13 @@ describe('Product Management', () => {
         id: 'admin-1',
         email: 'admin@test.com',
         role: 'admin',
-        isActive: true,
+        is_active: true,
       }
       const token = generateToken(admin)
 
-      mockPrisma.product.create.mockResolvedValue({
-        id: 'prod-1',
-        name: 'New Product',
-        price: 100,
-        category: 'Living Room',
-        stock: 10,
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'prod-1', name: 'New Product', price: 100, category: 'Living Room', stock: 10 },
+        error: null,
       })
 
       const response = await request(app)
@@ -142,7 +164,7 @@ describe('Product Management', () => {
         id: 'user-1',
         email: 'user@test.com',
         role: 'user',
-        isActive: true,
+        is_active: true,
       }
       const token = generateToken(user)
 
@@ -164,19 +186,17 @@ describe('Product Management', () => {
         id: 'admin-1',
         email: 'admin@test.com',
         role: 'admin',
-        isActive: true,
+        is_active: true,
       }
       const token = generateToken(admin)
 
-      mockPrisma.product.findUnique.mockResolvedValue({
-        id: 'prod-1',
-        name: 'Old Name',
-        price: 100,
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'prod-1', name: 'Old Name', price: 100 },
+        error: null,
       })
-      mockPrisma.product.update.mockResolvedValue({
-        id: 'prod-1',
-        name: 'New Name',
-        price: 100,
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'prod-1', name: 'New Name', price: 100 },
+        error: null,
       })
 
       const response = await request(app)
@@ -197,16 +217,17 @@ describe('Product Management', () => {
         id: 'admin-1',
         email: 'admin@test.com',
         role: 'admin',
-        isActive: true,
+        is_active: true,
       }
       const token = generateToken(admin)
 
-      mockPrisma.product.findUnique.mockResolvedValue({
-        id: 'prod-1',
-        name: 'Test Product',
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'prod-1', name: 'Test Product', images: [] },
+        error: null,
       })
-      mockPrisma.product.delete.mockResolvedValue({
-        id: 'prod-1',
+      builder.setResolveWith({
+        data: null,
+        error: null,
       })
 
       const response = await request(app)

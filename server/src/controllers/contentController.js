@@ -1,64 +1,114 @@
 import { asyncHandler } from '../utils/asyncHandler.js'
-import { prisma } from '../config/prisma.js'
+import { supabase } from '../config/supabase.js'
 import { ApiError } from '../utils/ApiError.js'
 import { mediaService } from '../services/media.service.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { withId, withIdArray } from '../utils/helpers.js'
 
+const TABLES = {
+  portfolio: 'portfolios',
+  virtualDesign: 'virtual_designs',
+  service: 'services',
+  about: 'abouts',
+  hero: 'hero',
+  testimonial: 'testimonials',
+}
+
 export const getAbout = asyncHandler(async (req, res) => {
-  const about = await prisma.about.findFirst({ orderBy: { createdAt: 'desc' } })
-  res.json(sendSuccess(about ? withId(about) : null))
+  const { data, error } = await supabase
+    .from('abouts')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+  if (error) throw new ApiError(500, error.message)
+  res.json(sendSuccess(data && data.length > 0 ? withId(data[0]) : null))
 })
 
 export const upsertAbout = asyncHandler(async (req, res) => {
-  const existing = await prisma.about.findFirst({ orderBy: { createdAt: 'desc' } })
+  const { data: existing, error: existingError } = await supabase
+    .from('abouts')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+  if (existingError) throw new ApiError(500, existingError.message)
 
   const payload = {
-    story: req.body.story ?? existing?.story ?? '',
-    companyDescription: req.body.companyDescription ?? existing?.companyDescription ?? '',
-    mission: req.body.mission ?? existing?.mission ?? '',
-    vision: req.body.vision ?? existing?.vision ?? '',
-    location: req.body.location ?? existing?.location ?? '',
-    contactEmail: req.body.contactEmail ?? existing?.contactEmail ?? '',
-    socials: req.body.socials ? (() => { try { return JSON.parse(req.body.socials) } catch { return {} } })() : (existing?.socials ?? {}),
+    story: req.body.story ?? existing?.[0]?.story ?? '',
+    company_description: req.body.companyDescription ?? existing?.[0]?.company_description ?? '',
+    mission: req.body.mission ?? existing?.[0]?.mission ?? '',
+    vision: req.body.vision ?? existing?.[0]?.vision ?? '',
+    location: req.body.location ?? existing?.[0]?.location ?? '',
+    contact_email: req.body.contactEmail ?? existing?.[0]?.contact_email ?? '',
+    socials: req.body.socials ? (() => { try { return JSON.parse(req.body.socials) } catch { return {} } })() : (existing?.[0]?.socials ?? {}),
   }
 
   if (req.file) {
     const upload = await mediaService.upload({ buffer: req.file.buffer, mimeType: req.file.mimetype, folder: 'hok/about', type: 'image' })
-    payload.aboutImageUrl = upload.secure_url
-    payload.aboutImagePublicId = upload.public_id
-    if (existing?.aboutImagePublicId) {
-      try { await mediaService.delete(existing.aboutImagePublicId, 'image') } catch {}
+    payload.about_image_url = upload.secure_url
+    payload.about_image_public_id = upload.public_id
+    if (existing?.[0]?.about_image_public_id) {
+      try { await mediaService.delete(existing[0].about_image_public_id, 'image') } catch {}
     }
   }
 
-  if (!existing) {
-    const created = await prisma.about.create({ data: payload })
-    return res.status(201).json(sendSuccess(withId(created)))
+  let result
+  if (!existing || existing.length === 0) {
+    const { data, error } = await supabase
+      .from('abouts')
+      .insert([payload])
+      .single()
+    if (error) throw new ApiError(500, error.message)
+    result = data
+    res.status(201).json(sendSuccess(withId(result)))
+  } else {
+    const { data, error } = await supabase
+      .from('abouts')
+      .update(payload)
+      .eq('id', existing[0].id)
+      .single()
+    if (error) throw new ApiError(500, error.message)
+    res.json(sendSuccess(withId(data)))
   }
-
-  const updated = await prisma.about.update({ where: { id: existing.id }, data: payload })
-  res.json(sendSuccess(withId(updated)))
 })
 
 export const homepageFeed = asyncHandler(async (req, res) => {
-  const [portfolio, virtualDesigns, services, about, hero, testimonials] = await Promise.all([
-    prisma.portfolio.findMany({ where: { published: true }, orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }] }),
-    prisma.virtualDesign.findMany({ orderBy: { createdAt: 'desc' } }),
-    prisma.service.findMany({ where: { isActive: true }, orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }] }),
-    prisma.about.findFirst({ orderBy: { createdAt: 'desc' } }),
-    prisma.hero.findMany({ orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }] }),
-    prisma.testimonial.findMany({ where: { isActive: true }, orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }], take: 10 }),
+  const [
+    portfolioRes,
+    virtualDesignsRes,
+    servicesRes,
+    aboutsRes,
+    heroRes,
+    testimonialsRes,
+  ] = await Promise.all([
+    supabase.from('portfolios').select('*').eq('published', true).order('display_order', { ascending: true }).order('created_at', { ascending: false }),
+    supabase.from('virtual_designs').select('*').order('created_at', { ascending: false }),
+    supabase.from('services').select('*').eq('is_active', true).order('display_order', { ascending: true }).order('created_at', { ascending: false }),
+    supabase.from('abouts').select('*').order('created_at', { ascending: false }).limit(1),
+    supabase.from('hero').select('*').order('display_order', { ascending: true }).order('created_at', { ascending: false }),
+    supabase.from('testimonials').select('*').eq('is_active', true).order('display_order', { ascending: true }).order('created_at', { ascending: false }).limit(10),
   ])
 
+  for (const r of [portfolioRes, virtualDesignsRes, servicesRes, aboutsRes, heroRes, testimonialsRes]) {
+    if (r.error) throw new ApiError(500, r.error.message)
+  }
+
+  const portfolio = portfolioRes.data || []
+  const virtualDesigns = virtualDesignsRes.data || []
+  const services = servicesRes.data || []
+  const abouts = aboutsRes.data || []
+  const hero = heroRes.data || []
+  const testimonials = testimonialsRes.data || []
+
   const sortByOrderThenDate = (items) => [...items].sort((a, b) => {
-    const orderDiff = (a.displayOrder || 0) - (b.displayOrder || 0)
+    const orderDiff = (a.display_order || 0) - (b.display_order || 0)
     if (orderDiff !== 0) return orderDiff
-    return new Date(b.createdAt) - new Date(a.createdAt)
+    return new Date(b.created_at) - new Date(a.created_at)
   })
 
   const sortedPortfolio = sortByOrderThenDate(portfolio)
-  const sortedVirtualDesigns = [...virtualDesigns].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  const sortedVirtualDesigns = [...virtualDesigns].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
   const sortedServices = sortByOrderThenDate(services)
   const sortedTestimonials = sortByOrderThenDate(testimonials)
 
@@ -66,14 +116,14 @@ export const homepageFeed = asyncHandler(async (req, res) => {
   const featuredVirtualDesigns = sortedVirtualDesigns.filter((item) => item.featured).slice(0, 3)
   const featuredProject = featuredPortfolio.length > 0 ? featuredPortfolio[0] : (sortedPortfolio.length > 0 ? sortedPortfolio[0] : null)
 
-  const heroImages = hero.map((item) => ({ ...withId(item), url: item.imageUrl, imageUrl: item.imageUrl }))
+  const heroImages = hero.map((item) => ({ ...withId(item), url: item.image_url, imageUrl: item.image_url }))
 
   res.json(sendSuccess({
     portfolio: withIdArray(sortedPortfolio),
     virtualDesigns: withIdArray(sortedVirtualDesigns),
     virtualInteriorDesign: withIdArray(sortedVirtualDesigns),
     services: withIdArray(sortedServices),
-    about: withId(about),
+    about: withId(abouts[0]),
     testimonials: withIdArray(sortedTestimonials),
     featuredPortfolio: withIdArray(featuredPortfolio),
     featuredVirtualDesigns: withIdArray(featuredVirtualDesigns),

@@ -2,22 +2,56 @@ import { jest } from '@jest/globals'
 import request from 'supertest'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import { createMockPrisma, resetMockPrisma } from './helpers.js'
+import { createChain, resetMockSupabase } from './helpers.js'
 
-const mockPrisma = createMockPrisma()
+const builder = createChain()
 
-jest.unstable_mockModule('../src/config/prisma.js', () => ({
-  prisma: mockPrisma,
-  executeWithRetry: jest.fn((fn) => fn()),
-  checkDatabaseHealth: jest.fn().mockResolvedValue({ database: 'connected', prisma: 'connected' }),
+jest.unstable_mockModule('../src/config/env.js', () => ({
+  env: {
+    nodeEnv: 'test',
+    port: 5000,
+    databaseUrl: 'postgresql://test:test@localhost:5432/test',
+    directUrl: 'postgresql://test:test@localhost:5432/test',
+    supabaseUrl: 'http://localhost',
+    supabaseServiceRoleKey: 'test-key',
+    jwtAccessSecret: 'test-access-secret',
+    jwtRefreshSecret: 'test-refresh-secret',
+    cloudinaryCloudName: 'test-cloud',
+    cloudinaryApiKey: 'test-key',
+    cloudinaryApiSecret: 'test-secret',
+    seedAdminEmail: 'admin@test.com',
+    seedAdminPassword: 'admin123',
+    clientUrl: 'http://localhost:5173',
+    sendgridApiKey: '',
+    accessTokenTtl: '15m',
+    refreshTokenTtl: '30d',
+  },
 }))
 
-process.env.JWT_ACCESS_SECRET = 'test-access-secret-key'
-process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-key'
+jest.unstable_mockModule('../src/config/cloudinary.js', () => ({
+  verifyCloudinaryConfig: jest.fn().mockResolvedValue(true),
+  uploadToCloudinary: jest.fn().mockResolvedValue({
+    url: 'https://test.cloudinary.com/image.jpg',
+    publicId: 'test-public-id',
+  }),
+  default: {},
+}))
+
+const { supabase: realSupabase } = await import('../src/config/supabase.js')
+
+process.env.JWT_ACCESS_SECRET = 'test-access-secret'
+process.env.JWT_REFRESH_SECRET = 'test-refresh-secret'
 process.env.NODE_ENV = 'test'
 process.env.SEED_ADMIN_EMAIL = 'admin@test.com'
 process.env.SEED_ADMIN_PASSWORD = 'admin123'
 process.env.CLIENT_URL = 'http://localhost:5173'
+
+const resetMockSupabaseAfterEach = () => {
+  jest.clearAllMocks()
+  resetMockSupabase(builder)
+  realSupabase.from = jest.fn(() => builder)
+  realSupabase.rpc = jest.fn(() => builder)
+}
 
 const generateToken = (user) => {
   return jwt.sign(
@@ -31,14 +65,12 @@ let app
 
 describe('Admin Management', () => {
   beforeAll(async () => {
-    jest.resetModules()
     const appModule = await import('../src/app.js')
     app = appModule.app
   })
 
   beforeEach(() => {
-    jest.clearAllMocks()
-    resetMockPrisma(mockPrisma)
+    resetMockSupabaseAfterEach()
   })
 
   describe('GET /api/admin/overview', () => {
@@ -47,18 +79,37 @@ describe('Admin Management', () => {
         id: 'admin-1',
         email: 'admin@test.com',
         role: 'admin',
-        isActive: true,
+        is_active: true,
       }
       const token = generateToken(admin)
 
-      mockPrisma.product.findMany.mockResolvedValue([])
-      mockPrisma.user.findMany.mockResolvedValue([])
-      mockPrisma.user.count.mockResolvedValue(10)
-      mockPrisma.order.findMany.mockResolvedValue([
-        { id: 'order-1', total: 100, status: 'pending', createdAt: new Date(), items: [] }
-      ])
-      mockPrisma.portfolio.count.mockResolvedValue(5)
-      mockPrisma.product.count.mockResolvedValue(3)
+      builder.setResolveWith({
+        data: [
+          { id: 'p1', name: 'Product 1', price: 100, stock: 5, is_published: true }
+        ],
+        count: 10,
+        error: null,
+      })
+
+      builder.setResolveWith({
+        data: [
+          { id: 'u1', role: 'user', created_at: new Date().toISOString() }
+        ],
+        count: 10,
+        error: null,
+      })
+
+      builder.setResolveWith({
+        data: [
+          { id: 'o1', total: 100, status: 'pending', payment_status: 'pending', created_at: new Date().toISOString(), user_id: 'u1', items: [] }
+        ],
+        error: null,
+      })
+
+      builder.setResolveWith({
+        count: 3,
+        error: null,
+      })
 
       const response = await request(app)
         .get('/api/admin/overview')
@@ -73,7 +124,7 @@ describe('Admin Management', () => {
         id: 'user-1',
         email: 'user@test.com',
         role: 'user',
-        isActive: true,
+        is_active: true,
       }
       const token = generateToken(user)
 
@@ -91,13 +142,17 @@ describe('Admin Management', () => {
         id: 'admin-1',
         email: 'admin@test.com',
         role: 'admin',
-        isActive: true,
+        is_active: true,
       }
       const token = generateToken(admin)
 
-      mockPrisma.user.findMany.mockResolvedValue([
-        { id: 'user-1', email: 'user@test.com', fullName: 'User', role: 'user', isActive: true, createdAt: new Date() }
-      ])
+      builder.setResolveWith({
+        data: [
+          { id: 'user-1', email: 'user@test.com', full_name: 'User', role: 'user', is_active: true, created_at: new Date().toISOString() }
+        ],
+        count: 1,
+        error: null,
+      })
 
       const response = await request(app)
         .get('/api/admin/users')
@@ -114,18 +169,17 @@ describe('Admin Management', () => {
         id: 'admin-1',
         email: 'admin@test.com',
         role: 'admin',
-        isActive: true,
+        is_active: true,
       }
       const token = generateToken(admin)
 
-      mockPrisma.user.findUnique.mockResolvedValue({
-        id: 'user-1',
-        email: 'user@test.com',
-        isActive: true,
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'user-1', email: 'user@test.com', is_active: true },
+        error: null,
       })
-      mockPrisma.user.update.mockResolvedValue({
-        id: 'user-1',
-        isActive: false,
+      builder.setResolveWith({
+        data: { id: 'user-1', is_active: false },
+        error: null,
       })
 
       const response = await request(app)
@@ -133,10 +187,7 @@ describe('Admin Management', () => {
         .set('Authorization', `Bearer ${token}`)
 
       expect(response.status).toBe(200)
-      expect(mockPrisma.user.update).toHaveBeenCalledWith({
-        where: { id: 'user-1' },
-        data: { isActive: false },
-      })
+      expect(response.body.data.user.is_active).toBe(false)
     })
 
     it('should activate user as admin', async () => {
@@ -144,18 +195,17 @@ describe('Admin Management', () => {
         id: 'admin-1',
         email: 'admin@test.com',
         role: 'admin',
-        isActive: true,
+        is_active: true,
       }
       const token = generateToken(admin)
 
-      mockPrisma.user.findUnique.mockResolvedValue({
-        id: 'user-1',
-        email: 'user@test.com',
-        isActive: false,
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'user-1', email: 'user@test.com', is_active: false },
+        error: null,
       })
-      mockPrisma.user.update.mockResolvedValue({
-        id: 'user-1',
-        isActive: true,
+      builder.setResolveWith({
+        data: { id: 'user-1', is_active: true },
+        error: null,
       })
 
       const response = await request(app)
@@ -172,19 +222,17 @@ describe('Admin Management', () => {
         id: 'admin-1',
         email: 'admin@test.com',
         role: 'admin',
-        isActive: true,
+        is_active: true,
       }
       const token = generateToken(admin)
 
-      mockPrisma.settings.findFirst.mockResolvedValue({
-        id: 'settings-1',
-        siteName: 'HOK',
-        currency: 'KES',
+      builder.setResolveWith({
+        data: [{ id: 'settings-1', site_name: 'HOK', currency: 'KES' }],
+        error: null,
       })
-      mockPrisma.settings.update.mockResolvedValue({
-        id: 'settings-1',
-        siteName: 'Updated HOK',
-        currency: 'KES',
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'settings-1', site_name: 'Updated HOK', currency: 'KES' },
+        error: null,
       })
 
       const response = await request(app)
@@ -196,7 +244,7 @@ describe('Admin Management', () => {
         })
 
       expect(response.status).toBe(200)
-      expect(response.body.data.siteName).toBe('Updated HOK')
+      expect(response.body.data.site_name).toBe('Updated HOK')
     })
 
     it('should create settings if none exist', async () => {
@@ -204,15 +252,17 @@ describe('Admin Management', () => {
         id: 'admin-1',
         email: 'admin@test.com',
         role: 'admin',
-        isActive: true,
+        is_active: true,
       }
       const token = generateToken(admin)
 
-      mockPrisma.settings.findFirst.mockResolvedValue(null)
-      mockPrisma.settings.create.mockResolvedValue({
-        id: 'settings-1',
-        siteName: 'HOK',
-        currency: 'USD',
+      builder.setResolveWith({
+        data: [],
+        error: null,
+      })
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'settings-1', site_name: 'HOK', currency: 'USD' },
+        error: null,
       })
 
       const response = await request(app)
@@ -232,19 +282,18 @@ describe('Admin Management', () => {
         id: 'admin-1',
         email: 'admin@test.com',
         role: 'admin',
-        isActive: true,
+        is_active: true,
       }
       const token = generateToken(admin)
 
-      mockPrisma.order.findUnique.mockResolvedValue({
-        id: 'order-1',
-        status: 'pending',
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'order-1', status: 'pending', items: [] },
+        error: null,
       })
-      mockPrisma.order.update.mockResolvedValue({
-        id: 'order-1',
-        status: 'shipped',
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'order-1', status: 'shipped' },
+        error: null,
       })
-      mockPrisma.order.$transaction = jest.fn().mockImplementation((fn) => Promise.resolve(fn({ order: mockPrisma.order, product: mockPrisma.product })))
 
       const response = await request(app)
         .patch('/api/admin/orders/order-1/status')
@@ -260,13 +309,13 @@ describe('Admin Management', () => {
         id: 'admin-1',
         email: 'admin@test.com',
         role: 'admin',
-        isActive: true,
+        is_active: true,
       }
       const token = generateToken(admin)
 
-      mockPrisma.order.findUnique.mockResolvedValue({
-        id: 'order-1',
-        status: 'pending',
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'order-1', status: 'pending' },
+        error: null,
       })
 
       const response = await request(app)

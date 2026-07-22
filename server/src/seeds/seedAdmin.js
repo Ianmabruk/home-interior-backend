@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs'
 import dotenv from 'dotenv'
-import { prisma } from '../config/prisma.js'
+import { supabase } from '../config/supabase.js'
 import { env } from '../config/env.js'
 
 dotenv.config()
@@ -11,32 +11,46 @@ const seedAdmin = async () => {
     const adminPassword = env.seedAdminPassword
     const adminPasswordHash = await bcrypt.hash(adminPassword, 12)
 
-    const admin = await prisma.user.upsert({
-      where: { email: adminEmail },
-      update: {
-        fullName: 'HOK Platform Admin',
-        email: adminEmail,
-        role: 'admin',
-        isActive: true,
-        passwordHash: adminPasswordHash,
-      },
-      create: {
-        fullName: 'HOK Platform Admin',
-        email: adminEmail,
-        role: 'admin',
-        isActive: true,
-        passwordHash: adminPasswordHash,
-      },
-    })
+    const { data, error } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', adminEmail)
+      .single()
 
-    console.log('Admin user ensured successfully')
-    console.log(`Admin email: ${admin.email}`)
-    console.log(`Admin password: ${adminPassword}`)
+    if (error && error.code !== 'PGRST116') {
+      throw new Error(error.message)
+    }
 
-    await prisma.$disconnect()
+    if (data) {
+      await supabase
+        .from('users')
+        .update({
+          full_name: 'HOK Platform Admin',
+          email: adminEmail,
+          role: 'admin',
+          is_active: true,
+          password_hash: adminPasswordHash,
+        })
+        .eq('id', data.id)
+
+      console.log('Admin user updated successfully')
+    } else {
+      await supabase
+        .from('users')
+        .insert([{
+          full_name: 'HOK Platform Admin',
+          email: adminEmail,
+          role: 'admin',
+          is_active: true,
+          password_hash: adminPasswordHash,
+        }])
+
+      console.log('Admin user created successfully')
+    }
+
+    console.log('Admin seed completed successfully')
   } catch (error) {
     console.error('Admin seed failed', error)
-    await prisma.$disconnect()
     process.exit(1)
   }
 }

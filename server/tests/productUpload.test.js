@@ -1,14 +1,30 @@
 import { jest } from '@jest/globals'
 import request from 'supertest'
 import jwt from 'jsonwebtoken'
-import { createMockPrisma, resetMockPrisma } from './helpers.js'
+import { createChain, resetMockSupabase } from './helpers.js'
 
-const mockPrisma = createMockPrisma()
+const builder = createChain()
 
-jest.unstable_mockModule('../src/config/prisma.js', () => ({
-  prisma: mockPrisma,
-  executeWithRetry: jest.fn((fn) => fn()),
-  checkDatabaseHealth: jest.fn().mockResolvedValue({ database: 'connected', prisma: 'connected' }),
+jest.unstable_mockModule('../src/config/env.js', () => ({
+  env: {
+    nodeEnv: 'test',
+    port: 5000,
+    databaseUrl: 'postgresql://test:test@localhost:5432/test',
+    directUrl: 'postgresql://test:test@localhost:5432/test',
+    supabaseUrl: 'http://localhost',
+    supabaseServiceRoleKey: 'test-key',
+    jwtAccessSecret: 'test-access-secret',
+    jwtRefreshSecret: 'test-refresh-secret',
+    cloudinaryCloudName: 'test-cloud',
+    cloudinaryApiKey: 'test-key',
+    cloudinaryApiSecret: 'test-secret',
+    seedAdminEmail: 'admin@test.com',
+    seedAdminPassword: 'admin123',
+    clientUrl: 'http://localhost:5173',
+    sendgridApiKey: '',
+    accessTokenTtl: '15m',
+    refreshTokenTtl: '30d',
+  },
 }))
 
 jest.unstable_mockModule('../src/config/cloudinary.js', () => ({
@@ -35,10 +51,13 @@ jest.unstable_mockModule('../src/services/uploadService.js', () => ({
   uploadImage: mockUploadImage,
   uploadVideo: mockUploadVideo,
   deleteMedia: mockDeleteMedia,
+  uploadToCloudinary: mockUploadImage,
 }))
 
-process.env.JWT_ACCESS_SECRET = 'test-access-secret-key'
-process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-key'
+const { supabase: realSupabase } = await import('../src/config/supabase.js')
+
+process.env.JWT_ACCESS_SECRET = 'test-access-secret'
+process.env.JWT_REFRESH_SECRET = 'test-refresh-secret'
 process.env.NODE_ENV = 'test'
 process.env.CLOUDINARY_CLOUD_NAME = 'test-cloud'
 process.env.CLOUDINARY_API_KEY = 'test-key'
@@ -51,10 +70,10 @@ const generateToken = (user) =>
   jwt.sign(
     { userId: user.id, email: user.email, role: user.role },
     process.env.JWT_ACCESS_SECRET,
-    { expiresIn: '1h' },
+    { expiresIn: '1h' }
   )
 
-const admin = { id: 'admin-1', email: 'admin@test.com', role: 'admin', isActive: true }
+const admin = { id: 'admin-1', email: 'admin@test.com', role: 'admin', is_active: true }
 const token = generateToken(admin)
 
 let app
@@ -67,14 +86,15 @@ describe('Admin Product Dashboard — image upload', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    resetMockPrisma(mockPrisma)
+    resetMockSupabase(builder)
+    realSupabase.from = jest.fn(() => builder)
+    realSupabase.rpc = jest.fn(() => builder)
   })
 
   it('creates a product with an uploaded image and defaults tags to []', async () => {
-    let capturedCreate
-    mockPrisma.product.create.mockImplementation(({ data }) => {
-      capturedCreate = data
-      return Promise.resolve({ id: 'prod-1', ...data })
+    builder.single.mockResolvedValueOnce({
+      data: { id: 'prod-1', name: 'Accent Chair', description: 'A comfortable accent chair', price: 199, category: 'Frames', stock: 5, images: [{ url: 'https://test.cloudinary.com/product-image.jpg', publicId: 'product-image-id' }], is_published: true, created_at: new Date().toISOString() },
+      error: null,
     })
 
     const response = await request(app)
@@ -93,31 +113,33 @@ describe('Admin Product Dashboard — image upload', () => {
     expect(response.status).toBe(201)
     expect(response.body.success).toBe(true)
 
-    // Image upload to Cloudinary must have happened (image branch).
     expect(mockUploadImage).toHaveBeenCalledTimes(1)
     expect(mockUploadVideo).not.toHaveBeenCalled()
 
-    // The DB record carries the uploaded image + safe defaults.
-    expect(Array.isArray(capturedCreate.images)).toBe(true)
-    expect(capturedCreate.images[0]).toMatchObject({
+    expect(Array.isArray(response.body.data.images)).toBe(true)
+    expect(response.body.data.images[0]).toMatchObject({
       url: 'https://test.cloudinary.com/product-image.jpg',
       publicId: 'product-image-id',
     })
-    expect(capturedCreate.isPublished).toBe(true)
+    expect(response.body.data.is_published).toBe(true)
   })
 
   it('lists products for the admin dashboard without error', async () => {
-    mockPrisma.product.findMany.mockResolvedValue([
-      {
-        id: 'prod-1',
-        name: 'Accent Chair',
-        price: 199,
-        category: 'Living Room',
-        images: [{ url: 'https://test.cloudinary.com/product-image.jpg', publicId: 'x' }],
-        stock: 5,
-        isPublished: true,
-      },
-    ])
+    builder.setResolveWith({
+      data: [
+        {
+          id: 'prod-1',
+          name: 'Accent Chair',
+          price: 199,
+          category: 'Living Room',
+          images: [{ url: 'https://test.cloudinary.com/product-image.jpg', publicId: 'x' }],
+          stock: 5,
+          is_published: true,
+        },
+      ],
+      count: 1,
+      error: null,
+    })
 
     const response = await request(app)
       .get('/api/products/admin/all')

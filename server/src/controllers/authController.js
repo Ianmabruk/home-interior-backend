@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import { z } from 'zod'
-import { prisma } from '../config/prisma.js'
+import { supabase } from '../config/supabase.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { signAccessToken, signRefreshToken, verifyRefreshToken, setRefreshCookie, clearRefreshCookie, REFRESH_COOKIE_NAME } from '../utils/tokens.js'
@@ -32,55 +32,74 @@ const makeAuthResponse = (user) => {
 
 export const register = asyncHandler(async (req, res) => {
   const body = parseBody(registerSchema, req.body)
-  const exists = await prisma.user.findUnique({ where: { email: body.email } })
-  if (exists) {
+
+  const { data: existing, error: existingError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('email', body.email)
+    .single()
+
+  if (existingError && existingError.code !== 'PGRST116') {
+    throw new ApiError(500, existingError.message)
+  }
+  if (existing) {
     return res.status(409).json({ success: false, message: 'User already exists' })
   }
 
   const passwordHash = await bcrypt.hash(body.password, 12)
   const { password: _password, ...userData } = body
-  const user = await prisma.user.create({
-    data: { ...userData, passwordHash },
-  })
+
+  const { data: user, error } = await supabase
+    .from('users')
+    .insert([{ ...userData, password_hash: passwordHash, role: 'user' }])
+    .single()
+
+  if (error) throw new ApiError(500, error.message)
 
   const tokens = makeAuthResponse(user)
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { refreshToken: tokens.refreshToken },
-  })
+  await supabase
+    .from('users')
+    .update({ refresh_token: tokens.refreshToken })
+    .eq('id', user.id)
 
   setRefreshCookie(res, tokens.refreshToken)
   res.status(201).json(sendSuccess({
-    user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role },
+    user: { id: user.id, fullName: user.full_name, email: user.email, role: user.role },
     accessToken: tokens.accessToken,
   }))
 })
 
 export const login = asyncHandler(async (req, res) => {
   const body = parseBody(loginSchema, req.body)
-  const user = await prisma.user.findUnique({ where: { email: body.email } })
-  if (!user) {
+
+  const { data: user, error: userError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('email', body.email)
+    .single()
+
+  if (userError || !user) {
     return res.status(401).json({ success: false, message: 'Invalid credentials' })
   }
 
-  if (!user.isActive) {
+  if (!user.is_active) {
     return res.status(403).json({ success: false, message: 'Your account has been suspended. Contact support.' })
   }
 
-  const matches = await bcrypt.compare(body.password, user.passwordHash)
+  const matches = await bcrypt.compare(body.password, user.password_hash)
   if (!matches) {
     return res.status(401).json({ success: false, message: 'Invalid credentials' })
   }
 
   const tokens = makeAuthResponse(user)
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { refreshToken: tokens.refreshToken, lastLoginAt: new Date() },
-  })
+  await supabase
+    .from('users')
+    .update({ refresh_token: tokens.refreshToken, last_login_at: new Date().toISOString() })
+    .eq('id', user.id)
 
   setRefreshCookie(res, tokens.refreshToken)
   res.json(sendSuccess({
-    user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role },
+    user: { id: user.id, fullName: user.full_name, email: user.email, role: user.role },
     accessToken: tokens.accessToken,
   }))
 })
@@ -103,16 +122,21 @@ export const refresh = asyncHandler(async (req, res) => {
     return res.status(401).json({ success: false, message: 'Invalid refresh token' })
   }
 
-  const user = await prisma.user.findUnique({ where: { id: decoded.userId } })
-  if (!user || user.refreshToken !== refreshToken || !user.isActive) {
+  const { data: user, error: userError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', decoded.userId)
+    .single()
+
+  if (userError || !user || user.refresh_token !== refreshToken || !user.is_active) {
     return res.status(401).json({ success: false, message: 'Invalid refresh token' })
   }
 
   const tokens = makeAuthResponse(user)
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { refreshToken: tokens.refreshToken },
-  })
+  await supabase
+    .from('users')
+    .update({ refresh_token: tokens.refreshToken })
+    .eq('id', user.id)
 
   setRefreshCookie(res, tokens.refreshToken)
   res.json(sendSuccess({ accessToken: tokens.accessToken }))
@@ -120,18 +144,23 @@ export const refresh = asyncHandler(async (req, res) => {
 
 export const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = parseBody(z.object({ email: z.string().email() }), req.body)
-  const user = await prisma.user.findUnique({ where: { email } })
+  const { data: user } = await supabase
+    .from('users')
+    .select('*')
+    .eq('email', email)
+    .single()
+
   if (!user) {
     return res.json(sendSuccess({ message: 'If that account exists, a reset link has been sent.' }))
   }
 
   const token = crypto.randomBytes(32).toString('hex')
-  const passwordResetExpires = new Date(Date.now() + 1000 * 60 * 30)
+  const passwordResetExpires = new Date(Date.now() + 1000 * 60 * 30).toISOString()
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { passwordResetToken: token, passwordResetExpires },
-  })
+  await supabase
+    .from('users')
+    .update({ password_reset_token: token, password_reset_expires: passwordResetExpires })
+    .eq('id', user.id)
 
   res.json(sendSuccess({ message: 'If that account exists, a reset link has been sent.' }))
 })
@@ -144,21 +173,22 @@ export const resetPassword = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Invalid reset token')
   }
 
-  const user = await prisma.user.findFirst({
-    where: {
-      passwordResetToken: token,
-      passwordResetExpires: { gt: new Date() },
-    },
-  })
-  if (!user) {
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('password_reset_token', token)
+    .lt('password_reset_expires', new Date().toISOString())
+    .single()
+
+  if (error || !user) {
     throw new ApiError(400, 'Reset link is invalid or expired')
   }
 
   const passwordHash = await bcrypt.hash(password, 12)
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { passwordHash, passwordResetToken: null, passwordResetExpires: null, refreshToken: null },
-  })
+  await supabase
+    .from('users')
+    .update({ password_hash: passwordHash, password_reset_token: null, password_reset_expires: null, refresh_token: null })
+    .eq('id', user.id)
 
   clearRefreshCookie(res)
   res.json(sendSuccess({ message: 'Password reset successful' }))
@@ -168,11 +198,11 @@ export const logout = asyncHandler(async (req, res) => {
   const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME]
   if (refreshToken) {
     try {
-      const decoded = verifyRefreshToken(refreshToken)
-      await prisma.user.update({
-        where: { id: decoded.userId },
-        data: { refreshToken: null },
-      })
+      verifyRefreshToken(refreshToken)
+      await supabase
+        .from('users')
+        .update({ refresh_token: null })
+        .eq('id', req.user.userId)
     } catch {
       // ignore invalid token
     }
@@ -189,21 +219,26 @@ const changePasswordSchema = z.object({
 export const changePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = parseBody(changePasswordSchema, req.body)
 
-  const user = await prisma.user.findUnique({ where: { id: req.user.userId } })
-  if (!user) {
+  const { data: user, error: userError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', req.user.userId)
+    .single()
+
+  if (userError || !user) {
     throw new ApiError(404, 'User not found')
   }
 
-  const matches = await bcrypt.compare(currentPassword, user.passwordHash)
+  const matches = await bcrypt.compare(currentPassword, user.password_hash)
   if (!matches) {
     throw new ApiError(401, 'Current password is incorrect')
   }
 
   const passwordHash = await bcrypt.hash(newPassword, 12)
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { passwordHash },
-  })
+  await supabase
+    .from('users')
+    .update({ password_hash: passwordHash })
+    .eq('id', user.id)
 
   res.json(sendSuccess({ message: 'Password changed successfully. Please log in again.' }))
 })

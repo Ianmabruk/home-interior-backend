@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { prisma } from '../config/prisma.js'
+import { supabase } from '../config/supabase.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
@@ -29,23 +29,39 @@ const replySchema = z.object({
 
 export const createMessage = asyncHandler(async (req, res) => {
   const payload = parseBody(messageSchema, req.body)
-  const created = await prisma.message.create({ data: payload })
+
+  const { data: created, error } = await supabase
+    .from('messages')
+    .insert([payload])
+    .single()
+
+  if (error) throw new ApiError(500, error.message)
   res.status(201).json(sendSuccess(withId(created)))
 })
 
 export const createQuote = asyncHandler(async (req, res) => {
   const payload = parseBody(quoteSchema, req.body)
-  const created = await prisma.message.create({
-    data: {
-      ...payload,
+  const created = await supabase
+    .from('messages')
+    .insert([{
+      name: payload.fullName,
+      email: payload.email,
       subject: `Quote Request: ${payload.projectType}`,
       content: payload.message,
-      isRead: false,
-    },
-  })
+      is_read: false,
+    }])
+    .single()
+
+  const { data: message } = created
+  if (created.error) throw new ApiError(500, created.error.message)
 
   try {
-    const admin = await prisma.user.findFirst({ where: { role: 'admin' } })
+    const { data: admin } = await supabase
+      .from('users')
+      .select('email')
+      .eq('role', 'admin')
+      .single()
+
     if (admin) {
       void emailService.send({
         to: admin.email,
@@ -58,29 +74,37 @@ export const createQuote = asyncHandler(async (req, res) => {
     // ignore
   }
 
-  res.status(201).json(sendSuccess(withId(created)))
+  res.status(201).json(sendSuccess(withId(message)))
 })
 
 export const listMessages = asyncHandler(async (req, res) => {
   const limit = Math.min(Number(req.query.limit) || 100, 200)
-  const messages = await prisma.message.findMany({
-    orderBy: { createdAt: 'desc' },
-    take: limit,
-  })
-  res.json(sendSuccess(withIdArray(messages)))
+  const { data, error } = await supabase
+    .from('messages')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .range(0, limit - 1)
+
+  if (error) throw new ApiError(500, error.message)
+  res.json(sendSuccess(withIdArray(data || [])))
 })
 
 export const replyToMessage = asyncHandler(async (req, res) => {
   const { messageId, reply } = parseBody(replySchema, req.body)
-  const message = await prisma.message.findUnique({ where: { id: messageId } })
-  if (!message) {
+  const { data: message, error: messageError } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('id', messageId)
+    .single()
+
+  if (messageError || !message) {
     return res.status(404).json({ message: 'Message not found' })
   }
 
-  await prisma.message.update({
-    where: { id: messageId },
-    data: { isRead: true },
-  })
+  await supabase
+    .from('messages')
+    .update({ is_read: true })
+    .eq('id', messageId)
 
   try {
     if (message.email) {

@@ -2,80 +2,30 @@ import { jest } from '@jest/globals'
 import request from 'supertest'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { createChain, resetMockSupabase } from './helpers.js'
 
-const mockPrisma = {
-  user: {
-    findFirst: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-  },
-  product: {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
-  project: {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
-  portfolio: {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
-  about: {
-    findFirst: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-  },
-  virtualDesign: {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
-  order: {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-  },
-  message: {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-  },
-  settings: {
-    findFirst: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-  },
-  wishlist: {
-    findMany: jest.fn(),
-    findFirst: jest.fn(),
-    create: jest.fn(),
-    delete: jest.fn(),
-  },
-  analytics: {
-    findMany: jest.fn(),
-  },
-  $transaction: jest.fn(),
-}
+const builder = createChain()
 
-jest.unstable_mockModule('../src/config/prisma.js', () => ({
-  prisma: mockPrisma,
-  executeWithRetry: jest.fn((fn) => fn()),
-  checkDatabaseHealth: jest.fn().mockResolvedValue({ database: 'connected', prisma: 'connected' }),
+jest.unstable_mockModule('../src/config/env.js', () => ({
+  env: {
+    nodeEnv: 'test',
+    port: 5000,
+    databaseUrl: 'postgresql://test:test@localhost:5432/test',
+    directUrl: 'postgresql://test:test@localhost:5432/test',
+    supabaseUrl: 'http://localhost',
+    supabaseServiceRoleKey: 'test-key',
+    jwtAccessSecret: 'test-access-secret',
+    jwtRefreshSecret: 'test-refresh-secret',
+    cloudinaryCloudName: 'test-cloud',
+    cloudinaryApiKey: 'test-key',
+    cloudinaryApiSecret: 'test-secret',
+    seedAdminEmail: 'admin@test.com',
+    seedAdminPassword: 'admin123',
+    clientUrl: 'http://localhost:5173',
+    sendgridApiKey: '',
+    accessTokenTtl: '15m',
+    refreshTokenTtl: '30d',
+  },
 }))
 
 jest.unstable_mockModule('../src/config/cloudinary.js', () => ({
@@ -87,8 +37,10 @@ jest.unstable_mockModule('../src/config/cloudinary.js', () => ({
   default: {},
 }))
 
-process.env.JWT_ACCESS_SECRET = 'test-access-secret-key'
-process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-key'
+const { supabase: realSupabase } = await import('../src/config/supabase.js')
+
+process.env.JWT_ACCESS_SECRET = 'test-access-secret'
+process.env.JWT_REFRESH_SECRET = 'test-refresh-secret'
 process.env.NODE_ENV = 'test'
 process.env.CLOUDINARY_CLOUD_NAME = 'test-cloud'
 process.env.CLOUDINARY_API_KEY = 'test-key'
@@ -97,17 +49,11 @@ process.env.SEED_ADMIN_EMAIL = 'admin@test.com'
 process.env.SEED_ADMIN_PASSWORD = 'admin123'
 process.env.CLIENT_URL = 'http://localhost:5173'
 
-const resetMockPrisma = () => {
-  Object.values(mockPrisma).forEach((model) => {
-    if (typeof model === 'object') {
-      Object.values(model).forEach((method) => {
-        if (typeof method === 'function') {
-          method.mockClear()
-          method.mockImplementation(() => Promise.resolve(undefined))
-        }
-      })
-    }
-  })
+const resetMockSupabaseAfterEach = () => {
+  jest.clearAllMocks()
+  resetMockSupabase(builder)
+  realSupabase.from = jest.fn(() => builder)
+  realSupabase.rpc = jest.fn(() => builder)
 }
 
 const generateToken = (user) => {
@@ -127,23 +73,26 @@ describe('Authentication', () => {
   })
 
   beforeEach(() => {
-    jest.clearAllMocks()
-    resetMockPrisma()
+    resetMockSupabaseAfterEach()
+  })
+
+  it('debug auth chain in test context', async () => {
+    builder.single.mockResolvedValueOnce({
+      data: { id: 'user-123', email: 'test@test.com', password_hash: 'hash', full_name: 'Test User', role: 'user', is_active: true, refresh_token: null },
+      error: null,
+    })
+    
+    const result = await realSupabase.from('users').select('id').eq('email', 'test@test.com').single()
+    console.log('DEBUG AUTH CHAIN RESULT', result)
+    expect(result.data?.id).toBe('user-123')
   })
 
   describe('POST /api/auth/register', () => {
     it('should register a new user with valid data', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null)
-      mockPrisma.user.create.mockResolvedValue({
-        id: 'user-123',
-        email: 'test@test.com',
-        fullName: 'Test User',
-        role: 'user',
-        isActive: true,
-      })
-      mockPrisma.user.update.mockResolvedValue({
-        id: 'user-123',
-        refreshToken: 'new-refresh-token',
+      builder.single.mockResolvedValueOnce({ data: null, error: { code: 'PGRST116' } })
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'user-123', email: 'test@test.com', full_name: 'Test User', role: 'user', is_active: true, password_hash: 'hash', refresh_token: null },
+        error: null,
       })
 
       const response = await request(app)
@@ -185,19 +134,18 @@ describe('Authentication', () => {
   describe('POST /api/auth/login', () => {
     it('should login with valid credentials', async () => {
       const hashedPassword = await bcrypt.hash('password123', 12)
-      mockPrisma.user.findUnique.mockResolvedValue({
-        id: 'user-123',
-        email: 'test@test.com',
-        passwordHash: hashedPassword,
-        fullName: 'Test User',
-        role: 'user',
-        isActive: true,
-        refreshToken: null,
-      })
-      mockPrisma.user.update.mockResolvedValue({
-        id: 'user-123',
-        email: 'test@test.com',
-        refreshToken: 'new-refresh-token',
+
+      builder.single.mockResolvedValueOnce({
+        data: {
+          id: 'user-123',
+          email: 'test@test.com',
+          password_hash: hashedPassword,
+          full_name: 'Test User',
+          role: 'user',
+          is_active: true,
+          refresh_token: null,
+        },
+        error: null,
       })
 
       const response = await request(app)
@@ -213,7 +161,10 @@ describe('Authentication', () => {
     })
 
     it('should reject login with invalid email', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null)
+      builder.single.mockResolvedValueOnce({
+        data: null,
+        error: { code: 'PGRST116' }
+      })
 
       const response = await request(app)
         .post('/api/auth/login')
@@ -227,11 +178,14 @@ describe('Authentication', () => {
 
     it('should reject login with wrong password', async () => {
       const hashedPassword = await bcrypt.hash('password123', 12)
-      mockPrisma.user.findUnique.mockResolvedValue({
-        id: 'user-123',
-        email: 'test@test.com',
-        passwordHash: hashedPassword,
-        isActive: true,
+      builder.single.mockResolvedValueOnce({
+        data: {
+          id: 'user-123',
+          email: 'test@test.com',
+          password_hash: hashedPassword,
+          is_active: true,
+        },
+        error: null,
       })
 
       const response = await request(app)
@@ -246,11 +200,14 @@ describe('Authentication', () => {
 
     it('should reject login for inactive user', async () => {
       const hashedPassword = await bcrypt.hash('password123', 12)
-      mockPrisma.user.findUnique.mockResolvedValue({
-        id: 'user-123',
-        email: 'test@test.com',
-        passwordHash: hashedPassword,
-        isActive: false,
+      builder.single.mockResolvedValueOnce({
+        data: {
+          id: 'user-123',
+          email: 'test@test.com',
+          password_hash: hashedPassword,
+          is_active: false,
+        },
+        error: null,
       })
 
       const response = await request(app)
@@ -272,16 +229,16 @@ describe('Authentication', () => {
         process.env.JWT_REFRESH_SECRET,
         { expiresIn: '7d' }
       )
-      mockPrisma.user.findUnique.mockResolvedValue({
-        id: 'user-123',
-        email: 'test@test.com',
-        passwordHash: hashedPassword,
-        isActive: true,
-        refreshToken,
-      })
-      mockPrisma.user.update.mockResolvedValue({
-        id: 'user-123',
-        refreshToken: 'new-refresh-token',
+
+      builder.single.mockResolvedValueOnce({
+        data: {
+          id: 'user-123',
+          email: 'test@test.com',
+          password_hash: hashedPassword,
+          is_active: true,
+          refresh_token: refreshToken,
+        },
+        error: null,
       })
 
       const response = await request(app)
@@ -304,11 +261,6 @@ describe('Authentication', () => {
 
   describe('POST /api/auth/logout', () => {
     it('should logout successfully', async () => {
-      mockPrisma.user.update.mockResolvedValue({
-        id: 'user-123',
-        refreshToken: null,
-      })
-
       const response = await request(app)
         .post('/api/auth/logout')
         .set('Authorization', 'Bearer valid-token')

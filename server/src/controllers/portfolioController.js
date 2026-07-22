@@ -1,5 +1,5 @@
 import { asyncHandler } from '../utils/asyncHandler.js'
-import { prisma } from '../config/prisma.js'
+import { supabase } from '../config/supabase.js'
 import { ApiError } from '../utils/ApiError.js'
 import { mediaService } from '../services/media.service.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
@@ -30,47 +30,27 @@ const findFilesByFieldname = (req, fieldname) => {
 
 export const portfolioController = {
   list: asyncHandler(async (req, res) => {
-    const items = await prisma.portfolio.findMany({
-      orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        category: true,
-        imageUrl: true,
-        cloudinaryId: true,
-        featured: true,
-        displayOrder: true,
-        published: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    })
-    res.json(sendSuccess(withIdArray(items)))
+    const { data, error } = await supabase
+      .from('portfolios')
+      .select('*')
+      .order('display_order', { ascending: true })
+      .order('created_at', { ascending: false })
+
+    if (error) throw new ApiError(500, error.message)
+    res.json(sendSuccess(withIdArray(data || [])))
   }),
 
   get: asyncHandler(async (req, res) => {
-    const item = await prisma.portfolio.findUnique({
-      where: { id: req.params.id },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        category: true,
-        imageUrl: true,
-        mediaUrls: true,
-        cloudinaryId: true,
-        featured: true,
-        displayOrder: true,
-        published: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    })
-    if (!item) {
+    const { data, error } = await supabase
+      .from('portfolios')
+      .select('*')
+      .eq('id', req.params.id)
+      .single()
+
+    if (error || !data) {
       return res.status(404).json({ success: false, message: 'Portfolio item not found' })
     }
-    res.json(sendSuccess(withId(item)))
+    res.json(sendSuccess(withId(data)))
   }),
 
   create: asyncHandler(async (req, res) => {
@@ -79,15 +59,15 @@ export const portfolioController = {
       description: req.body.description || '',
       category: req.body.category || 'General',
       featured: req.body.featured === 'true' || req.body.featured === true,
-      displayOrder: Number(req.body.displayOrder) || 0,
+      display_order: Number(req.body.displayOrder) || 0,
       published: req.body.published !== 'false' && req.body.published !== false,
     }
 
     const mediaFile = findFileByFieldname(req, 'media')
     if (mediaFile) {
       const upload = await mediaService.upload({ buffer: mediaFile.buffer, mimeType: mediaFile.mimetype, folder: 'hok/portfolio', type: 'image' })
-      data.imageUrl = upload.secure_url
-      data.cloudinaryId = upload.public_id
+      data.image_url = upload.secure_url
+      data.cloudinary_id = upload.public_id
     }
 
     const galleryFiles = findFilesByFieldname(req, 'gallery')
@@ -97,25 +77,35 @@ export const portfolioController = {
       mediaUrls.push(upload.secure_url)
     }
     if (mediaUrls.length > 0) {
-      data.mediaUrls = mediaUrls
+      data.media_urls = mediaUrls
     }
 
     const bodyMediaUrls = req.body.mediaUrls
     if (Array.isArray(bodyMediaUrls) && bodyMediaUrls.length > 0) {
-      data.mediaUrls = bodyMediaUrls
+      data.media_urls = bodyMediaUrls
     }
 
-    if (!data.imageUrl && !req.body.imageUrl) {
+    if (!data.image_url && !req.body.imageUrl) {
       return res.status(400).json({ success: false, message: 'Image is required' })
     }
 
-    const item = await prisma.portfolio.create({ data })
+    const { data: item, error } = await supabase
+      .from('portfolios')
+      .insert([data])
+      .single()
+
+    if (error) throw new ApiError(500, error.message)
     res.status(201).json(sendSuccess(withId(item)))
   }),
 
   update: asyncHandler(async (req, res) => {
-    const existing = await prisma.portfolio.findUnique({ where: { id: req.params.id } })
-    if (!existing) {
+    const { data: existing, error: existingError } = await supabase
+      .from('portfolios')
+      .select('*')
+      .eq('id', req.params.id)
+      .single()
+
+    if (existingError || !existing) {
       return res.status(404).json({ success: false, message: 'Portfolio item not found' })
     }
 
@@ -124,17 +114,17 @@ export const portfolioController = {
     if (req.body.description !== undefined) data.description = req.body.description
     if (req.body.category !== undefined) data.category = req.body.category
     if (req.body.featured !== undefined) data.featured = req.body.featured === 'true' || req.body.featured === true
-    if (req.body.displayOrder !== undefined) data.displayOrder = Number(req.body.displayOrder) || 0
+    if (req.body.displayOrder !== undefined) data.display_order = Number(req.body.displayOrder) || 0
     if (req.body.published !== undefined) data.published = req.body.published === 'true' || req.body.published === true
 
     const mediaFile = findFileByFieldname(req, 'media')
     if (mediaFile) {
-      if (existing.cloudinaryId) {
-        try { await mediaService.delete(existing.cloudinaryId, 'image') } catch {}
+      if (existing.cloudinary_id) {
+        try { await mediaService.delete(existing.cloudinary_id, 'image') } catch {}
       }
       const upload = await mediaService.upload({ buffer: mediaFile.buffer, mimeType: mediaFile.mimetype, folder: 'hok/portfolio', type: 'image' })
-      data.imageUrl = upload.secure_url
-      data.cloudinaryId = upload.public_id
+      data.image_url = upload.secure_url
+      data.cloudinary_id = upload.public_id
     }
 
     const galleryFiles = findFilesByFieldname(req, 'gallery')
@@ -144,15 +134,21 @@ export const portfolioController = {
         const upload = await mediaService.upload({ buffer: file.buffer, mimeType: file.mimetype, folder: 'hok/portfolio', type: 'image' })
         mediaUrls.push(upload.secure_url)
       }
-      data.mediaUrls = mediaUrls
+      data.media_urls = mediaUrls
     }
 
     const bodyMediaUrls = req.body.mediaUrls
     if (Array.isArray(bodyMediaUrls)) {
-      data.mediaUrls = bodyMediaUrls
+      data.media_urls = bodyMediaUrls
     }
 
-    const item = await prisma.portfolio.update({ where: { id: req.params.id }, data })
+    const { data: item, error } = await supabase
+      .from('portfolios')
+      .update(data)
+      .eq('id', req.params.id)
+      .single()
+
+    if (error) throw new ApiError(500, error.message)
     res.json(sendSuccess(withId(item)))
   }),
 
@@ -161,21 +157,32 @@ export const portfolioController = {
     if (!Array.isArray(order)) {
       return res.status(400).json({ success: false, message: 'Order must be an array of {id, displayOrder}' })
     }
-    const updates = order.map((item) =>
-      prisma.portfolio.update({ where: { id: item.id }, data: { displayOrder: item.displayOrder ?? 0 } })
-    )
-    await prisma.$transaction(updates)
+
+    for (const item of order) {
+      const { error } = await supabase
+        .from('portfolios')
+        .update({ display_order: item.displayOrder ?? 0 })
+        .eq('id', item.id)
+
+      if (error) throw new ApiError(500, error.message)
+    }
+
     res.json(sendSuccess({ message: 'Portfolio reordered' }))
   }),
 
   remove: asyncHandler(async (req, res) => {
-    const existing = await prisma.portfolio.findUnique({ where: { id: req.params.id } })
-    if (existing) {
-      if (existing.cloudinaryId) {
-        try { await mediaService.delete(existing.cloudinaryId, 'image') } catch {}
+    const { data: existing, error: existingError } = await supabase
+      .from('portfolios')
+      .select('*')
+      .eq('id', req.params.id)
+      .single()
+
+    if (!existingError && existing) {
+      if (existing.cloudinary_id) {
+        try { await mediaService.delete(existing.cloudinary_id, 'image') } catch {}
       }
-      if (Array.isArray(existing.mediaUrls)) {
-        for (const url of existing.mediaUrls) {
+      if (Array.isArray(existing.media_urls)) {
+        for (const url of existing.media_urls) {
           try {
             const publicId = url.split('/').pop()?.split('.')[0]
             if (publicId) await mediaService.delete(publicId, 'image')
@@ -183,7 +190,13 @@ export const portfolioController = {
         }
       }
     }
-    await prisma.portfolio.delete({ where: { id: req.params.id } })
+
+    const { error } = await supabase
+      .from('portfolios')
+      .delete()
+      .eq('id', req.params.id)
+
+    if (error) throw new ApiError(500, error.message)
     res.json(sendSuccess({ message: 'Portfolio item deleted' }))
   }),
 }

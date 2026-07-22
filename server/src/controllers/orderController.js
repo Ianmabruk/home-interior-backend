@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { prisma } from '../config/prisma.js'
+import { supabase } from '../config/supabase.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
@@ -47,17 +47,26 @@ const orderSchema = z.object({
 }).passthrough()
 
 export const createOrder = asyncHandler(async (req, res) => {
-  const user = await prisma.user.findUnique({ where: { id: req.user.userId } })
-  if (!user || !user.isActive) {
+  const { data: user, error: userError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', req.user.userId)
+    .single()
+
+  if (userError || !user || !user.is_active) {
     throw new ApiError(403, 'Your account is not active. Contact support.')
   }
 
   const data = parseBody(orderSchema, req.body)
 
   const productIds = data.items.map((item) => item.productId)
-  const products = await prisma.product.findMany({
-    where: { id: { in: productIds } },
-  })
+  const { data: products, error: productsError } = await supabase
+    .from('products')
+    .select('*')
+    .in('id', productIds)
+
+  if (productsError) throw new ApiError(500, productsError.message)
+
   const byId = new Map(products.map((item) => [item.id, item]))
 
   for (const item of data.items) {
@@ -81,16 +90,16 @@ export const createOrder = asyncHandler(async (req, res) => {
       quantity: item.quantity,
     }
     if (item.variant?.colorName) {
-      const variant = product.colorVariants?.find((v) => v.colorName === item.variant.colorName)
+      const variant = product.color_variants?.find((v) => v.colorName === item.variant.colorName)
       return {
         ...base,
         variant: item.variant,
-        price: variant?.priceOverride || product.discountPrice || product.price,
+        price: variant?.priceOverride || product.discount_price || product.price,
       }
     }
     return {
       ...base,
-      price: product.discountPrice || product.price,
+      price: product.discount_price || product.price,
     }
   })
 
@@ -99,55 +108,73 @@ export const createOrder = asyncHandler(async (req, res) => {
 
   const shippingAddress = normalizeShippingAddress(data.shippingAddress)
 
-  const order = await prisma.$transaction(async (tx) => {
-    const created = await tx.order.create({
-      data: {
-        userId: req.user.userId,
-        items,
-        subtotal,
-        total,
-        shippingAddress,
-      },
-    })
+  const { data: createdOrder, error: orderError } = await supabase
+    .from('orders')
+    .insert([{
+      user_id: req.user.userId,
+      items,
+      subtotal,
+      total,
+      shipping_address: shippingAddress,
+      status: 'pending',
+      payment_status: 'pending',
+    }])
+    .single()
 
-    for (const item of data.items) {
-      await tx.product.update({
-        where: { id: item.productId },
-        data: { stock: { decrement: item.quantity } },
-      })
-    }
+  if (orderError) throw new ApiError(500, orderError.message)
 
-    return created
-  })
+  for (const item of data.items) {
+    const { data: product } = await supabase
+      .from('products')
+      .select('stock')
+      .eq('id', item.productId)
+      .single()
+
+    await supabase
+      .from('products')
+      .update({ stock: (product?.stock || 0) - item.quantity })
+      .eq('id', item.productId)
+  }
 
   void emailService.send({
     to: user.email || req.user.email,
-    subject: `Order Confirmation #${order.id.slice(-8)}`,
-    text: `Dear ${user.fullName || 'Customer'},\n\nThank you for your order #${order.id.slice(-8)}. Total: $${total.toFixed(2)}.\n\nWe will notify you when your order ships.\n\nBest regards,\nHOK Interior Designs`,
-    html: `<p>Dear ${user.fullName || 'Customer'},</p><p>Thank you for your order <strong>#${order.id.slice(-8)}</strong>. Total: <strong>$${total.toFixed(2)}</strong>.</p><p>We will notify you when your order ships.</p><p>Best regards,<br>HOK Interior Designs</p>`,
+    subject: `Order Confirmation #${createdOrder.id.slice(-8)}`,
+    text: `Dear ${user.full_name || 'Customer'},\n\nThank you for your order #${createdOrder.id.slice(-8)}. Total: $${total.toFixed(2)}.\n\nWe will notify you when your order ships.\n\nBest regards,\nHOK Interior Designs`,
+    html: `<p>Dear ${user.full_name || 'Customer'},</p><p>Thank you for your order <strong>#${createdOrder.id.slice(-8)}</strong>. Total: <strong>$${total.toFixed(2)}</strong>.</p><p>We will notify you when your order ships.</p><p>Best regards,<br>HOK Interior Designs</p>`,
   })
 
-  res.status(201).json(sendSuccess(withId(order)))
+  res.status(201).json(sendSuccess(withId(createdOrder)))
 })
 
 export const getMyOrders = asyncHandler(async (req, res) => {
-  const user = await prisma.user.findUnique({ where: { id: req.user.userId } })
-  if (!user) {
+  const { data: user, error: userError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', req.user.userId)
+    .single()
+
+  if (userError || !user) {
     throw new ApiError(404, 'User not found')
   }
 
-  const orders = await prisma.order.findMany({
-    where: { userId: req.user.userId },
-    orderBy: { createdAt: 'desc' },
-  })
-  res.json(sendSuccess(withIdArray(orders)))
+  const { data: orders, error } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('user_id', req.user.userId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw new ApiError(500, error.message)
+  res.json(sendSuccess(withIdArray(orders || [])))
 })
 
 export const listOrders = asyncHandler(async (req, res) => {
   const limit = Math.min(Number(req.query.limit) || 100, 200)
-  const orders = await prisma.order.findMany({
-    orderBy: { createdAt: 'desc' },
-    take: limit,
-  })
-  res.json(sendSuccess(withIdArray(orders)))
+  const { data: orders, error } = await supabase
+    .from('orders')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .range(0, limit - 1)
+
+  if (error) throw new ApiError(500, error.message)
+  res.json(sendSuccess(withIdArray(orders || [])))
 })

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { prisma } from '../config/prisma.js'
+import { supabase } from '../config/supabase.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiError } from '../utils/ApiError.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
@@ -15,49 +15,63 @@ const updateMeSchema = z.object({
 }).partial()
 
 export const me = asyncHandler(async (req, res) => {
-  const user = await prisma.user.findUnique({
-    where: { id: req.user.userId },
-  })
-  if (!user) {
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', req.user.userId)
+    .single()
+
+  if (error || !user) {
     return res.status(404).json({ success: false, message: 'User not found' })
   }
 
-  const { passwordHash, refreshToken, ...safe } = user
+  const { password_hash, refresh_token, ...safe } = user
   res.json(sendSuccess(withId(safe)))
 })
 
 export const updateMe = asyncHandler(async (req, res) => {
   const data = parseBody(updateMeSchema, req.body)
-  const user = await prisma.user.update({
-    where: { id: req.user.userId },
-    data: {
-      fullName: data.fullName,
+  const { data: user, error } = await supabase
+    .from('users')
+    .update({
+      full_name: data.fullName,
       phone: data.phone,
       addresses: data.addresses,
-    },
-  })
+    })
+    .eq('id', req.user.userId)
+    .single()
 
-  const { passwordHash, refreshToken, ...safe } = user
+  if (error) throw new ApiError(500, error.message)
+  const { password_hash, refresh_token, ...safe } = user
   res.json(sendSuccess(withId(safe)))
 })
 
 export const getWishlist = asyncHandler(async (req, res) => {
-  let wishlist = await prisma.wishlist.findFirst({
-    where: { userId: req.user.userId },
-  })
+  let { data: wishlist, error } = await supabase
+    .from('wishlists')
+    .select('*')
+    .eq('user_id', req.user.userId)
+    .single()
 
-  if (!wishlist) {
-    wishlist = await prisma.wishlist.create({
-      data: { userId: req.user.userId, products: [] },
-    })
+  if (error || !wishlist) {
+    const { data: created, error: createError } = await supabase
+      .from('wishlists')
+      .insert([{ user_id: req.user.userId, products: [] }])
+      .single()
+
+    if (createError) throw new ApiError(500, createError.message)
+    wishlist = created
   }
 
   const productIds = wishlist.products || []
-  const products = await prisma.product.findMany({
-    where: { id: { in: productIds } },
-  })
+  const { data: products, error: productsError } = await supabase
+    .from('products')
+    .select('*')
+    .in('id', productIds)
 
-  res.json(sendSuccess({ ...withId(wishlist), products: withIdArray(products) }))
+  if (productsError) throw new ApiError(500, productsError.message)
+
+  res.json(sendSuccess({ ...withId(wishlist), products: withIdArray(products || []) }))
 })
 
 export const toggleWishlist = asyncHandler(async (req, res) => {
@@ -65,19 +79,31 @@ export const toggleWishlist = asyncHandler(async (req, res) => {
   if (!productId) {
     throw new ApiError(400, 'productId is required')
   }
-  const product = await prisma.product.findUnique({ where: { id: productId } })
-  if (!product) {
+
+  const { data: product, error: productError } = await supabase
+    .from('products')
+    .select('id')
+    .eq('id', productId)
+    .single()
+
+  if (productError || !product) {
     return res.status(404).json({ message: 'Product not found' })
   }
 
-  let wishlist = await prisma.wishlist.findFirst({
-    where: { userId: req.user.userId },
-  })
+  let { data: wishlist, error } = await supabase
+    .from('wishlists')
+    .select('*')
+    .eq('user_id', req.user.userId)
+    .single()
 
-  if (!wishlist) {
-    wishlist = await prisma.wishlist.create({
-      data: { userId: req.user.userId, products: [] },
-    })
+  if (error || !wishlist) {
+    const { data: created, error: createError } = await supabase
+      .from('wishlists')
+      .insert([{ user_id: req.user.userId, products: [] }])
+      .single()
+
+    if (createError) throw new ApiError(500, createError.message)
+    wishlist = created
   }
 
   const current = wishlist.products || []
@@ -86,22 +112,32 @@ export const toggleWishlist = asyncHandler(async (req, res) => {
     ? current.filter((id) => id !== productId)
     : [...current, productId]
 
-  const updated = await prisma.wishlist.update({
-    where: { id: wishlist.id },
-    data: { products: updatedProducts },
-  })
+  const { data: updated, error: updateError } = await supabase
+    .from('wishlists')
+    .update({ products: updatedProducts })
+    .eq('id', wishlist.id)
+    .single()
 
-  const products = await prisma.product.findMany({
-    where: { id: { in: updatedProducts } },
-  })
+  if (updateError) throw new ApiError(500, updateError.message)
 
-  res.json(sendSuccess({ ...withId(updated), products: withIdArray(products) }))
+  const { data: products, error: productsError } = await supabase
+    .from('products')
+    .select('*')
+    .in('id', updatedProducts)
+
+  if (productsError) throw new ApiError(500, productsError.message)
+
+  res.json(sendSuccess({ ...withId(updated), products: withIdArray(products || []) }))
 })
 
 export const getCart = asyncHandler(async (req, res) => {
-  const user = await prisma.user.findUnique({
-    where: { id: req.user.userId },
-  })
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', req.user.userId)
+    .single()
+
+  if (error) throw new ApiError(500, error.message)
 
   const cart = Array.isArray(user?.cart) ? user.cart : []
   if (!cart.length) {
@@ -115,11 +151,14 @@ export const getCart = asyncHandler(async (req, res) => {
     return res.json(sendSuccess({ items: [], total: 0 }))
   }
 
-  const products = await prisma.product.findMany({
-    where: { id: { in: productIds } },
-  })
+  const { data: products, error: productsError } = await supabase
+    .from('products')
+    .select('*')
+    .in('id', productIds)
 
-  const byId = new Map(products.map((item) => [item.id, item]))
+  if (productsError) throw new ApiError(500, productsError.message)
+
+  const byId = new Map((products || []).map((item) => [item.id, item]))
   const items = cart
     .map((entry) => {
       if (!entry?.product) return null
@@ -129,7 +168,7 @@ export const getCart = asyncHandler(async (req, res) => {
         _id: product.id,
         name: product.name,
         image: product.images?.[0]?.url || product.images,
-        price: product.discountPrice || product.price,
+        price: product.discount_price || product.price,
         quantity: entry.quantity || 1,
       }
       if (entry.variant) {
@@ -152,14 +191,24 @@ export const addToCart = asyncHandler(async (req, res) => {
   if (!Number.isFinite(qty) || qty < 1) {
     throw new ApiError(400, 'Quantity must be a positive number')
   }
-  const product = await prisma.product.findUnique({ where: { id: productId } })
-  if (!product) {
+
+  const { data: product, error: productError } = await supabase
+    .from('products')
+    .select('*')
+    .eq('id', productId)
+    .single()
+
+  if (productError || !product) {
     return res.status(404).json({ message: 'Product not found' })
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: req.user.userId },
-  })
+  const { data: user, error: userError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', req.user.userId)
+    .single()
+
+  if (userError) throw new ApiError(500, userError.message)
 
   const existing = (user?.cart || []).find((entry) => {
     if (variant?.colorName) {
@@ -186,16 +235,23 @@ export const addToCart = asyncHandler(async (req, res) => {
     newCart = [...(user?.cart || []), cartEntry]
   }
 
-  const updated = await prisma.user.update({
-    where: { id: req.user.userId },
-    data: { cart: newCart },
-  })
+  const { data: updated, error: updateError } = await supabase
+    .from('users')
+    .update({ cart: newCart })
+    .eq('id', req.user.userId)
+    .single()
 
-  const products = await prisma.product.findMany({
-    where: { id: { in: newCart.map((e) => e.product) } },
-  })
+  if (updateError) throw new ApiError(500, updateError.message)
 
-  const byId = new Map(products.map((item) => [item.id, item]))
+  const productIds = newCart.map((e) => e.product)
+  const { data: products, error: productsError } = await supabase
+    .from('products')
+    .select('*')
+    .in('id', productIds)
+
+  if (productsError) throw new ApiError(500, productsError.message)
+
+  const byId = new Map((products || []).map((item) => [item.id, item]))
   const items = newCart
     .map((entry) => {
       const product = byId.get(entry.product)
@@ -204,7 +260,7 @@ export const addToCart = asyncHandler(async (req, res) => {
         _id: product.id,
         name: product.name,
         image: product.images?.[0]?.url || product.images,
-        price: product.discountPrice || product.price,
+        price: product.discount_price || product.price,
         quantity: entry.quantity,
       }
       if (entry.variant) {
@@ -228,9 +284,13 @@ export const updateCartItem = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Quantity must be a non-negative number')
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: req.user.userId },
-  })
+  const { data: user, error: userError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', req.user.userId)
+    .single()
+
+  if (userError) throw new ApiError(500, userError.message)
 
   let existing
   if (variant?.colorName) {
@@ -262,17 +322,23 @@ export const updateCartItem = asyncHandler(async (req, res) => {
     })
   }
 
-  const updated = await prisma.user.update({
-    where: { id: req.user.userId },
-    data: { cart: newCart },
-  })
+  const { data: updated, error: updateError } = await supabase
+    .from('users')
+    .update({ cart: newCart })
+    .eq('id', req.user.userId)
+    .single()
+
+  if (updateError) throw new ApiError(500, updateError.message)
 
   const productIds = newCart.map((e) => e.product)
-  const products = await prisma.product.findMany({
-    where: { id: { in: productIds } },
-  })
+  const { data: products, error: productsError } = await supabase
+    .from('products')
+    .select('*')
+    .in('id', productIds)
 
-  const byId = new Map(products.map((item) => [item.id, item]))
+  if (productsError) throw new ApiError(500, productsError.message)
+
+  const byId = new Map((products || []).map((item) => [item.id, item]))
   const items = newCart
     .map((entry) => {
       const product = byId.get(entry.product)
@@ -281,7 +347,7 @@ export const updateCartItem = asyncHandler(async (req, res) => {
         _id: product.id,
         name: product.name,
         image: product.images?.[0]?.url || product.images,
-        price: product.discountPrice || product.price,
+        price: product.discount_price || product.price,
         quantity: entry.quantity,
       }
       if (entry.variant) {
@@ -302,9 +368,13 @@ export const removeCartItem = asyncHandler(async (req, res) => {
   }
   const { colorName } = req.query
 
-  const user = await prisma.user.findUnique({
-    where: { id: req.user.userId },
-  })
+  const { data: user, error: userError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', req.user.userId)
+    .single()
+
+  if (userError) throw new ApiError(500, userError.message)
 
   let newCart
   if (colorName) {
@@ -313,17 +383,23 @@ export const removeCartItem = asyncHandler(async (req, res) => {
     newCart = (user?.cart || []).filter((entry) => entry.product !== productId)
   }
 
-  const updated = await prisma.user.update({
-    where: { id: req.user.userId },
-    data: { cart: newCart },
-  })
+  const { data: updated, error: updateError } = await supabase
+    .from('users')
+    .update({ cart: newCart })
+    .eq('id', req.user.userId)
+    .single()
+
+  if (updateError) throw new ApiError(500, updateError.message)
 
   const productIds = newCart.map((e) => e.product)
-  const products = await prisma.product.findMany({
-    where: { id: { in: productIds } },
-  })
+  const { data: products, error: productsError } = await supabase
+    .from('products')
+    .select('*')
+    .in('id', productIds)
 
-  const byId = new Map(products.map((item) => [item.id, item]))
+  if (productsError) throw new ApiError(500, productsError.message)
+
+  const byId = new Map((products || []).map((item) => [item.id, item]))
   const items = newCart
     .map((entry) => {
       const product = byId.get(entry.product)
@@ -332,7 +408,7 @@ export const removeCartItem = asyncHandler(async (req, res) => {
         _id: product.id,
         name: product.name,
         image: product.images?.[0]?.url || product.images,
-        price: product.discountPrice || product.price,
+        price: product.discount_price || product.price,
         quantity: entry.quantity,
       }
       if (entry.variant) {

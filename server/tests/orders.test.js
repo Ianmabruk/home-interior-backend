@@ -1,21 +1,45 @@
 import { jest } from '@jest/globals'
 import request from 'supertest'
-import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import { createMockPrisma, resetMockPrisma } from './helpers.js'
+import { createChain, resetMockSupabase } from './helpers.js'
 
-const mockPrisma = createMockPrisma()
+const builder = createChain()
 
-jest.unstable_mockModule('../src/config/prisma.js', () => ({
-  prisma: mockPrisma,
-  executeWithRetry: jest.fn((fn) => fn()),
-  checkDatabaseHealth: jest.fn().mockResolvedValue({ database: 'connected', prisma: 'connected' }),
+jest.unstable_mockModule('../src/config/env.js', () => ({
+  env: {
+    nodeEnv: 'test',
+    port: 5000,
+    databaseUrl: 'postgresql://test:test@localhost:5432/test',
+    directUrl: 'postgresql://test:test@localhost:5432/test',
+    supabaseUrl: 'http://localhost',
+    supabaseServiceRoleKey: 'test-key',
+    jwtAccessSecret: 'test-access-secret',
+    jwtRefreshSecret: 'test-refresh-secret',
+    cloudinaryCloudName: 'test-cloud',
+    cloudinaryApiKey: 'test-key',
+    cloudinaryApiSecret: 'test-secret',
+    seedAdminEmail: 'admin@test.com',
+    seedAdminPassword: 'admin123',
+    clientUrl: 'http://localhost:5173',
+    sendgridApiKey: '',
+    accessTokenTtl: '15m',
+    refreshTokenTtl: '30d',
+  },
 }))
 
-process.env.JWT_ACCESS_SECRET = 'test-access-secret-key'
-process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-key'
+const { supabase: realSupabase } = await import('../src/config/supabase.js')
+
+process.env.JWT_ACCESS_SECRET = 'test-access-secret'
+process.env.JWT_REFRESH_SECRET = 'test-refresh-secret'
 process.env.NODE_ENV = 'test'
 process.env.CLIENT_URL = 'http://localhost:5173'
+
+const resetMockSupabaseAfterEach = () => {
+  jest.clearAllMocks()
+  resetMockSupabase(builder)
+  realSupabase.from = jest.fn(() => builder)
+  realSupabase.rpc = jest.fn(() => builder)
+}
 
 const generateToken = (user) => {
   return jwt.sign(
@@ -34,8 +58,7 @@ describe('Order Management', () => {
   })
 
   beforeEach(() => {
-    jest.clearAllMocks()
-    resetMockPrisma(mockPrisma)
+    resetMockSupabaseAfterEach()
   })
 
   describe('POST /api/orders', () => {
@@ -44,21 +67,29 @@ describe('Order Management', () => {
         id: 'user-1',
         email: 'user@test.com',
         role: 'user',
-        isActive: true,
+        is_active: true,
         fullName: 'Test User',
       }
       const token = generateToken(user)
 
-      mockPrisma.user.findUnique.mockResolvedValue(user)
-      mockPrisma.product.findMany.mockResolvedValue([
-        { id: 'prod-1234567890', name: 'Product 1', price: 100, stock: 10, images: [{ url: 'test.jpg' }], colorVariants: [] }
-      ])
-      mockPrisma.$transaction.mockImplementation(async (callback) => {
-        const tx = {
-          order: { create: jest.fn().mockResolvedValue({ id: 'order-1', total: 100, items: [] }) },
-          product: { update: jest.fn().mockResolvedValue({ id: 'prod-1234567890', stock: 9 }) },
-        }
-        return callback(tx)
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'user-1', email: 'user@test.com', full_name: 'Test User', is_active: true },
+        error: null,
+      })
+      builder.setResolveWith({
+        data: [
+          { id: 'prod-1234567890', name: 'Product 1', price: 100, stock: 10, images: [], color_variants: [] }
+        ],
+        count: 1,
+        error: null,
+      })
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'order-1', total: 100, items: [], user_id: 'user-1', status: 'pending', payment_status: 'pending', shipping_address: {} },
+        error: null,
+      })
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'prod-1234567890', stock: 10 },
+        error: null,
       })
 
       const response = await request(app)
@@ -85,15 +116,26 @@ describe('Order Management', () => {
         id: 'user-1',
         email: 'user@test.com',
         role: 'user',
-        isActive: true,
+        is_active: true,
         fullName: 'Test User',
       }
       const token = generateToken(user)
 
-      mockPrisma.user.findUnique.mockResolvedValue(user)
-      mockPrisma.product.findMany.mockResolvedValue([
-        { id: 'prod-1234567890', name: 'Product 1', price: 100, stock: 1, images: [], colorVariants: [] }
-      ])
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'user-1', email: 'user@test.com', full_name: 'Test User', is_active: true },
+        error: null,
+      })
+      builder.setResolveWith({
+        data: [
+          { id: 'prod-1234567890', name: 'Product 1', price: 100, stock: 1, images: [], color_variants: [] }
+        ],
+        count: 1,
+        error: null,
+      })
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'prod-1234567890', stock: 1 },
+        error: null,
+      })
 
       const response = await request(app)
         .post('/api/orders')
@@ -119,13 +161,20 @@ describe('Order Management', () => {
         id: 'user-1',
         email: 'user@test.com',
         role: 'user',
-        isActive: true,
+        is_active: true,
         fullName: 'Test User',
       }
       const token = generateToken(user)
 
-      mockPrisma.user.findUnique.mockResolvedValue(user)
-      mockPrisma.product.findMany.mockResolvedValue([])
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'user-1', email: 'user@test.com', full_name: 'Test User', is_active: true },
+        error: null,
+      })
+      builder.setResolveWith({
+        data: [],
+        count: 0,
+        error: null,
+      })
 
       const response = await request(app)
         .post('/api/orders')
@@ -152,14 +201,20 @@ describe('Order Management', () => {
         id: 'user-1',
         email: 'user@test.com',
         role: 'user',
-        isActive: true,
+        is_active: true,
       }
       const token = generateToken(user)
 
-      mockPrisma.user.findUnique.mockResolvedValue(user)
-      mockPrisma.order.findMany.mockResolvedValue([
-        { id: 'order-1', total: 100, status: 'pending', items: [] }
-      ])
+      builder.single.mockResolvedValueOnce({
+        data: { id: 'user-1', email: 'user@test.com', full_name: 'Test User', is_active: true },
+        error: null,
+      })
+      builder.setResolveWith({
+        data: [
+          { id: 'order-1', total: 100, status: 'pending', items: [] }
+        ],
+        error: null,
+      })
 
       const response = await request(app)
         .get('/api/orders/me')
