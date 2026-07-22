@@ -11,8 +11,8 @@ export const env = {
   accessTokenTtl: process.env.ACCESS_TOKEN_TTL || '15m',
   refreshTokenTtl: process.env.REFRESH_TOKEN_TTL || '30d',
   databaseUrl: process.env.DATABASE_URL,
-  seedAdminEmail: process.env.SEED_ADMIN_EMAIL || 'admin@hokinterior.com',
-  seedAdminPassword: process.env.SEED_ADMIN_PASSWORD || 'Admin123!',
+  seedAdminEmail: process.env.SEED_ADMIN_EMAIL || 'admin@chatgpt.com',
+  seedAdminPassword: process.env.SEED_ADMIN_PASSWORD || 'admin123.',
 }
 
 export function validateEnv() {

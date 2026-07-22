@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { prisma } from '../config/database.js'
 import { failure } from '../utils/response.js'
+import { env } from '../config/env.js'
 
 export const authService = {
   login,
@@ -26,8 +27,8 @@ async function login(email, password) {
   }
 
   const payload = { adminId: admin.id, email: admin.email, role: admin.role }
-  const accessToken = jwt.sign(payload, process.env.JWT_ACCESS_SECRET, { expiresIn: process.env.ACCESS_TOKEN_TTL || '15m' })
-  const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, { expiresIn: process.env.REFRESH_TOKEN_TTL || '30d' })
+  const accessToken = jwt.sign(payload, env.jwtAccessSecret, { expiresIn: env.accessTokenTtl || '15m' })
+  const refreshToken = jwt.sign(payload, env.jwtRefreshSecret, { expiresIn: env.refreshTokenTtl || '30d' })
 
   await prisma.passwordReset.deleteMany({ where: { adminId: admin.id } }).catch(() => {})
   await prisma.passwordReset.create({
@@ -50,7 +51,7 @@ async function refresh(refreshToken) {
 
   let decoded
   try {
-    decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET)
+    decoded = jwt.verify(refreshToken, env.jwtRefreshSecret)
   } catch {
     throw failure(401, 'Invalid refresh token')
   }
@@ -71,8 +72,8 @@ async function refresh(refreshToken) {
   if (!admin) throw failure(401, 'Admin not found')
 
   const payload = { adminId: admin.id, email: admin.email, role: admin.role }
-  const accessToken = jwt.sign(payload, process.env.JWT_ACCESS_SECRET, { expiresIn: process.env.ACCESS_TOKEN_TTL || '15m' })
-  const newRefresh = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, { expiresIn: process.env.REFRESH_TOKEN_TTL || '30d' })
+  const accessToken = jwt.sign(payload, env.jwtAccessSecret, { expiresIn: env.accessTokenTtl || '15m' })
+  const newRefresh = jwt.sign(payload, env.jwtRefreshSecret, { expiresIn: env.refreshTokenTtl || '30d' })
 
   await prisma.passwordReset.update({
     where: { id: reset.id },

@@ -8,9 +8,9 @@ const router = Router()
 
 router.get('/', optionalAuth, serviceController.list)
 router.get('/:id', optionalAuth, serviceController.get)
-router.post('/', authenticate, uploadSingle('media', ['image/jpeg', 'image/png', 'image/webp', 'image/gif']), serviceController.create)
-router.patch('/:id', authenticate, uploadSingle('media', ['image/jpeg', 'image/png', 'image/webp', 'image/gif']), serviceController.update)
-router.patch('/reorder', authenticate, serviceController.reorder)
-router.delete('/:id', authenticate, serviceController.delete)
+router.post('/', uploadSingle('media', ['image/jpeg', 'image/png', 'image/webp', 'image/gif']), serviceController.create)
+router.patch('/:id', uploadSingle('media', ['image/jpeg', 'image/png', 'image/webp', 'image/gif']), serviceController.update)
+router.patch('/reorder', serviceController.reorder)
+router.delete('/:id', serviceController.delete)
 
 export default router

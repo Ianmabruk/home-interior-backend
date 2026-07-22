@@ -7,8 +7,8 @@ const router = Router()
 
 router.get('/', portfolioController.list)
 router.get('/:id', portfolioController.get)
-router.post('/', authenticate, uploadFields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }]), portfolioController.create)
-router.patch('/:id', authenticate, uploadFields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }]), portfolioController.update)
-router.delete('/:id', authenticate, portfolioController.delete)
+router.post('/', uploadFields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }]), portfolioController.create)
+router.patch('/:id', uploadFields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }]), portfolioController.update)
+router.delete('/:id', portfolioController.delete)
 
 export default router

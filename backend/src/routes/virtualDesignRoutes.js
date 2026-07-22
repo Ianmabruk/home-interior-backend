@@ -7,8 +7,8 @@ const router = Router()
 
 router.get('/', virtualDesignController.list)
 router.get('/:id', virtualDesignController.get)
-router.post('/', authenticate, uploadFields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }]), virtualDesignController.create)
-router.patch('/:id', authenticate, uploadFields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }]), virtualDesignController.update)
-router.delete('/:id', authenticate, virtualDesignController.delete)
+router.post('/', uploadFields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }]), virtualDesignController.create)
+router.patch('/:id', uploadFields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }]), virtualDesignController.update)
+router.delete('/:id', virtualDesignController.delete)
 
 export default router

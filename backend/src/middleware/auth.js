@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken'
 import { prisma } from '../config/database.js'
 import { ApiError } from '../utils/ApiError.js'
+import { env } from '../config/env.js'
 
 export async function authenticate(req, res, next) {
   try {
@@ -12,7 +13,7 @@ export async function authenticate(req, res, next) {
     }
 
     const token = authHeader.split(' ')[1]
-    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET)
+    const decoded = jwt.verify(token, env.jwtAccessSecret)
 
     const admin = await prisma.admin.findUnique({
       where: { id: decoded.adminId },
@@ -39,7 +40,7 @@ export const optionalAuth = async (req, res, next) => {
     if (!authHeader?.startsWith('Bearer ')) return next()
 
     const token = authHeader.split(' ')[1]
-    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET)
+    const decoded = jwt.verify(token, env.jwtAccessSecret)
 
     const admin = await prisma.admin.findUnique({
       where: { id: decoded.adminId },

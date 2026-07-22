@@ -49,7 +49,7 @@ router.use('/users', userRoutes)
 router.use('/media', mediaRoutes)
 router.use('/testimonials', testRoutes)
 
-router.post('/content/test-upload', authenticate, uploadSingle('media'), async (req, res) => {
+router.post('/content/test-upload', uploadSingle('media'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ success: false, message: 'No file uploaded' })
   }
@@ -57,7 +57,7 @@ router.post('/content/test-upload', authenticate, uploadSingle('media'), async (
   res.status(201).json({ success: true, data: { url: uploaded.url, path: uploaded.path } })
 })
 
-router.post('/test-upload', authenticate, uploadSingle('media'), async (req, res) => {
+router.post('/test-upload', uploadSingle('media'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ success: false, message: 'No file uploaded' })
   }
