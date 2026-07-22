@@ -398,10 +398,10 @@ useEffect(() => {
                   <Link to={`/virtual-design/project/${item.id}`} className="block">
                     <div className="relative overflow-hidden rounded-3xl bg-white/80 backdrop-blur-xl border border-[var(--border)]/60 shadow-[0_10px_40px_rgba(42,36,31,0.06)] hover:shadow-[0_25px_80px_rgba(42,36,31,0.12)] transition-all duration-500 hover:-translate-y-1">
                       <div className="relative aspect-[4/3] overflow-hidden">
-                        {item.mediaType === 'image' && item.mediaUrl && (
+                        {item.mediaType === 'image' && item.imageUrl && (
                           <>
                             <img
-                              src={getOptimizedUrl(item.mediaUrl, { width: 640 })}
+                              src={getOptimizedUrl(item.imageUrl, { width: 640 })}
                               alt={item.title}
                               className="h-full w-full object-contain bg-[var(--bg)] transition duration-700 group-hover:scale-105"
                               loading="lazy"
@@ -414,11 +414,11 @@ useEffect(() => {
                             </div>
                           </>
                         )}
-                        {item.mediaType === 'video' && item.mediaUrl && (
+                        {item.mediaType === 'video' && item.imageUrl && (
                           <>
                             <video
-                              src={item.mediaUrl}
-                              poster={getOptimizedUrl(item.mediaUrl, { width: 640 })}
+                              src={item.imageUrl}
+                              poster={getOptimizedUrl(item.imageUrl, { width: 640 })}
                               className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
                               autoPlay
                               muted
