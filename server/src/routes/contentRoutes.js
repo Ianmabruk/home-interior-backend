@@ -13,7 +13,6 @@ import { portfolioController } from '../controllers/portfolioController.js'
 import { virtualDesignController } from '../controllers/virtualDesignController.js'
 import { serviceController } from '../controllers/serviceController.js'
 import { createConsultation } from '../controllers/consultationController.js'
-import { auth, authorize } from '../middleware/auth.js'
 import { sanitizeInput, validateFileUpload } from '../middleware/validate.js'
 
 const router = Router()
@@ -35,36 +34,36 @@ const validateGalleryUpload = validateFileUpload('gallery', { maxBytes: 50 * 102
 router.get('/homepage', homepageFeed)
 
 router.get('/about', getAbout)
-router.put('/about', auth, authorize('admin'), writeLimiter, upload.single('media'), validateUpload, sanitizeInput, upsertAbout)
+router.put('/about', writeLimiter, upload.single('media'), validateUpload, sanitizeInput, upsertAbout)
 
 router.get('/hero-media', heroMediaController.list)
-router.post('/hero-media', auth, authorize('admin'), writeLimiter, upload.single('media'), validateUpload, sanitizeInput, heroMediaController.create)
-router.patch('/hero-media/:id', auth, authorize('admin'), writeLimiter, upload.single('media'), validateUpload, sanitizeInput, heroMediaController.update)
-router.delete('/hero-media/:id', auth, authorize('admin'), writeLimiter, sanitizeInput, heroMediaController.remove)
+router.post('/hero-media', writeLimiter, upload.single('media'), validateUpload, sanitizeInput, heroMediaController.create)
+router.patch('/hero-media/:id', writeLimiter, upload.single('media'), validateUpload, sanitizeInput, heroMediaController.update)
+router.delete('/hero-media/:id', writeLimiter, sanitizeInput, heroMediaController.remove)
 
 router.get('/portfolio', portfolioController.list)
 router.get('/portfolio/:id', portfolioController.get)
-router.post('/portfolio', auth, authorize('admin'), writeLimiter, upload.fields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }]), validateUpload, validateGalleryUpload, sanitizeInput, portfolioController.create)
-router.patch('/portfolio/:id', auth, authorize('admin'), writeLimiter, upload.fields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }]), validateUpload, validateGalleryUpload, sanitizeInput, portfolioController.update)
-router.delete('/portfolio/:id', auth, authorize('admin'), writeLimiter, sanitizeInput, portfolioController.remove)
+router.post('/portfolio', writeLimiter, upload.fields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }]), validateUpload, validateGalleryUpload, sanitizeInput, portfolioController.create)
+router.patch('/portfolio/:id', writeLimiter, upload.fields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }]), validateUpload, validateGalleryUpload, sanitizeInput, portfolioController.update)
+router.delete('/portfolio/:id', writeLimiter, sanitizeInput, portfolioController.remove)
 
 router.get('/virtual-design', virtualDesignController.list)
 router.get('/virtual-design/:id', virtualDesignController.get)
-router.post('/virtual-design', auth, authorize('admin'), writeLimiter, upload.fields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }]), validateUpload, validateGalleryUpload, sanitizeInput, virtualDesignController.create)
-router.patch('/virtual-design/:id', auth, authorize('admin'), writeLimiter, upload.fields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }]), validateUpload, validateGalleryUpload, sanitizeInput, virtualDesignController.update)
-router.delete('/virtual-design/:id', auth, authorize('admin'), writeLimiter, sanitizeInput, virtualDesignController.remove)
+router.post('/virtual-design', writeLimiter, upload.fields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }]), validateUpload, validateGalleryUpload, sanitizeInput, virtualDesignController.create)
+router.patch('/virtual-design/:id', writeLimiter, upload.fields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }]), validateUpload, validateGalleryUpload, sanitizeInput, virtualDesignController.update)
+router.delete('/virtual-design/:id', writeLimiter, sanitizeInput, virtualDesignController.remove)
 
 router.get('/services', serviceController.list)
 router.get('/services/:id', serviceController.get)
-router.post('/services', auth, authorize('admin'), writeLimiter, upload.single('media'), validateUpload, sanitizeInput, serviceController.create)
-router.patch('/services/:id', auth, authorize('admin'), writeLimiter, upload.single('media'), validateUpload, sanitizeInput, serviceController.update)
-router.patch('/services/reorder', auth, authorize('admin'), writeLimiter, sanitizeInput, serviceController.reorder)
-router.delete('/services/:id', auth, authorize('admin'), writeLimiter, sanitizeInput, serviceController.remove)
+router.post('/services', writeLimiter, upload.single('media'), validateUpload, sanitizeInput, serviceController.create)
+router.patch('/services/:id', writeLimiter, upload.single('media'), validateUpload, sanitizeInput, serviceController.update)
+router.patch('/services/reorder', writeLimiter, sanitizeInput, serviceController.reorder)
+router.delete('/services/:id', writeLimiter, sanitizeInput, serviceController.remove)
 
 router.post('/consultations', writeLimiter, sanitizeInput, createConsultation)
 
-router.post('/test-upload', auth, authorize('admin'), writeLimiter, upload.single('media'), validateUpload, sanitizeInput, uploadMediaController)
-router.post('/media/upload', auth, authorize('admin'), writeLimiter, upload.single('media'), validateUpload, sanitizeInput, uploadMediaController)
-router.post('/media/delete', auth, authorize('admin'), writeLimiter, sanitizeInput, deleteMediaController)
+router.post('/test-upload', writeLimiter, upload.single('media'), validateUpload, sanitizeInput, uploadMediaController)
+router.post('/media/upload', writeLimiter, upload.single('media'), validateUpload, sanitizeInput, uploadMediaController)
+router.post('/media/delete', writeLimiter, sanitizeInput, deleteMediaController)
 
 export default router

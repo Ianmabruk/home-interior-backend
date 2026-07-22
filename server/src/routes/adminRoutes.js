@@ -1,5 +1,4 @@
 import { Router } from 'express'
-import { auth, authorize } from '../middleware/auth.js'
 import {
   dashboardOverview,
   sendAdminTestEmail,
@@ -16,24 +15,24 @@ import { testimonialController } from '../controllers/testimonialController.js'
 
 const router = Router()
 
-router.get('/overview', auth, authorize('admin'), dashboardOverview)
-router.get('/messages', auth, authorize('admin'), listMessages)
-router.post('/test-email', auth, authorize('admin'), sendAdminTestEmail)
-router.get('/users', auth, authorize('admin'), listUsers)
-router.patch('/users/:id/:action', auth, authorize('admin'), manageUser)
-router.get('/orders', auth, authorize('admin'), listAllOrders)
-router.patch('/orders/:id/status', auth, authorize('admin'), updateOrderStatus)
-router.get('/settings', auth, authorize('admin'), getSettings)
-router.put('/settings', auth, authorize('admin'), updateSettings)
+router.get('/overview', dashboardOverview)
+router.get('/messages', listMessages)
+router.post('/test-email', sendAdminTestEmail)
+router.get('/users', listUsers)
+router.patch('/users/:id/:action', manageUser)
+router.get('/orders', listAllOrders)
+router.patch('/orders/:id/status', updateOrderStatus)
+router.get('/settings', getSettings)
+router.put('/settings', updateSettings)
 
-router.get('/consultations', auth, authorize('admin'), listConsultations)
-router.get('/consultations/export', auth, authorize('admin'), exportConsultationsCsv)
-router.patch('/consultations/:id/status', auth, authorize('admin'), updateConsultationStatus)
-router.delete('/consultations/:id', auth, authorize('admin'), deleteConsultation)
+router.get('/consultations', listConsultations)
+router.get('/consultations/export', exportConsultationsCsv)
+router.patch('/consultations/:id/status', updateConsultationStatus)
+router.delete('/consultations/:id', deleteConsultation)
 
-router.get('/testimonials', auth, authorize('admin'), testimonialController.listAdmin)
-router.post('/testimonials', auth, authorize('admin'), testimonialController.create)
-router.patch('/testimonials/:id', auth, authorize('admin'), testimonialController.update)
-router.delete('/testimonials/:id', auth, authorize('admin'), testimonialController.remove)
+router.get('/testimonials', testimonialController.listAdmin)
+router.post('/testimonials', testimonialController.create)
+router.patch('/testimonials/:id', testimonialController.update)
+router.delete('/testimonials/:id', testimonialController.remove)
 
 export default router

@@ -198,6 +198,12 @@ app.get(['/api/health', '/health'], async (req, res) => {
   })
 })
 
+// TEMP AUTH BYPASS - REMOVE BEFORE PRODUCTION
+app.use((req, res, next) => {
+  req.user = { id: 'temp-admin', role: 'ADMIN', email: 'admin@hokinterior.com' }
+  next()
+})
+
 app.use('/api', apiRoutes)
 
 app.use(notFoundHandler)

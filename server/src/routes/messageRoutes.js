@@ -1,6 +1,5 @@
 import { Router } from 'express'
 import rateLimit from 'express-rate-limit'
-import { auth, authorize } from '../middleware/auth.js'
 import { createMessage, listMessages, replyToMessage, createQuote } from '../controllers/messageController.js'
 
 const router = Router()
@@ -16,7 +15,7 @@ const contactLimiter = rateLimit({
 
 router.post('/', contactLimiter, createMessage)
 router.post('/quote', contactLimiter, createQuote)
-router.get('/', auth, authorize('admin'), listMessages)
-router.post('/reply', auth, authorize('admin'), replyToMessage)
+router.get('/', listMessages)
+router.post('/reply', replyToMessage)
 
 export default router

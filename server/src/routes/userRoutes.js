@@ -1,5 +1,4 @@
 import { Router } from 'express'
-import { auth } from '../middleware/auth.js'
 import {
 	addToCart,
 	getCart,
@@ -13,13 +12,13 @@ import {
 
 const router = Router()
 
-router.get('/me', auth, me)
-router.patch('/me', auth, updateMe)
-router.get('/wishlist', auth, getWishlist)
-router.post('/wishlist/toggle', auth, toggleWishlist)
-router.get('/cart', auth, getCart)
-router.post('/cart', auth, addToCart)
-router.patch('/cart', auth, updateCartItem)
-router.delete('/cart/:productId', auth, removeCartItem)
+router.get('/me', me)
+router.patch('/me', updateMe)
+router.get('/wishlist', getWishlist)
+router.post('/wishlist/toggle', toggleWishlist)
+router.get('/cart', getCart)
+router.post('/cart', addToCart)
+router.patch('/cart', updateCartItem)
+router.delete('/cart/:productId', removeCartItem)
 
 export default router
