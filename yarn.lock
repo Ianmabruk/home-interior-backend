@@ -1436,42 +1436,6 @@
   resolved "https://registry.npmjs.org/@pkgr/core/-/core-0.3.6.tgz"
   integrity sha512-SEeaJLb3qBNF/OaXnaR1NmmBbFYk1zC0ZH/52fATcRPLFg/p791YrcyFFy44Bo9sLaGuSuLp5Q6axbb/O+v/RA==
 
-"@prisma/client-runtime-utils@7.8.0":
-  version "7.8.0"
-  resolved "https://registry.npmjs.org/@prisma/client-runtime-utils/-/client-runtime-utils-7.8.0.tgz"
-  integrity sha512-5NQZztQ0oY/ADFkmd9gPuweH5A1/CCY8YQPorLLO0Mu6a87mY5gsnDkzmFmIHs9NFaLnZojzgddFVN4RpKYrdw==
-
-"@prisma/client@^3.5.0 || ^4.7.0 || ^5.0.0 || ^6.0.0 || ^7.0.0":
-  version "7.8.0"
-  resolved "https://registry.npmjs.org/@prisma/client/-/client-7.8.0.tgz"
-  integrity sha512-HFp3Dawv/3sU3JtlPha90IB+48lS7zHiH4LKZPjmcE8YH5P9DOXGPvo8dqOtO7MqLDd1p2hOWMcFlRT1DMblHw==
-  dependencies:
-    "@prisma/client-runtime-utils" "7.8.0"
-
-"@prisma/debug@6.19.3":
-  version "6.19.3"
-  resolved "https://registry.npmjs.org/@prisma/debug/-/debug-6.19.3.tgz"
-  integrity sha512-ljkJ+SgpXNktLG0Q/n4JGYCkKf0f8oYLyjImS2I8e2q2WCfdRRtWER062ZV/ixaNP2M2VKlWXVJiGzZaUgbKZw==
-
-"@prisma/dmmf@6.19.3":
-  version "6.19.3"
-  resolved "https://registry.npmjs.org/@prisma/dmmf/-/dmmf-6.19.3.tgz"
-  integrity sha512-+D6v7RIF21bJrZAXiiIdW0qR73TleYVCqTDozokdEHdGeqN997O7jJW5z+43s5CVwWTZJIwFGpoeXxDDyXDVxA==
-
-"@prisma/generator-helper@^6.19.0":
-  version "6.19.3"
-  resolved "https://registry.npmjs.org/@prisma/generator-helper/-/generator-helper-6.19.3.tgz"
-  integrity sha512-13S8ngSWVKcyuRFqaK/JGMyovjQC5sOKJ9A+ufqePQWeIUbvKO2QY2CmhcV4JAa2vuN22//4Sip5mORVKwS0sw==
-  dependencies:
-    "@prisma/debug" "6.19.3"
-    "@prisma/dmmf" "6.19.3"
-    "@prisma/generator" "6.19.3"
-
-"@prisma/generator@6.19.3":
-  version "6.19.3"
-  resolved "https://registry.npmjs.org/@prisma/generator/-/generator-6.19.3.tgz"
-  integrity sha512-rzHJaIZEnEDUWNjjFAimsyMCS9osPxwbwiAbymwFprSHJSAglMxMDVU+xbQUCLeDsjUF09W5ag/aBPL2t3YqgA==
-
 "@rolldown/binding-linux-x64-gnu@1.1.5":
   version "1.1.5"
   resolved "https://registry.npmjs.org/@rolldown/binding-linux-x64-gnu/-/binding-linux-x64-gnu-1.1.5.tgz"
@@ -3884,13 +3848,6 @@ jest-message-util@30.4.1:
     slash "^3.0.0"
     stack-utils "^2.0.6"
 
-jest-mock-extended@^3.0.6:
-  version "3.0.7"
-  resolved "https://registry.npmjs.org/jest-mock-extended/-/jest-mock-extended-3.0.7.tgz"
-  integrity sha512-7lsKdLFcW9B9l5NzZ66S/yTQ9k8rFtnwYdCNuRU/81fqDWicNDVhitTSPnrGmNeNm0xyw0JHexEOShrIKRCIRQ==
-  dependencies:
-    ts-essentials "^10.0.0"
-
 jest-mock@30.4.1:
   version "30.4.1"
   resolved "https://registry.npmjs.org/jest-mock/-/jest-mock-30.4.1.tgz"
@@ -4064,7 +4021,7 @@ jest-worker@30.4.1:
     merge-stream "^2.0.0"
     supports-color "^8.1.1"
 
-"jest@^24.0.0 || ^25.0.0 || ^26.0.0 || ^27.0.0 || ^28.0.0 || ^29.0.0", "jest@^29.0.0 || ^30.0.0", jest@^30.4.2:
+"jest@^29.0.0 || ^30.0.0", jest@^30.4.2:
   version "30.4.2"
   resolved "https://registry.npmjs.org/jest/-/jest-30.4.2.tgz"
   integrity sha512-Yi1jqNC/Oq0N4hBgNH/YvBpP1P57QqundgytzYqy3yqAa7NZPNjSoi4SGbRAXDMdBzNE6xBCi5U7RgfrvMEUVQ==
@@ -4775,14 +4732,6 @@ pretty-format@^30.0.0, pretty-format@30.4.1:
     ansi-styles "^5.2.0"
     react-is-18 "npm:react-is@^18.3.1"
     react-is-19 "npm:react-is@^19.2.5"
-
-prisma-mock@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.npmjs.org/prisma-mock/-/prisma-mock-1.1.0.tgz"
-  integrity sha512-GxFmvBSdxt+eyT7NTUeynMkUw27KYJOZRcRLtvuGYE6TbBRfPXyz4nhn+LgkMaE7lUMf5GNenaN1dtJWHQLeVg==
-  dependencies:
-    "@prisma/generator-helper" "^6.19.0"
-    jest-mock-extended "^3.0.6"
 
 proxy-from-env@^2.1.0:
   version "2.1.0"
@@ -5656,11 +5605,6 @@ tr46@^6.0.0:
   dependencies:
     punycode "^2.3.1"
 
-ts-essentials@^10.0.0:
-  version "10.2.1"
-  resolved "https://registry.npmjs.org/ts-essentials/-/ts-essentials-10.2.1.tgz"
-  integrity sha512-+Id1fRkuir+CsgK2x04/icS2b4V1hQmq7ObzIrDjhN0ozfRYivnP7aaKMVJfLApQm0trjR39A6NIMVchiB9Erw==
-
 ts-interface-checker@^0.1.9:
   version "0.1.13"
   resolved "https://registry.npmjs.org/ts-interface-checker/-/ts-interface-checker-0.1.13.tgz"
@@ -5758,7 +5702,7 @@ typed-array-length@^1.0.7:
     possible-typed-array-names "^1.1.0"
     reflect.getprototypeof "^1.0.10"
 
-"typescript@^3.0.0 || ^4.0.0 || ^5.0.0", "typescript@>=4.3 <7", typescript@>=4.5.0, typescript@>=5.4.0:
+"typescript@>=4.3 <7":
   version "5.9.3"
   resolved "https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz"
   integrity sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==

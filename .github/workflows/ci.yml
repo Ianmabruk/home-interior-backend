@@ -42,7 +42,6 @@ jobs:
           node-version: '22'
           cache: 'yarn'
       - run: yarn install --frozen-lockfile
-      - run: yarn prisma generate
       - run: yarn test:ci
       - uses: actions/upload-artifact@v4
         if: always()

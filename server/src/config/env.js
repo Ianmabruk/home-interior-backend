@@ -1,7 +1,6 @@
 const isProd = process.env.NODE_ENV === 'production'
 
 const missing = []
-if (isProd && !process.env.DATABASE_URL) missing.push('DATABASE_URL')
 if (isProd && !process.env.JWT_ACCESS_SECRET) missing.push('JWT_ACCESS_SECRET')
 if (isProd && !process.env.JWT_REFRESH_SECRET) missing.push('JWT_REFRESH_SECRET')
 if (isProd && !process.env.CLOUDINARY_CLOUD_NAME) missing.push('CLOUDINARY_CLOUD_NAME')
@@ -19,8 +18,6 @@ if (missing.length) {
 export const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT || 5000),
-  databaseUrl: process.env.DATABASE_URL || '',
-  directUrl: process.env.DIRECT_URL || '',
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
   jwtAccessSecret: process.env.JWT_ACCESS_SECRET || '',
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || '',

@@ -9,8 +9,6 @@ jest.unstable_mockModule('../src/config/env.js', () => ({
   env: {
     nodeEnv: 'test',
     port: 5000,
-    databaseUrl: 'postgresql://test:test@localhost:5432/test',
-    directUrl: 'postgresql://test:test@localhost:5432/test',
     supabaseUrl: 'http://localhost',
     supabaseServiceRoleKey: 'test-key',
     jwtAccessSecret: 'test-access-secret',

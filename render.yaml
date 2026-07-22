@@ -12,7 +12,7 @@ services:
     name: home-interior-backend
     runtime: node
     rootDir: server
-    # Install deps, generate Prisma client, apply migrations, then seed content + admin.
+    # Install deps, seed content + admin.
     buildCommand: cd server && npm install && npm run seed
     startCommand: cd server && npm run seed && npm start
     envVars:
@@ -22,10 +22,6 @@ services:
         value: https://amcaogrlsrwxbvuglyle.supabase.co
       - key: SUPABASE_SERVICE_ROLE_KEY
         value: REPLACE_WITH_YOUR_SUPABASE_SERVICE_ROLE_KEY
-      - key: DATABASE_URL
-        value: postgresql://postgres.amcaogrlsrwxbvuglyle:9gmHmQXuBfZfkyY8@aws-1-eu-west-2.pooler.supabase.com:6543/postgres
-      - key: DIRECT_URL
-        value: postgresql://postgres:9gmHmQXuBfZfkyY8@db.amcaogrlsrwxbvuglyle.supabase.co:5432/postgres
       - key: JWT_ACCESS_SECRET
         value: 4549201ef63a5517aa42bf414e7f7d4d
       - key: JWT_REFRESH_SECRET
