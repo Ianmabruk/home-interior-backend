@@ -156,7 +156,7 @@ export const ShopDashboard = () => {
       isPublished: item.isPublished ?? true,
       colorVariants: item.colorVariants || [],
     })
-    setImagePreviews(item.images?.map((i) => i.url) || [])
+    setImagePreviews(item.images?.map((i) => typeof i === 'string' ? i : i.url) || [])
     setImageFiles([])
   }
 
@@ -697,9 +697,9 @@ export const ShopDashboard = () => {
               className="bg-white/80 backdrop-blur-xl border border-[var(--border)]/60 rounded-2xl p-5 shadow-[0_10px_40px_rgba(42,36,31,0.06)] overflow-hidden group"
             >
               <div className="relative overflow-hidden">
-                {item.images?.[0]?.url ? (
+                {typeof item.images?.[0] === 'string' ? item.images[0] : item.images?.[0]?.url ? (
                   <img
-                    src={item.images[0].url}
+                    src={typeof item.images?.[0] === 'string' ? item.images[0] : item.images?.[0]?.url}
                     alt={item.name}
                     className="h-44 w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
@@ -896,9 +896,9 @@ export const ShopDashboard = () => {
                   <X size={18} />
                 </motion.button>
               </div>
-              {viewItem.images?.[0]?.url && (
+              {viewItem.images?.[0] && (
                 <img
-                  src={viewItem.images[0].url}
+                  src={typeof viewItem.images?.[0] === 'string' ? viewItem.images[0] : viewItem.images?.[0]?.url}
                   alt={viewItem.name}
                   className="w-full h-52 object-cover rounded-2xl mb-5 shadow-lg"
                 />

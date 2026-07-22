@@ -6,6 +6,7 @@ function mapTestimonial(item) {
   if (!item) return null
   return {
     ...item,
+    _id: item.id,
     id: item.id,
     clientName: item.clientName,
     photoUrl: item.photoUrl,

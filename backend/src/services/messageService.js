@@ -5,6 +5,7 @@ function mapMessage(item) {
   if (!item) return null
   return {
     ...item,
+    _id: item.id,
     id: item.id,
     isRead: item.isRead,
     createdAt: item.createdAt,

@@ -8,11 +8,10 @@ describe('AuthContext', () => {
     localStorage.clear()
   })
 
-  // TEMP AUTH BYPASS - REMOVE BEFORE PRODUCTION
-  it('initializes with temp admin user when no token', () => {
+  it('initializes with no user when no token', () => {
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider })
-    expect(result.current.user).toEqual({ id: 'temp-admin', role: 'ADMIN', email: 'admin@hokinterior.com' })
-    expect(result.current.isAuthenticated).toBe(true)
+    expect(result.current.user).toBeNull()
+    expect(result.current.isAuthenticated).toBe(false)
   })
 
   it('provides login and logout functions', () => {

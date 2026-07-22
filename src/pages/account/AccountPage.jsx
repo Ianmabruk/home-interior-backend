@@ -96,7 +96,7 @@ const OrderCard = ({ order }) => {
           )}
           <div className="min-w-0">
             <p className="font-medium text-[var(--primary)] truncate">
-              Order #{order._id?.slice ? order._id.slice(-6).toUpperCase() : order._id}
+              Order #{(order._id || order.id)?.slice ? (order._id || order.id).slice(-6).toUpperCase() : order._id || order.id}
             </p>
             <p className="text-xs text-[var(--primary)]/60 truncate">Placed on {formatDate(order.createdAt)}</p>
           </div>
@@ -408,7 +408,7 @@ export const AccountPage = () => {
               ) : (
                 <div className="space-y-4">
                   {activeOrders.map((order) => (
-                    <OrderCard key={order._id} order={order} />
+                    <OrderCard key={order._id || order.id} order={order} />
                   ))}
                 </div>
               )}
@@ -431,7 +431,7 @@ export const AccountPage = () => {
                   </div>
                   <div className="space-y-3">
                     {cancelledOrders.map((order) => (
-                      <OrderCard key={order._id} order={order} />
+                      <OrderCard key={order._id || order.id} order={order} />
                     ))}
                   </div>
                 </motion.div>

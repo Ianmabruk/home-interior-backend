@@ -5,6 +5,7 @@ import { failure } from '../utils/response.js'
 function mapPortfolio(item) {
   if (!item) return null
   return {
+    _id: item.id,
     id: item.id,
     title: item.title,
     description: item.description,

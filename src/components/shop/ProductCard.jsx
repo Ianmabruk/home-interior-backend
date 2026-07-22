@@ -13,7 +13,7 @@ export const ProductCard = memo(({ product, onQuickView }) => {
   const defaultVariant = variants.length ? (variants.find((v) => v.isDefault) || variants[0]) : null
   const primaryImage =
     defaultVariant?.imageUrl ||
-    product.images?.[0]?.url ||
+    (typeof product.images?.[0] === 'string' ? product.images[0] : product.images?.[0]?.url) ||
     ''
   const salePercent = product.discountPrice
     ? Math.round(((product.price - product.discountPrice) / product.price) * 100)

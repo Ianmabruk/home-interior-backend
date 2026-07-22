@@ -18,7 +18,11 @@ export const aboutController = {
     if (req.body.location !== undefined) data.location = req.body.location
     if (req.body.contactEmail !== undefined) data.contactEmail = req.body.contactEmail
     if (req.body.socials !== undefined) {
-      try { data.socials = JSON.stringify(req.body.socials) } catch { data.socials = '{}' }
+      try {
+        data.socials = typeof req.body.socials === 'string' ? req.body.socials : JSON.stringify(req.body.socials)
+      } catch {
+        data.socials = '{}'
+      }
     }
     const item = await aboutService.createOrUpdateAbout(data, file)
     res.json({ success: true, data: item })

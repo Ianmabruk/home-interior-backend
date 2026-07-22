@@ -17,7 +17,6 @@ const CONTENT_PATHS = [
   '/consultations',
   '/media',
   '/test-upload',
-  '/analytics',
 ]
 
 api.interceptors.request.use((config) => {

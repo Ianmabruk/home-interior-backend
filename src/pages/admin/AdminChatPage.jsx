@@ -74,7 +74,7 @@ export const AdminChatPage = () => {
 
             {!loading && messages.map((msg) => (
               <button
-                key={msg._id}
+                key={msg._id || msg.id}
                 onClick={() => setSelectedMessage(msg)}
                 className={`w-full p-4 text-left border-b border-black/10 transition ${
                   !msg.isRead ? 'bg-cream' : ''

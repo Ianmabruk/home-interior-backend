@@ -20,7 +20,8 @@ export const messageController = {
   }),
 
   reply: asyncHandler(async (req, res) => {
-    const item = await messageService.replyToMessage(req.body.messageId, req.body.reply)
+    const id = req.body.messageId || req.body.id || req.params.id
+    const item = await messageService.replyToMessage(id, req.body.reply)
     res.json({ success: true, data: item })
   }),
 }

@@ -6,10 +6,10 @@ function mapProduct(item) {
   if (!item) return null
   return {
     ...item,
-    images: (item.images || []).map((url, i) => ({ url, publicId: item.cloudinaryIds?.[i] || '' })),
+    _id: item.id,
+    images: (item.images || []).map((url) => ({ url, publicId: '' })),
     colorVariants: item.colorVariants || [],
     styleVariants: item.styleVariants || [],
-    cloudinaryIds: item.cloudinaryIds || [],
   }
 }
 
@@ -62,18 +62,15 @@ async function getProduct(id) {
 async function createProduct(data, files) {
   const createData = { ...data }
   const images = []
-  const cloudinaryIds = []
 
   if (Array.isArray(files)) {
     for (const f of files) {
       const uploaded = await uploadFile(f.buffer, f.mimetype, 'products')
       images.push(uploaded.url)
-      cloudinaryIds.push(uploaded.path)
     }
   }
 
   if (images.length > 0) createData.images = images
-  if (cloudinaryIds.length > 0) createData.cloudinaryIds = cloudinaryIds
   if (createData.tags && typeof createData.tags === 'string') {
     createData.tags = createData.tags.split(',').map((s) => s.trim()).filter(Boolean)
   }
@@ -88,22 +85,16 @@ async function updateProduct(id, data, files) {
 
   const updateData = { ...data }
   const images = [...(existing.images || [])]
-  const cloudinaryIds = [...(existing.cloudinaryIds || [])]
 
   if (Array.isArray(files) && files.length > 0) {
-    if (existing.cloudinaryIds) {
-      for (const path of existing.cloudinaryIds) await deleteFile(path)
-    }
     for (const f of files) {
       const uploaded = await uploadFile(f.buffer, f.mimetype, 'products')
       images.push(uploaded.url)
-      cloudinaryIds.push(uploaded.path)
     }
   }
 
   if (files?.length > 0) {
     updateData.images = images
-    updateData.cloudinaryIds = cloudinaryIds
   }
 
   if (updateData.tags && typeof updateData.tags === 'string') {
@@ -117,8 +108,5 @@ async function updateProduct(id, data, files) {
 async function deleteProduct(id) {
   const existing = await prisma.product.findUnique({ where: { id } })
   if (!existing) throw failure(404, 'Product not found')
-  if (existing.cloudinaryIds) {
-    for (const path of existing.cloudinaryIds) await deleteFile(path)
-  }
   await prisma.product.delete({ where: { id } })
 }

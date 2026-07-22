@@ -5,6 +5,7 @@ import { failure } from '../utils/response.js'
 function mapVD(item) {
   return {
     ...item,
+    _id: item.id,
     id: item.id,
     mediaUrl: item.imageUrl,
     mediaType: item.mediaType,

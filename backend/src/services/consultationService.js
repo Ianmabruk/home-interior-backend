@@ -5,6 +5,7 @@ function mapConsultation(item) {
   if (!item) return null
   return {
     ...item,
+    _id: item.id,
     id: item.id,
     status: item.status,
     createdAt: item.createdAt,

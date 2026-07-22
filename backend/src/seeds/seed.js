@@ -53,6 +53,43 @@ async function seed() {
   }
   console.log('Default settings created')
 
+  const serviceCount = await prisma.service.count()
+  if (serviceCount === 0) {
+    await prisma.service.createMany({
+      data: [
+        { title: 'Interior Design', description: 'Full-service interior design tailored to your lifestyle.', icon: 'LayoutGrid', displayOrder: 0 },
+        { title: 'Virtual Consultation', description: 'Online design consultations from anywhere in the world.', icon: 'MonitorSmartphone', displayOrder: 1 },
+        { title: 'Furniture Curation', description: 'Handpicked furniture and decor for timeless elegance.', icon: 'Armchair', displayOrder: 2 },
+      ],
+    })
+    console.log('Default services created')
+  }
+
+  const testimonialCount = await prisma.testimonial.count()
+  if (testimonialCount === 0) {
+    await prisma.testimonial.createMany({
+      data: [
+        { clientName: 'Sarah Mitchell', content: 'HOK transformed our home into a sanctuary. Absolutely stunning work!', displayOrder: 0 },
+        { clientName: 'James Chen', content: 'Professional, creative, and detail-oriented. Highly recommend their virtual design service.', displayOrder: 1 },
+        { clientName: 'Elena Rodriguez', content: 'The team understood our vision perfectly and brought it to life beyond expectations.', displayOrder: 2 },
+      ],
+    })
+    console.log('Default testimonials created')
+  }
+
+  const heroCount = await prisma.heroMedia.count()
+  if (heroCount === 0) {
+    await prisma.heroMedia.create({
+      data: {
+        title: 'Luxury Interior Design',
+        subtitle: 'Crafting spaces that inspire',
+        isActive: true,
+        displayOrder: 0,
+      },
+    })
+    console.log('Default hero media created')
+  }
+
   console.log('Seeding complete')
   await prisma.$disconnect()
 }

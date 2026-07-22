@@ -6,6 +6,7 @@ function mapHero(item) {
   if (!item) return null
   return {
     ...item,
+    _id: item.id,
     id: item.id,
     imageUrl: item.imageUrl,
     mediaUrl: item.imageUrl,

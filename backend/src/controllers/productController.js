@@ -37,8 +37,8 @@ export const productController = {
       featured: req.body.isFeatured === 'true' || req.body.isFeatured === true,
       inStock: req.body.isPublished !== 'false' && req.body.isPublished !== false,
       displayOrder: Number(req.body.displayOrder) || 0,
-      colorVariants: req.body.colorVariants ? JSON.parse(req.body.colorVariants) : [],
-      styleVariants: req.body.styleVariants ? JSON.parse(req.body.styleVariants) : [],
+      colorVariants: req.body.colorVariants ? (() => { try { return JSON.parse(req.body.colorVariants) } catch { return [] } })() : [],
+      styleVariants: req.body.styleVariants ? (() => { try { return JSON.parse(req.body.styleVariants) } catch { return [] } })() : [],
     }
     const item = await productService.createProduct(data, files)
     res.status(201).json({ success: true, data: item })
@@ -58,8 +58,12 @@ export const productController = {
     if (req.body.tags !== undefined) data.tags = req.body.tags
     if (req.body.isFeatured !== undefined) data.featured = req.body.isFeatured === 'true' || req.body.isFeatured === true
     if (req.body.isPublished !== undefined) data.inStock = req.body.isPublished === 'false' || req.body.isPublished === false
-    if (req.body.colorVariants !== undefined) data.colorVariants = JSON.parse(req.body.colorVariants)
-    if (req.body.styleVariants !== undefined) data.styleVariants = JSON.parse(req.body.styleVariants)
+    if (req.body.colorVariants !== undefined) {
+      try { data.colorVariants = JSON.parse(req.body.colorVariants) } catch { data.colorVariants = [] }
+    }
+    if (req.body.styleVariants !== undefined) {
+      try { data.styleVariants = JSON.parse(req.body.styleVariants) } catch { data.styleVariants = [] }
+    }
     const item = await productService.updateProduct(req.params.id, data, files)
     res.json({ success: true, data: item })
   }),

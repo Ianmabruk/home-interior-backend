@@ -547,7 +547,7 @@ useEffect(() => {
                       {item.images?.[0]?.url && (
                         <>
                           <img
-                            src={getOptimizedUrl(item.images[0].url, { width: 640 })}
+                            src={getOptimizedUrl(typeof item.images?.[0] === 'string' ? item.images[0] : item.images?.[0]?.url, { width: 640 })}
                             alt={item.name}
                             className="h-full w-full object-cover bg-[var(--bg)] transition duration-700 group-hover:scale-105"
                             loading="lazy"

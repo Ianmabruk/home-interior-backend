@@ -10,6 +10,7 @@ export const orderService = {
 async function createOrder(data) {
   const order = await prisma.order.create({ data })
   return {
+    _id: order.id,
     id: order.id,
     email: order.email,
     name: order.name,
@@ -31,6 +32,7 @@ async function getUserOrders(email) {
     orderBy: { createdAt: 'desc' },
   })
   return orders.map((o) => ({
+    _id: o.id,
     id: o.id,
     email: o.email,
     name: o.name,
@@ -52,6 +54,7 @@ async function getAllOrders({ sort = '-createdAt', limit = 100 } = {}) {
     take: Number(limit) || 100,
   })
   return orders.map((o) => ({
+    _id: o.id,
     id: o.id,
     email: o.email,
     name: o.name,

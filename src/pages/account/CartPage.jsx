@@ -32,7 +32,7 @@ export const CartPage = () => {
               <AnimatePresence>
                 {cart.map((item, i) => (
                   <motion.div
-                    key={`${item._id}-${item.selectedVariant?.colorName || 'default'}`}
+                    key={`${item._id || item.id}-${item.selectedVariant?.colorName || 'default'}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -20 }}

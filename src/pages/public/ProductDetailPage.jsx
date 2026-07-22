@@ -44,7 +44,7 @@ export const ProductDetailPage = () => {
       const res = await api.get(`/products/${id}`)
       const productData = res.data
       
-      if (!productData || !productData._id) {
+      if (!productData || !(productData._id || productData.id)) {
         throw new Error('Invalid product data received')
       }
 
@@ -64,7 +64,7 @@ export const ProductDetailPage = () => {
           })
           setRelatedProducts(
             (r.data?.items || [])
-              .filter((p) => p._id !== productData._id)
+              .filter((p) => (p._id || p.id) !== (productData._id || productData.id))
               .slice(0, 4)
           )
         } catch {

@@ -11,6 +11,7 @@ import testRoutes from './testimonialRoutes.js'
 import heroRoutes from './heroMediaRoutes.js'
 import aboutRoutes from './aboutRoutes.js'
 import consultationRoutes from './consultationRoutes.js'
+import adminConsultationRoutes from './adminConsultationRoutes.js'
 import { portfolioRoutes as adminPortfolioRoutes, virtualDesignRoutes as adminVDRoutes } from './adminContentRoutes.js'
 import { portfolioRoutes as contentPortfolioRoutes, virtualDesignRoutes as contentVDRoutes, default as contentRoutes } from './contentRoutes.js'
 import { uploadSingle } from '../middleware/upload.js'
@@ -36,7 +37,7 @@ router.use('/admin/portfolio', adminPortfolioRoutes)
 router.use('/admin/virtual-designs', adminVDRoutes)
 router.use('/admin/services', serviceRoutes)
 router.use('/admin/testimonials', testRoutes)
-router.use('/admin/consultations', consultationRoutes)
+router.use('/admin/consultations', adminConsultationRoutes)
 
 router.use('/portfolio', contentPortfolioRoutes)
 router.use('/virtual-design', contentVDRoutes)
