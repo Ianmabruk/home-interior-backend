@@ -12,13 +12,14 @@ export default defineConfig({
       '**/node_modules/**',
       '**/dist/**',
       '**/server/**',
+      '**/backend/**',
       '**/tests/**',
       '**/*.spec.js',
     ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'src/test/setup.js', 'server/**', 'tests/**'],
+      exclude: ['node_modules/', 'src/test/setup.js', 'server/**', 'backend/**', 'tests/**'],
     },
   },
 })

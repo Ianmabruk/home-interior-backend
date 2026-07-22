@@ -1,0 +1,203 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique @db.Text
+  passwordHash String   @map("password_hash") @db.Text
+  fullName     String   @default("Admin") @map("full_name") @db.Text
+  role         String   @default("ADMIN") @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("admins")
+}
+
+model PortfolioProject {
+  id           String   @id @default(cuid())
+  title        String   @db.Text
+  description  String?  @db.Text
+  category     String?  @db.Text
+  featured     Boolean  @default(false)
+  displayOrder Int      @default(0) @map("display_order")
+  published    Boolean  @default(true)
+  imageUrl     String?  @db.Text @map("image_url")
+  cloudinaryId String?  @db.Text @map("cloudinary_id")
+  mediaUrls    String[] @default([]) @map("media_urls") @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("portfolios")
+}
+
+model VirtualDesign {
+  id           String   @id @default(cuid())
+  title        String   @db.Text
+  description  String?  @db.Text
+  category     String?  @db.Text
+  featured     Boolean  @default(false)
+  displayOrder Int      @default(0) @map("display_order")
+  published    Boolean  @default(true)
+  imageUrl     String?  @db.Text @map("image_url")
+  cloudinaryId String?  @db.Text @map("cloudinary_id")
+  mediaType    String   @default("image") @map("media_type") @db.Text
+  mediaUrls    String[] @default([]) @map("media_urls") @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("virtual_designs")
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  name          String   @db.Text
+  description   String?  @db.Text
+  price         Float
+  originalPrice Float?   @map("original_price")
+  category      String?  @db.Text
+  images        String[] @default([]) @db.Text
+  colorVariants String[] @default([]) @map("color_variants") @db.Text
+  styleVariants String[] @default([]) @map("style_variants") @db.Text
+  vendor        String?  @db.Text
+  stock         Int      @default(0)
+  sku           String?  @db.Text
+  tags          String[] @default([]) @db.Text
+  featured      Boolean  @default(false)
+  inStock       Boolean  @default(true) @map("in_stock")
+  displayOrder  Int      @default(0) @map("display_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("products")
+}
+
+model Service {
+  id           String   @id @default(cuid())
+  title        String   @db.Text
+  description  String?  @db.Text
+  icon         String?  @db.Text
+  imageUrl     String?  @db.Text @map("image_url")
+  cloudinaryId String?  @db.Text @map("cloudinary_id")
+  featured     Boolean  @default(false)
+  displayOrder Int      @default(0) @map("display_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("services")
+}
+
+model Testimonial {
+  id           String   @id @default(cuid())
+  clientName   String   @map("client_name") @db.Text
+  content      String   @db.Text
+  photoUrl     String?  @db.Text @map("photo_url")
+  publicId     String?  @db.Text @map("public_id")
+  displayOrder Int      @default(0) @map("display_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("testimonials")
+}
+
+model HeroMedia {
+  id           String   @id @default(cuid())
+  title        String   @db.Text
+  subtitle     String?  @db.Text
+  imageUrl     String?  @db.Text @map("image_url")
+  cloudinaryId String?  @db.Text @map("cloudinary_id")
+  mediaUrls    String[] @default([]) @map("media_urls") @db.Text
+  isActive     Boolean  @default(true) @map("is_active")
+  displayOrder Int      @default(0) @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("hero_media")
+}
+
+model About {
+  id              String   @id @default(cuid())
+  story           String   @db.Text @default("")
+  companyDesc     String   @default("") @map("company_description") @db.Text
+  mission         String   @db.Text @default("")
+  vision          String   @db.Text @default("")
+  location        String   @db.Text @default("")
+  contactEmail    String   @default("") @map("contact_email") @db.Text
+  socials         String   @default("{}") @db.Text
+  imageUrl        String?  @db.Text @map("image_url")
+  cloudinaryId    String?  @db.Text @map("cloudinary_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("abouts")
+}
+
+model Consultation {
+  id        String   @id @default(cuid())
+  name      String   @db.Text
+  email     String   @db.Text
+  phone     String?  @db.Text
+  message   String   @db.Text
+  status    String   @default("pending") @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("consultations")
+}
+
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique @db.Text
+  value     String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("site_settings")
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  email           String   @db.Text
+  name            String   @db.Text
+  phone           String?  @db.Text
+  items           String   @db.Text
+  shippingAddress String   @db.Text @map("shipping_address")
+  shippingMethod  String?  @default("standard") @db.Text @map("shipping_method")
+  paymentMethod   String   @db.Text @map("payment_method")
+  paymentDetails  String   @db.Text @map("payment_details")
+  total           Float
+  status          String   @default("pending") @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("orders")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  name      String   @db.Text
+  email     String   @db.Text
+  subject   String?  @db.Text
+  content   String   @db.Text
+  reply     String?  @db.Text
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("messages")
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  adminId   String   @map("admin_id") @db.Text
+  token     String   @unique @db.Text
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("password_resets")
+}

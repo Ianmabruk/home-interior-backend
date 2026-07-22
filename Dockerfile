@@ -2,13 +2,13 @@ FROM node:20-slim AS builder
 
 WORKDIR /app
 
-COPY server/package*.json ./
+COPY backend/package*.json ./
 RUN npm install
 
-COPY server/src ./src
+COPY backend/src ./src
 
 EXPOSE 5000
 
 ENV NODE_ENV=production
 
-CMD ["node", "src/index.js"]
+CMD ["node", "src/server.js"]
