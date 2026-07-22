@@ -118,12 +118,10 @@ const seed = async () => {
     console.log('Seed completed successfully')
     console.log(`Admin email: ${adminEmail}`)
     console.log(`Admin password: ${adminPassword}`)
-
-    process.exit(0)
   } catch (error) {
     console.error('Seed failed', error)
     process.exit(1)
   }
 }
 
-seed()
+export default seed
