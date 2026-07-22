@@ -17,8 +17,8 @@ export const LoginPage = () => {
     setLoading(true)
     try {
       const response = await login(form.email, form.password)
-      const role = response?.data?.user?.role
-      if (role === 'admin') {
+      const role = response?.user?.role
+      if (role === 'ADMIN') {
         navigate('/admin', { replace: true })
       } else {
         navigate('/account', { replace: true })
