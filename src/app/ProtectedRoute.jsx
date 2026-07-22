@@ -1,20 +1,6 @@
-import { Navigate, Outlet } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { Outlet } from 'react-router-dom'
 
-export const ProtectedRoute = ({ adminOnly = false }) => {
-  const { isAuthenticated, isAdmin, loading } = useAuth()
-
-  if (loading) {
-    return <div className="px-4 py-10">Loading...</div>
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
-
-  if (adminOnly && !isAdmin) {
-    return <Navigate to="/account" replace />
-  }
-
+// TEMP AUTH BYPASS - REMOVE BEFORE PRODUCTION
+export const ProtectedRoute = () => {
   return <Outlet />
 }

@@ -86,6 +86,8 @@ async function uploadWithRetry(file, options, attempt = 1) {
     if (token) {
       xhr.setRequestHeader('Authorization', `Bearer ${token}`)
     }
+    // TEMP AUTH BYPASS - REMOVE BEFORE PRODUCTION
+    xhr.setRequestHeader('X-Dev-Bypass-Auth', 'true')
     xhr.send(formData)
   })
 }

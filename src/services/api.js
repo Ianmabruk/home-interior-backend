@@ -4,9 +4,11 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
-  // Required so the httpOnly refresh cookie is sent on cross-origin requests
-  // to the API (localhost dev port or the deployed API domain).
   withCredentials: true,
+  // TEMP AUTH BYPASS - REMOVE BEFORE PRODUCTION
+  headers: {
+    'X-Dev-Bypass-Auth': 'true',
+  },
 })
 
 const CONTENT_PATHS = [
