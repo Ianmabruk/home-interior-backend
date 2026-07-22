@@ -3,7 +3,7 @@ import { supabase } from '../config/supabase.js'
 import { ApiError } from '../utils/ApiError.js'
 import { mediaService } from '../services/media.service.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
-import { withId, withIdArray } from '../utils/helpers.js'
+import { withId, withIdArray, sortByOrderThenDate } from '../utils/helpers.js'
 
 const TABLES = {
   portfolio: 'portfolios',
@@ -14,6 +14,15 @@ const TABLES = {
   testimonial: 'testimonials',
 }
 
+const mapAboutItem = (item) => {
+  if (!item) return item
+  return {
+    ...item,
+    _id: item.id,
+    aboutImageUrl: item.about_image_url,
+  }
+}
+
 export const getAbout = asyncHandler(async (req, res) => {
   const { data, error } = await supabase
     .from('abouts')
@@ -22,7 +31,8 @@ export const getAbout = asyncHandler(async (req, res) => {
     .limit(1)
 
   if (error) throw new ApiError(500, error.message)
-  res.json(sendSuccess(data && data.length > 0 ? withId(data[0]) : null))
+  const mapped = data && data.length > 0 ? mapAboutItem(data[0]) : null
+  res.json(sendSuccess(mapped))
 })
 
 export const upsertAbout = asyncHandler(async (req, res) => {
@@ -61,7 +71,7 @@ export const upsertAbout = asyncHandler(async (req, res) => {
       .single()
     if (error) throw new ApiError(500, error.message)
     result = data
-    res.status(201).json(sendSuccess(withId(result)))
+    res.status(201).json(sendSuccess(mapAboutItem(result)))
   } else {
     const { data, error } = await supabase
       .from('abouts')
@@ -69,7 +79,7 @@ export const upsertAbout = asyncHandler(async (req, res) => {
       .eq('id', existing[0].id)
       .single()
     if (error) throw new ApiError(500, error.message)
-    res.json(sendSuccess(withId(data)))
+    res.json(sendSuccess(mapAboutItem(data)))
   }
 })
 
@@ -123,7 +133,7 @@ export const homepageFeed = asyncHandler(async (req, res) => {
     virtualDesigns: withIdArray(sortedVirtualDesigns),
     virtualInteriorDesign: withIdArray(sortedVirtualDesigns),
     services: withIdArray(sortedServices),
-    about: withId(abouts[0]),
+    about: mapAboutItem(abouts[0]),
     testimonials: withIdArray(sortedTestimonials),
     featuredPortfolio: withIdArray(featuredPortfolio),
     featuredVirtualDesigns: withIdArray(featuredVirtualDesigns),

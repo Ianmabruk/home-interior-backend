@@ -14,6 +14,13 @@ const updateMeSchema = z.object({
   addresses: z.any().optional(),
 }).partial()
 
+const mapUserItem = (item) => {
+  if (!item) return item
+  const { password_hash, refresh_token, ...safe } = item
+  return { ...safe, _id: item.id }
+}
+const mapUserArray = (items) => (items || []).map(mapUserItem)
+
 export const me = asyncHandler(async (req, res) => {
   const { data: user, error } = await supabase
     .from('users')
@@ -25,8 +32,7 @@ export const me = asyncHandler(async (req, res) => {
     return res.status(404).json({ success: false, message: 'User not found' })
   }
 
-  const { password_hash, refresh_token, ...safe } = user
-  res.json(sendSuccess(withId(safe)))
+  res.json(sendSuccess(mapUserItem(user)))
 })
 
 export const updateMe = asyncHandler(async (req, res) => {
@@ -42,8 +48,7 @@ export const updateMe = asyncHandler(async (req, res) => {
     .single()
 
   if (error) throw new ApiError(500, error.message)
-  const { password_hash, refresh_token, ...safe } = user
-  res.json(sendSuccess(withId(safe)))
+  res.json(sendSuccess(mapUserItem(user)))
 })
 
 export const getWishlist = asyncHandler(async (req, res) => {

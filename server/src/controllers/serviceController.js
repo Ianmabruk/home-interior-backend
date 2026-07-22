@@ -5,6 +5,18 @@ import { mediaService } from '../services/media.service.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { withId, withIdArray } from '../utils/helpers.js'
 
+const mapServiceItem = (item) => {
+  if (!item) return item
+  return {
+    ...item,
+    _id: item.id,
+    imageUrl: item.image_url,
+    isActive: item.is_active,
+    displayOrder: item.display_order,
+  }
+}
+const mapServiceArray = (items) => (items || []).map(mapServiceItem)
+
 export const serviceController = {
   list: asyncHandler(async (req, res) => {
     const { data, error } = await supabase
@@ -15,7 +27,7 @@ export const serviceController = {
       .order('created_at', { ascending: false })
 
     if (error) throw new ApiError(500, error.message)
-    res.json(sendSuccess(withIdArray(data || [])))
+    res.json(sendSuccess(mapServiceArray(data || [])))
   }),
 
   get: asyncHandler(async (req, res) => {
@@ -28,7 +40,7 @@ export const serviceController = {
     if (error || !data) {
       return res.status(404).json({ success: false, message: 'Service not found' })
     }
-    res.json(sendSuccess(withId(data)))
+    res.json(sendSuccess(mapServiceItem(data)))
   }),
 
   create: asyncHandler(async (req, res) => {
@@ -53,7 +65,7 @@ export const serviceController = {
       .single()
 
     if (error) throw new ApiError(500, error.message)
-    res.status(201).json(sendSuccess(withId(item)))
+    res.status(201).json(sendSuccess(mapServiceItem(item)))
   }),
 
   update: asyncHandler(async (req, res) => {
@@ -91,7 +103,7 @@ export const serviceController = {
       .single()
 
     if (error) throw new ApiError(500, error.message)
-    res.json(sendSuccess(withId(item)))
+    res.json(sendSuccess(mapServiceItem(item)))
   }),
 
   reorder: asyncHandler(async (req, res) => {

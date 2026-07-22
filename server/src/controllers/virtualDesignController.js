@@ -28,6 +28,18 @@ const findFilesByFieldname = (req, fieldname) => {
   return []
 }
 
+const mapVirtualDesignItem = (item) => {
+  if (!item) return item
+  return {
+    ...item,
+    _id: item.id,
+    mediaUrl: item.media_url,
+    mediaType: item.media_type || 'image',
+    galleryMedia: item.media_urls || [],
+  }
+}
+const mapVirtualDesignArray = (items) => (items || []).map(mapVirtualDesignItem)
+
 export const virtualDesignController = {
   list: asyncHandler(async (req, res) => {
     const { data, error } = await supabase
@@ -36,7 +48,7 @@ export const virtualDesignController = {
       .order('created_at', { ascending: false })
 
     if (error) throw new ApiError(500, error.message)
-    res.json(sendSuccess(withIdArray(data || [])))
+    res.json(sendSuccess(mapVirtualDesignArray(data || [])))
   }),
 
   get: asyncHandler(async (req, res) => {
@@ -49,7 +61,7 @@ export const virtualDesignController = {
     if (error || !data) {
       return res.status(404).json({ success: false, message: 'Virtual Design item not found' })
     }
-    res.json(sendSuccess(withId(data)))
+    res.json(sendSuccess(mapVirtualDesignItem(data)))
   }),
 
   create: asyncHandler(async (req, res) => {
@@ -99,7 +111,7 @@ export const virtualDesignController = {
       .single()
 
     if (error) throw new ApiError(500, error.message)
-    res.status(201).json(sendSuccess(withId(item)))
+    res.status(201).json(sendSuccess(mapVirtualDesignItem(item)))
   }),
 
   update: asyncHandler(async (req, res) => {
@@ -154,7 +166,7 @@ export const virtualDesignController = {
       .single()
 
     if (error) throw new ApiError(500, error.message)
-    res.json(sendSuccess(withId(item)))
+    res.json(sendSuccess(mapVirtualDesignItem(item)))
   }),
 
   remove: asyncHandler(async (req, res) => {

@@ -206,10 +206,10 @@ export const DashboardOverview = ({ overview, onNavigate }) => {
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold text-[var(--primary)]">
-                    ${order.total?.toFixed(2) || '0.00'}
+                    ${(order.total ?? 0).toFixed(2)}
                   </p>
                   <p className="text-[10px] text-[var(--primary)]/50">
-                    {new Date(order.createdAt).toLocaleDateString()}
+                    {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '—'}
                   </p>
                 </div>
               </motion.div>

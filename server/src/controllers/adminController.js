@@ -46,7 +46,13 @@ export const dashboardOverview = asyncHandler(async (req, res) => {
 
   const recentOrders = sortedOrders.slice(0, 10).map((o) => {
     const u = userById.get(o.user_id)
-    return { ...o, _id: o.id, customerName: u?.full_name || u?.email || 'Customer' }
+    return { 
+      ...o, 
+      _id: o.id, 
+      customerName: u?.full_name || u?.email || 'Customer',
+      createdAt: o.created_at,
+      total: Number(o.total) || 0,
+    }
   })
 
   res.json(sendSuccess({
@@ -127,7 +133,13 @@ export const listAllOrders = asyncHandler(async (req, res) => {
 
   const enriched = (orders || []).map((o) => {
     const u = userById.get(o.user_id)
-    return { ...withId(o), customerName: u?.full_name || 'Guest', customerEmail: u?.email || '' }
+    return { 
+      ...withId(o), 
+      customerName: u?.full_name || 'Guest', 
+      customerEmail: u?.email || '',
+      createdAt: o.created_at,
+      total: Number(o.total) || 0,
+    }
   })
 
   const sorted = enriched.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))

@@ -75,9 +75,9 @@ export const parseBody = (schema, body) => {
 }
 
 export const sortByOrderThenDate = (items) => items.sort((a, b) => {
-  const orderDiff = (a.displayOrder || a.order || 0) - (b.displayOrder || b.order || 0)
+  const orderDiff = (a.displayOrder || a.display_order || 0) - (b.displayOrder || b.display_order || 0)
   if (orderDiff !== 0) return orderDiff
-  return new Date(b.createdAt) - new Date(a.createdAt)
+  return new Date(b.createdAt || b.created_at || 0) - new Date(a.createdAt || a.created_at || 0)
 })
 
 export const orderValue = (value) => {

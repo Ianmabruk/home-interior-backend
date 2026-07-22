@@ -28,6 +28,17 @@ const findFilesByFieldname = (req, fieldname) => {
   return []
 }
 
+const mapPortfolioItem = (item) => {
+  if (!item) return item
+  return {
+    ...item,
+    _id: item.id,
+    imageUrl: item.image_url,
+    galleryImages: item.media_urls || [],
+  }
+}
+const mapPortfolioArray = (items) => (items || []).map(mapPortfolioItem)
+
 export const portfolioController = {
   list: asyncHandler(async (req, res) => {
     const { data, error } = await supabase
@@ -37,7 +48,7 @@ export const portfolioController = {
       .order('created_at', { ascending: false })
 
     if (error) throw new ApiError(500, error.message)
-    res.json(sendSuccess(withIdArray(data || [])))
+    res.json(sendSuccess(mapPortfolioArray(data || [])))
   }),
 
   get: asyncHandler(async (req, res) => {
@@ -50,7 +61,7 @@ export const portfolioController = {
     if (error || !data) {
       return res.status(404).json({ success: false, message: 'Portfolio item not found' })
     }
-    res.json(sendSuccess(withId(data)))
+    res.json(sendSuccess(mapPortfolioItem(data)))
   }),
 
   create: asyncHandler(async (req, res) => {
@@ -95,7 +106,7 @@ export const portfolioController = {
       .single()
 
     if (error) throw new ApiError(500, error.message)
-    res.status(201).json(sendSuccess(withId(item)))
+    res.status(201).json(sendSuccess(mapPortfolioItem(item)))
   }),
 
   update: asyncHandler(async (req, res) => {
@@ -149,7 +160,7 @@ export const portfolioController = {
       .single()
 
     if (error) throw new ApiError(500, error.message)
-    res.json(sendSuccess(withId(item)))
+    res.json(sendSuccess(mapPortfolioItem(item)))
   }),
 
   reorder: asyncHandler(async (req, res) => {

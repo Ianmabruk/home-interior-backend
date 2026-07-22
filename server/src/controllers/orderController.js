@@ -164,7 +164,11 @@ export const getMyOrders = asyncHandler(async (req, res) => {
     .order('created_at', { ascending: false })
 
   if (error) throw new ApiError(500, error.message)
-  res.json(sendSuccess(withIdArray(orders || [])))
+  res.json(sendSuccess(withIdArray((orders || []).map((o) => ({
+    ...o,
+    createdAt: o.created_at,
+    total: Number(o.total) || 0,
+  })))))
 })
 
 export const listOrders = asyncHandler(async (req, res) => {
@@ -176,5 +180,9 @@ export const listOrders = asyncHandler(async (req, res) => {
     .range(0, limit - 1)
 
   if (error) throw new ApiError(500, error.message)
-  res.json(sendSuccess(withIdArray(orders || [])))
+  res.json(sendSuccess(withIdArray((orders || []).map((o) => ({
+    ...o,
+    createdAt: o.created_at,
+    total: Number(o.total) || 0,
+  })))))
 })

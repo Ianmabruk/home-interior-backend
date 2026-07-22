@@ -4,6 +4,17 @@ import { mediaService } from '../services/media.service.js'
 import { sendSuccess } from '../utils/sendSuccess.js'
 import { withId, withIdArray } from '../utils/helpers.js'
 
+const mapHeroItem = (item) => {
+  if (!item) return item
+  return {
+    ...item,
+    _id: item.id,
+    imageUrl: item.image_url,
+    mediaUrls: item.media_urls || [],
+  }
+}
+const mapHeroArray = (items) => (items || []).map(mapHeroItem)
+
 export const heroMediaController = {
   list: asyncHandler(async (req, res) => {
     const { data, error } = await supabase
@@ -14,7 +25,7 @@ export const heroMediaController = {
       .order('created_at', { ascending: false })
 
     if (error) throw new ApiError(500, error.message)
-    res.json(sendSuccess(withIdArray(data || [])))
+    res.json(sendSuccess(mapHeroArray(data || [])))
   }),
 
   get: asyncHandler(async (req, res) => {
@@ -27,7 +38,7 @@ export const heroMediaController = {
     if (error || !data) {
       return res.status(404).json({ success: false, message: 'Hero content not found' })
     }
-    res.json(sendSuccess(withId(data)))
+    res.json(sendSuccess(mapHeroItem(data)))
   }),
 
   create: asyncHandler(async (req, res) => {
@@ -55,7 +66,7 @@ export const heroMediaController = {
       .single()
 
     if (error) throw new ApiError(500, error.message)
-    res.status(201).json(sendSuccess(withId(hero)))
+    res.status(201).json(sendSuccess(mapHeroItem(hero)))
   }),
 
   update: asyncHandler(async (req, res) => {
@@ -100,7 +111,7 @@ export const heroMediaController = {
       .single()
 
     if (error) throw new ApiError(500, error.message)
-    res.json(sendSuccess(withId(updated)))
+    res.json(sendSuccess(mapHeroItem(updated)))
   }),
 
   remove: asyncHandler(async (req, res) => {

@@ -8,10 +8,24 @@ import { withId, withIdArray } from '../utils/helpers.js'
 
 const sortByOrder = (items) =>
   [...(items || [])].sort((a, b) => {
-    const o = (a.display_order || 0) - (b.display_order || 0)
+    const o = (a.display_order || a.displayOrder || 0) - (b.display_order || b.displayOrder || 0)
     if (o !== 0) return o
-    return new Date(b.created_at || 0) - new Date(a.created_at || 0)
+    return new Date(b.created_at || b.createdAt || 0) - new Date(a.created_at || a.createdAt || 0)
   })
+
+const mapTestimonialItem = (item) => {
+  if (!item) return item
+  return {
+    ...item,
+    _id: item.id,
+    clientName: item.client_name,
+    photoUrl: item.photo_url,
+    photoPublicId: item.photo_public_id,
+    displayOrder: item.display_order,
+    isActive: item.is_active,
+  }
+}
+const mapTestimonialArray = (items) => (items || []).map(mapTestimonialItem)
 
 export const listPublic = asyncHandler(async (req, res) => {
   const { data, error } = await supabase
@@ -22,7 +36,7 @@ export const listPublic = asyncHandler(async (req, res) => {
     .order('created_at', { ascending: false })
 
   if (error) throw new ApiError(500, error.message)
-  res.json(sendSuccess(withIdArray(sortByOrder(data || []))))
+  res.json(sendSuccess(mapTestimonialArray(sortByOrder(data || []))))
 })
 
 export const listAdmin = asyncHandler(async (req, res) => {
@@ -33,7 +47,7 @@ export const listAdmin = asyncHandler(async (req, res) => {
     .order('created_at', { ascending: false })
 
   if (error) throw new ApiError(500, error.message)
-  res.json(sendSuccess(withIdArray(sortByOrder(data || []))))
+  res.json(sendSuccess(mapTestimonialArray(sortByOrder(data || []))))
 })
 
 const testimonialSchema = z.object({
@@ -76,7 +90,7 @@ export const create = asyncHandler(async (req, res) => {
 
   if (error) throw new ApiError(500, error.message)
 
-  res.status(201).json(sendSuccess(withId(item)))
+  res.status(201).json(sendSuccess(mapTestimonialItem(item)))
 })
 
 export const update = asyncHandler(async (req, res) => {
@@ -114,7 +128,7 @@ export const update = asyncHandler(async (req, res) => {
     .single()
 
   if (error) throw new ApiError(500, error.message)
-  res.json(sendSuccess(withId(item)))
+  res.json(sendSuccess(mapTestimonialItem(item)))
 })
 
 export const remove = asyncHandler(async (req, res) => {
@@ -158,7 +172,7 @@ export const reorder = asyncHandler(async (req, res) => {
     .order('created_at', { ascending: false })
 
   if (error) throw new ApiError(500, error.message)
-  res.json(sendSuccess(withIdArray(sortByOrder(items || []))))
+  res.json(sendSuccess(mapTestimonialArray(sortByOrder(items || []))))
 })
 
 export const testimonialController = {
