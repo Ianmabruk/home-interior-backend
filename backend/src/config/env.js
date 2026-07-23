@@ -11,6 +11,8 @@ export const env = {
   accessTokenTtl: process.env.ACCESS_TOKEN_TTL || '15m',
   refreshTokenTtl: process.env.REFRESH_TOKEN_TTL || '30d',
   databaseUrl: process.env.DATABASE_URL,
+  supabaseUrl: process.env.SUPABASE_URL,
+  supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
   seedAdminEmail: process.env.SEED_ADMIN_EMAIL || 'admin@chatgpt.com',
   seedAdminPassword: process.env.SEED_ADMIN_PASSWORD || 'admin123.',
 }
@@ -23,4 +25,5 @@ export function validateEnv() {
   if (missing.length > 0) {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`)
   }
+}
 }

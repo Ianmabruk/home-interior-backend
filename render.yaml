@@ -4,7 +4,7 @@ services:
     runtime: node
     rootDir: backend
     buildCommand: npm install && npm run db:generate && npm run db:deploy && npm run seed
-    startCommand: npm run db:generate && npx prisma db push --accept-data-loss && npm run seed && npm start
+    startCommand: npm run db:generate && npm run db:deploy && npm run seed && npm start
     envVars:
       - key: NODE_ENV
         value: production
@@ -22,3 +22,7 @@ services:
         value: admin123.
       - key: DATABASE_URL
         value: postgresql://neondb_owner:npg_8g1kJfADurxe@ep-red-cake-aya2hje0-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+      - key: SUPABASE_URL
+        value: https://amcaogrlsrwxbvuglyle.supabase.co
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtY2FvZ3Jsc3J3eGJ2dWdseWxlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDU0Mzg5MiwiZXhwIjoyMTAwMTE5ODkyfQ.dX0NzgtWLfnNWxJFM0-B-33Li6Cnhvw7n5cnfD9f_T8
