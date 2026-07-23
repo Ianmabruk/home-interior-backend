@@ -22,7 +22,9 @@ services:
         value: admin123.
       - key: DATABASE_URL
         value: postgresql://neondb_owner:npg_8g1kJfADurxe@ep-red-cake-aya2hje0-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-      - key: SUPABASE_URL
-        value: https://amcaogrlsrwxbvuglyle.supabase.co
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtY2FvZ3Jsc3J3eGJ2dWdseWxlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDU0Mzg5MiwiZXhwIjoyMTAwMTE5ODkyfQ.dX0NzgtWLfnNWxJFM0-B-33Li6Cnhvw7n5cnfD9f_T8
+      - key: CLOUDINARY_CLOUD_NAME
+        value: du02q965h
+      - key: CLOUDINARY_API_KEY
+        value: 242841727892945
+      - key: CLOUDINARY_API_SECRET
+        value: UYvJYQILpLivuXY5S_EvHMB-y_s
