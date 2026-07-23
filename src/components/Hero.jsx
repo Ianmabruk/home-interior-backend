@@ -15,7 +15,7 @@ export const Hero = ({ onBookConsultation, heroImages = [] }) => {
       .filter(item => item)
       .slice(0, 5)
       .map(item => ({
-        url: typeof item === 'string' ? item : item.imageUrl || item.url,
+        url: typeof item === 'string' ? item : (item.imageUrl || item.mediaUrls?.[0] || item.url),
         alt: item.title || item.alt || 'Luxury interior design project'
       }))
   }, [heroImages])
