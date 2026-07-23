@@ -46,29 +46,39 @@ async function getHeroMedia(id) {
   }
 }
 
-async function createHeroMedia(data, file) {
+async function createHeroMedia(data, files = []) {
   const createData = { ...data }
-  if (file) {
-    const uploaded = await uploadFile(file.buffer, file.mimetype, 'homepage/hero')
-    createData.imageUrl = uploaded.url
-    createData.cloudinaryId = uploaded.path
-    createData.mediaUrls = [uploaded.url]
+  const mediaUrls = []
+
+  for (const f of files) {
+    const uploaded = await uploadFile(f.buffer, f.mimetype, 'homepage/hero')
+    mediaUrls.push(uploaded.url)
+  }
+
+  if (mediaUrls.length > 0) {
+    createData.imageUrl = mediaUrls[0]
+    createData.mediaUrls = mediaUrls
   }
   const item = await prisma.heroMedia.create({ data: createData })
   return mapHero(item)
 }
 
-async function updateHeroMedia(id, data, file) {
+async function updateHeroMedia(id, data, files = []) {
   const existing = await prisma.heroMedia.findUnique({ where: { id } })
   if (!existing) throw failure(404, 'Hero media not found')
 
   const updateData = { ...data }
-  if (file) {
+  const mediaUrls = [...(existing.mediaUrls || [])]
+
+  for (const f of files) {
     if (existing.cloudinaryId) await deleteFile(existing.cloudinaryId)
-    const updated = await uploadFile(file.buffer, file.mimetype, 'homepage/hero')
-    updateData.imageUrl = updated.url
-    updateData.cloudinaryId = updated.path
-    updateData.mediaUrls = [updated.url]
+    const uploaded = await uploadFile(f.buffer, f.mimetype, 'homepage/hero')
+    mediaUrls.push(uploaded.url)
+  }
+
+  if (files.length > 0) {
+    updateData.mediaUrls = mediaUrls
+    updateData.imageUrl = mediaUrls[0]
   }
   const item = await prisma.heroMedia.update({ where: { id }, data: updateData })
   return mapHero(item)

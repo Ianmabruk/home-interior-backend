@@ -35,7 +35,7 @@ export const VirtualDesignDetailPage = () => {
   }, [id])
 
   useEffect(() => {
-    if (project) document.body.style.overflow = 'hidden'
+    if (project) document.body.style.overflow = ''
     else document.body.style.overflow = ''
     return () => { document.body.style.overflow = '' }
   }, [project])

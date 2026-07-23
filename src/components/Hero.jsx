@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { CalendarCheck } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -7,7 +7,7 @@ import { getOptimizedUrl } from '../utils/cloudinaryHelpers'
 const FADE_DURATION = 2.5
 
 export const Hero = ({ onBookConsultation, heroImages = [] }) => {
-  const [currentIndex] = useState(0)
+  const [currentIndex, setCurrentIndex] = useState(0)
 
   const images = useMemo(() => {
     if (!heroImages || heroImages.length === 0) return []
@@ -19,6 +19,14 @@ export const Hero = ({ onBookConsultation, heroImages = [] }) => {
         alt: item.title || item.alt || 'Luxury interior design project'
       }))
   }, [heroImages])
+
+  useEffect(() => {
+    if (images.length <= 1) return
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % images.length)
+    }, 2000)
+    return () => clearInterval(timer)
+  }, [images.length])
 
   const currentImage = images[currentIndex]
   const activeImage = currentImage?.url

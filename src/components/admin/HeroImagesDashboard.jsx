@@ -292,15 +292,15 @@ export const HeroImagesDashboard = () => {
                   #{i + 1}
                 </span>
               </div>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => window.open(item.url, '_blank')}
-                className="absolute bottom-6 left-1/2 -translate-x-1/2 btn-luxury-primary group flex items-center gap-2 text-[10px] px-5 py-2.5 rounded-full opacity-0 translate-y-4 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0"
-              >
-                View
-                <Eye size={12} strokeWidth={1.5} className="transition-transform duration-300 group-hover:scale-110" />
-              </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => window.open(item.imageUrl, '_blank')}
+                  className="absolute bottom-6 left-1/2 -translate-x-1/2 btn-luxury-primary group flex items-center gap-2 text-[10px] px-5 py-2.5 rounded-full opacity-0 translate-y-4 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0"
+                >
+                  View
+                  <Eye size={12} strokeWidth={1.5} className="transition-transform duration-300 group-hover:scale-110" />
+                </motion.button>
               <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <motion.button
                   whileHover={{ scale: 1.1 }}
