@@ -60,32 +60,43 @@ async function createSocialItem(data, file, circularFile) {
   let cloudinaryId = null
   let homepageCircularImage = null
   let homepageCircularImageId = null
+  let uploadedPaths = []
 
   if (file) {
     const uploaded = await uploadFile(file.buffer, file.mimetype, 'socials')
     imageUrl = uploaded.url
     cloudinaryId = uploaded.path
+    uploadedPaths.push(uploaded.path)
   }
 
   if (circularFile) {
     const uploaded = await uploadFile(circularFile.buffer, circularFile.mimetype, 'socials')
     homepageCircularImage = uploaded.url
     homepageCircularImageId = uploaded.path
+    uploadedPaths.push(uploaded.path)
   }
 
-  const item = await prisma.socialItem.create({
-    data: {
-      name: data.name,
-      platform: data.platform,
-      link: data.link,
-      imageUrl,
-      cloudinaryId,
-      homepageCircularImage,
-      homepageCircularImageId,
-      displayOrder: data.displayOrder || 0,
-      isActive: data.isActive !== false,
-    },
-  })
+  let item
+  try {
+    item = await prisma.socialItem.create({
+      data: {
+        name: data.name,
+        platform: data.platform,
+        link: data.link,
+        imageUrl,
+        cloudinaryId,
+        homepageCircularImage,
+        homepageCircularImageId,
+        displayOrder: data.displayOrder || 0,
+        isActive: data.isActive !== false,
+      },
+    })
+  } catch (err) {
+    if (uploadedPaths.length > 0) {
+      deleteFiles(uploadedPaths).catch(() => {})
+    }
+    throw err
+  }
   return mapSocialItem(item)
 }
 
@@ -96,12 +107,14 @@ async function updateSocialItem(id, data, file, circularFile, removeHomepageCirc
   }
 
   const updateData = { ...data }
+  let newUploadedPaths = []
 
   if (file) {
     if (existing.cloudinaryId) await deleteFile(existing.cloudinaryId)
     const uploaded = await uploadFile(file.buffer, file.mimetype, 'socials')
     updateData.imageUrl = uploaded.url
     updateData.cloudinaryId = uploaded.path
+    newUploadedPaths.push(uploaded.path)
   }
 
   if (circularFile) {
@@ -109,16 +122,25 @@ async function updateSocialItem(id, data, file, circularFile, removeHomepageCirc
     const uploaded = await uploadFile(circularFile.buffer, circularFile.mimetype, 'socials')
     updateData.homepageCircularImage = uploaded.url
     updateData.homepageCircularImageId = uploaded.path
+    newUploadedPaths.push(uploaded.path)
   } else if (removeHomepageCircularImage) {
     if (existing.homepageCircularImageId) await deleteFile(existing.homepageCircularImageId)
     updateData.homepageCircularImage = null
     updateData.homepageCircularImageId = null
   }
 
-  const item = await prisma.socialItem.update({
-    where: { id },
-    data: updateData,
-  })
+  let item
+  try {
+    item = await prisma.socialItem.update({
+      where: { id },
+      data: updateData,
+    })
+  } catch (err) {
+    if (newUploadedPaths.length > 0) {
+      deleteFiles(newUploadedPaths).catch(() => {})
+    }
+    throw err
+  }
   return mapSocialItem(item)
 }
 

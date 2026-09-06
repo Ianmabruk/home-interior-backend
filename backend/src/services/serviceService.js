@@ -50,17 +50,30 @@ async function getService(id) {
 
 async function createService(data, file, circularFile) {
   const createData = { ...data }
+  let uploadedPaths = []
+
   if (file) {
     const uploaded = await uploadFile(file.buffer, file.mimetype, 'services')
     createData.imageUrl = uploaded.url
     createData.cloudinaryId = uploaded.path
+    uploadedPaths.push(uploaded.path)
   }
   if (circularFile) {
     const uploaded = await uploadFile(circularFile.buffer, circularFile.mimetype, 'services')
     createData.homepageCircularImage = uploaded.url
     createData.homepageCircularImageId = uploaded.path
+    uploadedPaths.push(uploaded.path)
   }
-  const item = await prisma.service.create({ data: createData })
+
+  let item
+  try {
+    item = await prisma.service.create({ data: createData })
+  } catch (err) {
+    if (uploadedPaths.length > 0) {
+      deleteFiles(uploadedPaths).catch(() => {})
+    }
+    throw err
+  }
   return mapService(item)
 }
 
@@ -69,19 +82,32 @@ async function updateService(id, data, file, circularFile) {
   if (!existing) throw failure(404, 'Service not found')
 
   const updateData = { ...data }
+  let newUploadedPaths = []
+
   if (file) {
     if (existing.cloudinaryId) await deleteFile(existing.cloudinaryId)
     const uploaded = await uploadFile(file.buffer, file.mimetype, 'services')
     updateData.imageUrl = uploaded.url
     updateData.cloudinaryId = uploaded.path
+    newUploadedPaths.push(uploaded.path)
   }
   if (circularFile) {
     if (existing.homepageCircularImageId) await deleteFile(existing.homepageCircularImageId)
     const uploaded = await uploadFile(circularFile.buffer, circularFile.mimetype, 'services')
     updateData.homepageCircularImage = uploaded.url
     updateData.homepageCircularImageId = uploaded.path
+    newUploadedPaths.push(uploaded.path)
   }
-  const item = await prisma.service.update({ where: { id }, data: updateData })
+
+  let item
+  try {
+    item = await prisma.service.update({ where: { id }, data: updateData })
+  } catch (err) {
+    if (newUploadedPaths.length > 0) {
+      deleteFiles(newUploadedPaths).catch(() => {})
+    }
+    throw err
+  }
   return mapService(item)
 }
 

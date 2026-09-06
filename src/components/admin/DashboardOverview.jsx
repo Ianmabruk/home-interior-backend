@@ -114,13 +114,14 @@ export const DashboardOverview = () => {
 
   useEffect(() => {
     let cancelled = false
+    const controller = new AbortController()
 
     const loadAll = async () => {
       try {
         const [overviewRes, ordersRes, uploadsRes] = await Promise.all([
-          api.get('/admin/overview').catch(() => ({ data: null })),
-          api.get('/orders', { params: { sort: '-createdAt', limit: 100 } }).catch(() => ({ data: [] })),
-          api.get('/portfolio', { params: { sort: '-createdAt', limit: 6 } }).catch(() => ({ data: [] })),
+          api.get('/admin/overview', { signal: controller.signal }).catch(() => ({ data: null })),
+          api.get('/orders', { params: { sort: '-createdAt', limit: 100 }, signal: controller.signal }).catch(() => ({ data: [] })),
+          api.get('/portfolio', { params: { sort: '-createdAt', limit: 6 }, signal: controller.signal }).catch(() => ({ data: [] })),
         ])
 
         if (cancelled) return
@@ -137,7 +138,7 @@ export const DashboardOverview = () => {
     }
 
     loadAll()
-    return () => { cancelled = true }
+    return () => { cancelled = true; controller.abort() }
   }, [])
 
   useEffect(() => {

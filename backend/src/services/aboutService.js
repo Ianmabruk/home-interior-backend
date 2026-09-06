@@ -36,12 +36,14 @@ async function getAbout() {
 async function createOrUpdateAbout(data, file, socialFile, homepageCircularImageFile, removeHomepageCircularImage = false) {
   const existing = await prisma.about.findFirst({ orderBy: { createdAt: 'desc' } })
   const createData = { ...data }
+  let uploadedPaths = []
 
   if (file) {
     if (existing?.cloudinaryId) await deleteFile(existing.cloudinaryId)
     const uploaded = await uploadFile(file.buffer, file.mimetype, 'about')
     createData.imageUrl = uploaded.url
     createData.cloudinaryId = uploaded.path
+    uploadedPaths.push(uploaded.path)
   } else if (!existing?.imageUrl && createData.imageUrl === undefined) {
     createData.imageUrl = null
   }
@@ -51,6 +53,7 @@ async function createOrUpdateAbout(data, file, socialFile, homepageCircularImage
     const uploaded = await uploadFile(socialFile.buffer, socialFile.mimetype, 'about')
     createData.socialImage = uploaded.url
     createData.socialImageId = uploaded.path
+    uploadedPaths.push(uploaded.path)
   }
 
   if (homepageCircularImageFile) {
@@ -58,16 +61,25 @@ async function createOrUpdateAbout(data, file, socialFile, homepageCircularImage
     const uploaded = await uploadFile(homepageCircularImageFile.buffer, homepageCircularImageFile.mimetype, 'about')
     createData.homepageCircularImage = uploaded.url
     createData.homepageCircularImageId = uploaded.path
+    uploadedPaths.push(uploaded.path)
   } else if (removeHomepageCircularImage) {
     if (existing?.homepageCircularImageId) await deleteFile(existing.homepageCircularImageId)
     createData.homepageCircularImage = null
     createData.homepageCircularImageId = null
   }
 
-  if (existing) {
-    const item = await prisma.about.update({ where: { id: existing.id }, data: createData })
-    return mapAbout(item)
+  let item
+  try {
+    if (existing) {
+      item = await prisma.about.update({ where: { id: existing.id }, data: createData })
+    } else {
+      item = await prisma.about.create({ data: createData })
+    }
+  } catch (err) {
+    if (uploadedPaths.length > 0) {
+      deleteFiles(uploadedPaths).catch(() => {})
+    }
+    throw err
   }
-  const item = await prisma.about.create({ data: createData })
   return mapAbout(item)
 }

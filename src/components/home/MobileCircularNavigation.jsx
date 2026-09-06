@@ -144,31 +144,19 @@ const CircleItemMobile = memo(({ item, data, reduceMotion }) => {
           className="relative flex flex-col items-center group focus:outline-none w-full"
           aria-label={`${item.label} — tap to explore`}
         >
-          <motion.div
-            className="relative rounded-full overflow-hidden"
-            style={{
-              width: CIRCLE_SIZE,
-              height: CIRCLE_SIZE,
-              boxShadow: '0 8px 25px rgba(42,36,31,0.1)',
-              border: '2px solid #E89A43',
-              background: '#F5EFE8',
-            }}
-            whileHover={reduceMotion ? {} : { scale: 1.03, y: -4 }}
-            animate={reduceMotion ? {} : { y: [0, -6, 0] }}
-            transition={
-              reduceMotion
-                ? { duration: 0.3 }
-                : {
-                    type: 'spring',
-                    stiffness: 300,
-                    damping: 20,
-                    repeat: Infinity,
-                    repeatType: 'reverse',
-                    duration: 4,
-                    repeatDelay: 2,
-                  }
-            }
-          >
+           <motion.div
+             className="relative rounded-full overflow-hidden"
+             style={{
+               width: CIRCLE_SIZE,
+               height: CIRCLE_SIZE,
+               boxShadow: '0 8px 25px rgba(42,36,31,0.1)',
+               border: '2px solid #E89A43',
+               background: '#F5EFE8',
+               animation: !reduceMotion ? 'float 6s ease-in-out infinite' : 'none',
+             }}
+             whileHover={reduceMotion ? {} : { scale: 1.03, y: -4 }}
+             transition={reduceMotion ? { duration: 0.3 } : { type: 'spring', stiffness: 300, damping: 20 }}
+           >
             {imageUrl && !hasError ? (
               <img
                 src={getOptimizedUrl(imageUrl, { width: 600, crop: 'limit' })}

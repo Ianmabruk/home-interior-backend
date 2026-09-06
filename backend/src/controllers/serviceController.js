@@ -1,5 +1,6 @@
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { serviceService } from '../services/serviceService.js'
+import { invalidateCachePattern } from '../utils/cache.js'
 import { failure } from '../utils/response.js'
 
 export const serviceController = {
@@ -28,6 +29,8 @@ export const serviceController = {
       buttonUrl: req.body.buttonUrl || '',
     }
     const item = await serviceService.createService(data, file, circularFile)
+    invalidateCachePattern('service')
+    invalidateCachePattern('homepage')
     res.status(201).json({ success: true, data: item })
   }),
 
@@ -45,17 +48,23 @@ export const serviceController = {
     if (req.body.buttonText !== undefined) data.buttonText = req.body.buttonText
     if (req.body.buttonUrl !== undefined) data.buttonUrl = req.body.buttonUrl
     const item = await serviceService.updateService(req.params.id, data, file, circularFile)
+    invalidateCachePattern('service')
+    invalidateCachePattern('homepage')
     res.json({ success: true, data: item })
   }),
 
   reorder: asyncHandler(async (req, res) => {
     const orderArray = req.body.order || []
     await serviceService.updateServiceOrder(orderArray)
+    invalidateCachePattern('service')
+    invalidateCachePattern('homepage')
     res.json({ success: true, data: { message: 'Reordered' } })
   }),
 
   delete: asyncHandler(async (req, res) => {
     await serviceService.deleteService(req.params.id)
+    invalidateCachePattern('service')
+    invalidateCachePattern('homepage')
     res.json({ success: true, data: { message: 'Deleted' } })
   }),
 }

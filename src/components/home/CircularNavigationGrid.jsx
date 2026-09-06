@@ -152,22 +152,10 @@ const CircleItem = memo(({ item, data, reduceMotion }) => {
           border: '3px solid #E89A43',
           background: '#F5EFE8',
           flexShrink: 0,
+          animation: !reduceMotion ? 'float 6s ease-in-out infinite' : 'none',
         }}
         whileHover={reduceMotion ? {} : { scale: 1.03, y: -4 }}
-        animate={reduceMotion ? {} : { y: [0, -6, 0] }}
-        transition={
-          reduceMotion
-            ? { duration: 0.4 }
-            : {
-                type: 'spring',
-                stiffness: 300,
-                damping: 20,
-                repeat: Infinity,
-                repeatType: 'reverse',
-                duration: 4,
-                repeatDelay: 2,
-              }
-        }
+        transition={reduceMotion ? { duration: 0.4 } : { type: 'spring', stiffness: 300, damping: 20 }}
       >
         {imageUrl && !hasError ? (
           <img

@@ -54,17 +54,30 @@ async function getTestimonial(id) {
 
 async function createTestimonial(data, file, circularFile) {
   const createData = { ...data }
+  let uploadedPaths = []
+
   if (file) {
     const uploaded = await uploadFile(file.buffer, file.mimetype, 'testimonials')
     createData.photoUrl = uploaded.url
     createData.publicId = uploaded.path
+    uploadedPaths.push(uploaded.path)
   }
   if (circularFile) {
     const uploaded = await uploadFile(circularFile.buffer, circularFile.mimetype, 'testimonials')
     createData.homepageCircularImage = uploaded.url
     createData.homepageCircularImageId = uploaded.path
+    uploadedPaths.push(uploaded.path)
   }
-  const item = await prisma.testimonial.create({ data: createData })
+
+  let item
+  try {
+    item = await prisma.testimonial.create({ data: createData })
+  } catch (err) {
+    if (uploadedPaths.length > 0) {
+      deleteFiles(uploadedPaths).catch(() => {})
+    }
+    throw err
+  }
   return mapTestimonial(item)
 }
 
@@ -73,18 +86,22 @@ async function updateTestimonial(id, data, file, circularFile, removeHomepageCir
   if (!existing) throw failure(404, 'Testimonial not found')
 
   const updateData = { ...data }
+  let newUploadedPaths = []
+
   if (file) {
     if (existing.publicId) await deleteFile(existing.publicId)
     const uploaded = await uploadFile(file.buffer, file.mimetype, 'testimonials')
     updateData.photoUrl = uploaded.url
     updateData.publicId = uploaded.path
+    newUploadedPaths.push(uploaded.path)
   }
   if (circularFile) {
     if (existing.homepageCircularImageId) await deleteFile(existing.homepageCircularImageId)
     const uploaded = await uploadFile(circularFile.buffer, circularFile.mimetype, 'testimonials')
     updateData.homepageCircularImage = uploaded.url
     updateData.homepageCircularImageId = uploaded.path
-   } else if (removeHomepageCircularImage) {
+    newUploadedPaths.push(uploaded.path)
+  } else if (removeHomepageCircularImage) {
     if (existing.homepageCircularImageId) await deleteFile(existing.homepageCircularImageId)
     updateData.homepageCircularImage = null
     updateData.homepageCircularImageId = null
@@ -94,7 +111,16 @@ async function updateTestimonial(id, data, file, circularFile, removeHomepageCir
     updateData.photoUrl = null
     updateData.publicId = null
   }
-  const item = await prisma.testimonial.update({ where: { id }, data: updateData })
+
+  let item
+  try {
+    item = await prisma.testimonial.update({ where: { id }, data: updateData })
+  } catch (err) {
+    if (newUploadedPaths.length > 0) {
+      deleteFiles(newUploadedPaths).catch(() => {})
+    }
+    throw err
+  }
   return mapTestimonial(item)
 }
 

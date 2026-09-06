@@ -1,5 +1,6 @@
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { blogService } from '../services/blogService.js'
+import { invalidateCachePattern } from '../utils/cache.js'
 import { failure } from '../utils/response.js'
 
 export const blogController = {
@@ -96,9 +97,11 @@ export const blogController = {
        publishDate: req.body.publishDate ? new Date(req.body.publishDate) : null,
      }
 
-     const item = await blogService.createBlog(data, imageFile, videoFile, contentFiles, homepageCircularImageFile)
-     res.status(201).json({ success: true, data: item })
-   }),
+      const item = await blogService.createBlog(data, imageFile, videoFile, contentFiles, homepageCircularImageFile)
+      invalidateCachePattern('blog')
+      invalidateCachePattern('homepage')
+      res.status(201).json({ success: true, data: item })
+    }),
 
    update: asyncHandler(async (req, res) => {
     const imageFile = req.files?.image?.[0] || null
@@ -132,11 +135,15 @@ export const blogController = {
     }
 
     const item = await blogService.updateBlog(req.params.id, data, imageFile, videoFile, contentFiles, removeMediaUrls, homepageCircularImageFile, removeHomepageCircularImage)
+    invalidateCachePattern('blog')
+    invalidateCachePattern('homepage')
     res.json({ success: true, data: item })
   }),
 
   delete: asyncHandler(async (req, res) => {
     await blogService.deleteBlog(req.params.id)
+    invalidateCachePattern('blog')
+    invalidateCachePattern('homepage')
     res.json({ success: true, data: { message: 'Deleted' } })
   }),
 }

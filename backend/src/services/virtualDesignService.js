@@ -62,6 +62,7 @@ async function getVirtualDesign(id) {
 async function createVirtualDesign(data, file, galleryFiles, circularFile = null) {
   const createData = { ...data }
   const mediaUrls = []
+  let uploadedPaths = []
 
   const uploadPromises = []
   for (const f of galleryFiles) {
@@ -79,6 +80,7 @@ async function createVirtualDesign(data, file, galleryFiles, circularFile = null
     const uploaded = await uploadFile(file.buffer, file.mimetype, 'virtual-designs')
     createData.imageUrl = uploaded.url
     createData.cloudinaryId = uploaded.path
+    uploadedPaths.push(uploaded.path)
   } else if (!createData.imageUrl && mediaUrls.length > 0) {
     createData.imageUrl = mediaUrls[0]
   }
@@ -87,9 +89,18 @@ async function createVirtualDesign(data, file, galleryFiles, circularFile = null
     const uploaded = await uploadFile(circularFile.buffer, circularFile.mimetype, 'virtual-designs')
     createData.homepageCircularImage = uploaded.url
     createData.homepageCircularImageId = uploaded.path
+    uploadedPaths.push(uploaded.path)
   }
 
-  const item = await prisma.virtualDesign.create({ data: createData })
+  let item
+  try {
+    item = await prisma.virtualDesign.create({ data: createData })
+  } catch (err) {
+    if (uploadedPaths.length > 0) {
+      deleteFiles(uploadedPaths).catch(() => {})
+    }
+    throw err
+  }
   return mapVD(item)
 }
 
@@ -98,12 +109,14 @@ async function updateVirtualDesign(id, data, file, galleryFiles, circularFile = 
   if (!existing) throw failure(404, 'Virtual design not found')
 
   const updateData = { ...data }
+  let newUploadedPaths = []
 
   if (file) {
     if (existing.cloudinaryId) await deleteFile(existing.cloudinaryId)
     const uploaded = await uploadFile(file.buffer, file.mimetype, 'virtual-designs')
     updateData.imageUrl = uploaded.url
     updateData.cloudinaryId = uploaded.path
+    newUploadedPaths.push(uploaded.path)
   }
 
   if (circularFile) {
@@ -111,6 +124,7 @@ async function updateVirtualDesign(id, data, file, galleryFiles, circularFile = 
     const uploaded = await uploadFile(circularFile.buffer, circularFile.mimetype, 'virtual-designs')
     updateData.homepageCircularImage = uploaded.url
     updateData.homepageCircularImageId = uploaded.path
+    newUploadedPaths.push(uploaded.path)
   }
 
   // Build the final mediaUrls: existing URLs the client wants to keep + newly uploaded files.
@@ -144,7 +158,15 @@ async function updateVirtualDesign(id, data, file, galleryFiles, circularFile = 
     updateData.mediaUrls = keptUrls
   }
 
-  const item = await prisma.virtualDesign.update({ where: { id }, data: updateData })
+  let item
+  try {
+    item = await prisma.virtualDesign.update({ where: { id }, data: updateData })
+  } catch (err) {
+    if (newUploadedPaths.length > 0) {
+      deleteFiles(newUploadedPaths).catch(() => {})
+    }
+    throw err
+  }
   return mapVD(item)
 }
 

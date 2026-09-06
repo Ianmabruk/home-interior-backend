@@ -4,6 +4,7 @@ import { Star, Quote, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api } from '@services/api'
 import { PageMeta } from '@hooks/usePageMeta'
+import { getOptimizedUrl, buildSrcSet } from '@utils/cloudinaryHelpers'
 
 const SkeletonTestimonials = () => (
   <main>
@@ -160,10 +161,13 @@ export const TestimonialsPage = () => {
                         onClick={() => openLightbox(i)}
                       >
                         <img
-                          src={t.photoUrl}
+                          src={getOptimizedUrl(t.photoUrl, { width: 800, crop: 'fill' })}
+                          srcSet={buildSrcSet(t.photoUrl) || undefined}
+                          sizes="(max-width: 768px) 80vw, (max-width: 1024px) 40vw, 33vw"
                           alt={t.clientName || 'Testimonial'}
                           className="w-full h-auto object-contain rounded-xl transition-transform duration-300 group-hover:scale-[1.02]"
                           loading="lazy"
+                          decoding="async"
                         />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100">
                           <span className="text-white text-xs font-medium">Click to view full image</span>
@@ -173,7 +177,7 @@ export const TestimonialsPage = () => {
                       <div className="flex items-center gap-4 mb-4">
                         <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[var(--accent)]/10 to-[var(--secondary)]/40 flex items-center justify-center overflow-hidden flex-shrink-0">
                           {t.photoUrl ? (
-                            <img src={t.photoUrl} alt={t.clientName} className="w-full h-full object-cover" loading="lazy" />
+                            <img src={getOptimizedUrl(t.photoUrl, { width: 200, crop: 'fill' })} alt={t.clientName} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                           ) : (
                             <span className="text-[var(--accent)] text-lg font-semibold">
                               {(t.clientName || 'U').charAt(0).toUpperCase()}
@@ -265,16 +269,18 @@ export const TestimonialsPage = () => {
               className="relative max-h-[90vh] max-w-[90vw] flex items-center justify-center"
               onClick={(e) => e.stopPropagation()}
             >
-              <motion.img
-                key={lightboxIndex}
-                src={lightboxImages[lightboxIndex]}
-                alt="Testimonial"
-                className="max-h-[90vh] max-w-[90vw] object-contain"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.3 }}
-              />
+               <motion.img
+                 key={lightboxIndex}
+                 src={getOptimizedUrl(lightboxImages[lightboxIndex], { width: 2560, crop: 'limit' })}
+                 srcSet={buildSrcSet(lightboxImages[lightboxIndex]) || undefined}
+                 sizes="90vw"
+                 alt="Testimonial"
+                 className="max-h-[90vh] max-w-[90vw] object-contain"
+                 initial={{ opacity: 0, scale: 0.95 }}
+                 animate={{ opacity: 1, scale: 1 }}
+                 exit={{ opacity: 0, scale: 0.95 }}
+                 transition={{ duration: 0.3 }}
+               />
             </div>
 
             {lightboxImages.length > 1 && (

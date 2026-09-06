@@ -1,5 +1,6 @@
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { testimonialService } from '../services/testimonialService.js'
+import { invalidateCachePattern } from '../utils/cache.js'
 
 export const testimonialController = {
   list: asyncHandler(async (req, res) => {
@@ -24,6 +25,8 @@ export const testimonialController = {
       initial: req.body.initial || '',
     }
     const item = await testimonialService.createTestimonial(data, photoFile, circularFile)
+    invalidateCachePattern('testimonial')
+    invalidateCachePattern('homepage')
     res.status(201).json({ success: true, data: item })
   }),
 
@@ -41,17 +44,23 @@ export const testimonialController = {
     if (req.body.initial !== undefined) data.initial = req.body.initial
     const removePhoto = req.body.removePhoto === 'true'
     const item = await testimonialService.updateTestimonial(req.params.id, data, photoFile, circularFile, removeHomepageCircularImage, removePhoto)
+    invalidateCachePattern('testimonial')
+    invalidateCachePattern('homepage')
     res.json({ success: true, data: item })
   }),
 
   delete: asyncHandler(async (req, res) => {
     await testimonialService.deleteTestimonial(req.params.id)
+    invalidateCachePattern('testimonial')
+    invalidateCachePattern('homepage')
     res.json({ success: true, data: { message: 'Deleted' } })
   }),
 
   reorder: asyncHandler(async (req, res) => {
     const orderedIds = Array.isArray(req.body.orderedIds) ? req.body.orderedIds : []
     const items = await testimonialService.reorderTestimonials(orderedIds)
+    invalidateCachePattern('testimonial')
+    invalidateCachePattern('homepage')
     res.json({ success: true, data: items })
   }),
 }

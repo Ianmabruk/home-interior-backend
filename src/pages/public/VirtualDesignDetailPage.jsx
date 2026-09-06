@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, ArrowRight, X, Loader2, Send } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '@services/api'
-import { getOptimizedUrl } from '@utils/cloudinaryHelpers'
+import { getOptimizedUrl, buildSrcSet } from '@utils/cloudinaryHelpers'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '@utils/adminEvents'
 import { PageMeta } from '@hooks/usePageMeta'
 import { useZoom } from '@hooks/useZoom'
@@ -29,7 +29,7 @@ export const VirtualDesignDetailPage = () => {
     preferredTime: '',
   })
 
-  const { style: zoomStyle, handleWheel, handleMouseDown, handleTouchStart, handleTouchEnd } = useZoom()
+  const { style: zoomStyle, handleWheel, handleMouseDown, handleTouchStart, handleTouchEnd, activate: activateZoom, deactivate: deactivateZoom } = useZoom()
 
   const loadDesign = useCallback(async () => {
     if (!id) return
@@ -117,13 +117,13 @@ export const VirtualDesignDetailPage = () => {
   useEffect(() => {
     if (!lightboxOpen) return
     const onKeyDown = (e) => {
-      if (e.key === 'Escape') { setLightboxOpen(false) }
+      if (e.key === 'Escape') { setLightboxOpen(false); deactivateZoom() }
       if (e.key === 'ArrowRight') { setCurrentImageIndex((prev) => (prev + 1) % images.length) }
       if (e.key === 'ArrowLeft') { setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length) }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [lightboxOpen, images.length])
+   }, [lightboxOpen, images.length, deactivateZoom])
 
   if (loading) {
     return (
@@ -166,15 +166,19 @@ export const VirtualDesignDetailPage = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  onClick={() => { setCurrentImageIndex(index); setLightboxOpen(true) }}
+                  onClick={() => { setCurrentImageIndex(index); setLightboxOpen(true); activateZoom() }}
                   className="relative aspect-[4/3] group rounded-2xl overflow-hidden bg-[var(--secondary)]/40 border border-[var(--border)]/20 transition-all duration-300 hover:border-[var(--accent)]/30"
                   aria-label={`View image ${index + 1}`}
                 >
                   <img
                     src={getOptimizedUrl(img, { width: 600, crop: 'fill' })}
+                    srcSet={buildSrcSet(img) || undefined}
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     alt={`${design.title} - Image ${index + 1}`}
                     className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
-                    loading={index < 6 ? 'lazy' : 'lazy'}
+                    loading="lazy"
+                    decoding="async"
+                    fetchPriority={index === 0 ? 'high' : 'low'}
                   />
                 </motion.button>
               ))}
@@ -459,13 +463,13 @@ export const VirtualDesignDetailPage = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-[var(--primary)]/95 backdrop-blur-sm flex items-center justify-center"
-            onClick={() => setLightboxOpen(false)}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Fullscreen gallery"
-          >
-             <button
-              onClick={() => setLightboxOpen(false)}
+             onClick={() => { setLightboxOpen(false); deactivateZoom() }}
+             role="dialog"
+             aria-modal="true"
+             aria-label="Fullscreen gallery"
+           >
+            <button
+              onClick={() => { setLightboxOpen(false); deactivateZoom() }}
               className="absolute top-6 left-6 z-10 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
               aria-label="Close gallery"
             >
@@ -513,16 +517,18 @@ export const VirtualDesignDetailPage = () => {
               className="relative max-h-[90vh] max-w-[90vw]"
             >
               <AnimatePresence mode="wait">
-                <motion.img
-                  key={currentImageIndex}
-                  src={getOptimizedUrl(images[currentImageIndex], { width: 2560, crop: 'limit' })}
-                  alt={`${design.title} - Image ${currentImageIndex + 1}`}
-                  className="max-h-[90vh] max-w-[90vw] object-contain"
-                  initial={{ opacity: 0, scale: 1.05 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                />
+                 <motion.img
+                   key={currentImageIndex}
+                   src={getOptimizedUrl(images[currentImageIndex], { width: 2560, crop: 'limit' })}
+                   srcSet={buildSrcSet(images[currentImageIndex]) || undefined}
+                   sizes="90vw"
+                   alt={`${design.title} - Image ${currentImageIndex + 1}`}
+                   className="max-h-[90vh] max-w-[90vw] object-contain"
+                   initial={{ opacity: 0, scale: 1.05 }}
+                   animate={{ opacity: 1, scale: 1 }}
+                   exit={{ opacity: 0, scale: 0.95 }}
+                   transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                 />
               </AnimatePresence>
             </div>
 

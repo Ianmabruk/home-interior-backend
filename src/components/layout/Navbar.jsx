@@ -333,14 +333,22 @@ export const Navbar = memo(() => {
 
   useEffect(() => {
     if (prefersReducedMotion) return
+    let animationFrame = null
     const handleMouseMove = (event) => {
-      const { innerWidth, innerHeight } = window
-      const x = (event.clientX / innerWidth - 0.5) * 2
-      const y = (event.clientY / innerHeight - 0.5) * 2
-      setMousePos({ x, y })
+      if (animationFrame) return
+      animationFrame = requestAnimationFrame(() => {
+        const { innerWidth, innerHeight } = window
+        const x = (event.clientX / innerWidth - 0.5) * 2
+        const y = (event.clientY / innerHeight - 0.5) * 2
+        setMousePos({ x, y })
+        animationFrame = null
+      })
     }
     window.addEventListener('mousemove', handleMouseMove, { passive: true })
-    return () => window.removeEventListener('mousemove', handleMouseMove)
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      if (animationFrame) cancelAnimationFrame(animationFrame)
+    }
   }, [prefersReducedMotion])
 
   // Escape closes any open overlay (cart, user menu, mobile menu)

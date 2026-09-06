@@ -1,5 +1,6 @@
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { portfolioService } from '../services/portfolioService.js'
+import { invalidateCachePattern } from '../utils/cache.js'
 import { failure } from '../utils/response.js'
 
 function normalizeStringArray(val) {
@@ -47,6 +48,8 @@ export const portfolioController = {
     } else if (elapsed > 5000) {
       console.warn(`[portfolio] create took ${elapsed}ms — investigate performance`)
     }
+    invalidateCachePattern('portfolio')
+    invalidateCachePattern('homepage')
     res.status(201).json({ success: true, data: item })
   }),
 
@@ -75,11 +78,15 @@ export const portfolioController = {
     } else if (elapsed > 5000) {
       console.warn(`[portfolio] update took ${elapsed}ms — investigate performance`)
     }
+    invalidateCachePattern('portfolio')
+    invalidateCachePattern('homepage')
     res.json({ success: true, data: item })
   }),
 
   delete: asyncHandler(async (req, res) => {
     await portfolioService.deletePortfolio(req.params.id)
+    invalidateCachePattern('portfolio')
+    invalidateCachePattern('homepage')
     res.json({ success: true, data: { message: 'Deleted' } })
   }),
 
@@ -91,6 +98,8 @@ export const portfolioController = {
     }
     const items = projects.map((p) => ({ id: p?.id, displayOrder: Number(p?.displayOrder) }))
     const updated = await portfolioService.reorderPortfolioProjects(items)
+    invalidateCachePattern('portfolio')
+    invalidateCachePattern('homepage')
     res.json({ success: true, data: updated })
   }),
 
@@ -118,6 +127,8 @@ export const portfolioController = {
       })
     }
     const item = await portfolioService.reorderPortfolioImages(req.params.id, orderList)
+    invalidateCachePattern('portfolio')
+    invalidateCachePattern('homepage')
     res.json({ success: true, data: item })
   }),
 }

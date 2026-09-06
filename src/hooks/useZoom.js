@@ -4,6 +4,7 @@ export function useZoom() {
   const [scale, setScale] = useState(1)
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
+  const [isActive, setIsActive] = useState(false)
   const dragStartRef = useRef({ x: 0, y: 0 })
   const initialPositionRef = useRef({ x: 0, y: 0 })
   const initialScaleRef = useRef(1)
@@ -89,7 +90,16 @@ export function useZoom() {
     setIsDragging(false)
   }, [])
 
+  const activate = useCallback(() => {
+    setIsActive(true)
+  }, [])
+
+  const deactivate = useCallback(() => {
+    setIsActive(false)
+  }, [])
+
   useEffect(() => {
+    if (!isActive) return
     window.addEventListener('mousemove', handleMouseMove)
     window.addEventListener('mouseup', handleMouseUp)
     window.addEventListener('touchmove', handleTouchMove, { passive: false })
@@ -100,7 +110,7 @@ export function useZoom() {
       window.removeEventListener('touchmove', handleTouchMove)
       window.removeEventListener('touchend', handleTouchEnd)
     }
-  }, [handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd])
+  }, [handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd, isActive])
 
   const style = {
     transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
@@ -121,5 +131,8 @@ export function useZoom() {
     handleMouseDown,
     handleTouchStart,
     handleTouchEnd,
+    isActive,
+    activate,
+    deactivate,
   }
 }

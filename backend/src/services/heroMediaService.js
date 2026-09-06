@@ -49,6 +49,7 @@ async function getHeroMedia(id) {
 async function createHeroMedia(data, files = []) {
   const createData = { ...data }
   const mediaUrls = []
+  let uploadedPaths = []
 
   if (files.length > 0) {
     const uploadPromises = files.map((f) => uploadFile(f.buffer, f.mimetype, 'homepage/hero'))
@@ -56,6 +57,7 @@ async function createHeroMedia(data, files = []) {
     results.forEach((result) => {
       if (result.status === 'fulfilled') {
         mediaUrls.push(result.value.url)
+        if (result.value.path) uploadedPaths.push(result.value.path)
       }
     })
   }
@@ -64,7 +66,16 @@ async function createHeroMedia(data, files = []) {
     createData.imageUrl = mediaUrls[0]
     createData.mediaUrls = mediaUrls
   }
-  const item = await prisma.heroMedia.create({ data: createData })
+
+  let item
+  try {
+    item = await prisma.heroMedia.create({ data: createData })
+  } catch (err) {
+    if (uploadedPaths.length > 0) {
+      deleteFiles(uploadedPaths).catch(() => {})
+    }
+    throw err
+  }
   return mapHero(item)
 }
 
@@ -73,6 +84,7 @@ async function updateHeroMedia(id, data, files = []) {
   if (!existing) throw failure(404, 'Hero media not found')
 
   const updateData = { ...data }
+  let newUploadedPaths = []
 
   if (files.length > 0) {
     const oldUrls = existing.mediaUrls || []
@@ -85,12 +97,22 @@ async function updateHeroMedia(id, data, files = []) {
     results.forEach((result) => {
       if (result.status === 'fulfilled') {
         mediaUrls.push(result.value.url)
+        if (result.value.path) newUploadedPaths.push(result.value.path)
       }
     })
     updateData.mediaUrls = mediaUrls
     updateData.imageUrl = mediaUrls[0]
   }
-  const item = await prisma.heroMedia.update({ where: { id }, data: updateData })
+
+  let item
+  try {
+    item = await prisma.heroMedia.update({ where: { id }, data: updateData })
+  } catch (err) {
+    if (newUploadedPaths.length > 0) {
+      deleteFiles(newUploadedPaths).catch(() => {})
+    }
+    throw err
+  }
   return mapHero(item)
 }
 

@@ -170,10 +170,11 @@ export const PortfolioPage = memo(() => {
                               sizes={buildSrcSet(heroImage) ? '(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw' : undefined}
                               alt={item.title}
                               className="h-full w-full object-contain transition-transform duration-700 group-hover:scale-105"
-                              loading={index < 4 ? 'eager' : 'lazy'}
-                              decoding="async"
-                              width={600}
-                              height={800}
+                               loading={index < 4 ? 'eager' : 'lazy'}
+                               decoding="async"
+                               fetchPriority={index === 0 ? 'high' : undefined}
+                               width={600}
+                               height={800}
                             />
                           ) : (
                             <div className="h-full w-full flex items-center justify-center text-[var(--primary)]/20">

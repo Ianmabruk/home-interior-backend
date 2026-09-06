@@ -1,5 +1,6 @@
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { heroMediaService } from '../services/heroMediaService.js'
+import { invalidateCachePattern } from '../utils/cache.js'
 import { failure } from '../utils/response.js'
 
 export const heroMediaController = {
@@ -22,6 +23,8 @@ export const heroMediaController = {
       displayOrder: Number(req.body.displayOrder) || 0,
     }
     const item = await heroMediaService.createHeroMedia(data, files)
+    invalidateCachePattern('hero')
+    invalidateCachePattern('homepage')
     res.status(201).json({ success: true, data: item })
   }),
 
@@ -33,11 +36,15 @@ export const heroMediaController = {
     if (req.body.isActive !== undefined) data.isActive = req.body.isActive === 'true' || req.body.isActive === true
     if (req.body.displayOrder !== undefined) data.displayOrder = Number(req.body.displayOrder) || 0
     const item = await heroMediaService.updateHeroMedia(req.params.id, data, files)
+    invalidateCachePattern('hero')
+    invalidateCachePattern('homepage')
     res.json({ success: true, data: item })
   }),
 
   delete: asyncHandler(async (req, res) => {
     const result = await heroMediaService.deleteHeroMedia(req.params.id)
+    invalidateCachePattern('hero')
+    invalidateCachePattern('homepage')
     res.json({ success: true, data: result })
   }),
 }

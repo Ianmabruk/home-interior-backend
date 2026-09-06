@@ -1,12 +1,13 @@
-import { useState, useEffect, useCallback, memo } from 'react'
+import { useState, useEffect, useCallback, memo, Suspense, lazy } from 'react'
 import { Link } from 'react-router-dom'
 import { HeroSection } from '@components/home/HeroSection'
-import { CircularNavigationGrid } from '@components/home/CircularNavigationGrid'
-import { MobileCircularNavigation } from '@components/home/MobileCircularNavigation'
 import { SectionErrorBoundary } from '@components/home/SectionErrorBoundary'
 import { api, clearApiCache } from '@services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '@utils/adminEvents'
 import { PageMeta } from '@hooks/usePageMeta'
+
+const CircularNavigationGrid = lazy(() => import('@components/home/CircularNavigationGrid'))
+const MobileCircularNavigation = lazy(() => import('@components/home/MobileCircularNavigation'))
 
 const SkeletonHero = memo(() => (
   <section className="relative w-full h-screen min-h-[700px] overflow-hidden bg-[var(--primary)]" role="region" aria-label="Hero image">
@@ -28,71 +29,67 @@ export const HomePage = memo(() => {
     const [heroImages, setHeroImages] = useState([])
     const [circularTabs, setCircularTabs] = useState({})
 
-  const loadCircularTabs = useCallback(async () => {
+  const loadData = useCallback(async (signal) => {
     try {
-      const res = await api.get('/circular-tabs')
-      setCircularTabs(res.data || {})
-    } catch {
-      setCircularTabs({})
-    }
-  }, [])
+      const [homeRes, circularRes] = await Promise.allSettled([
+        api.get('/homepage', { signal }),
+        api.get('/circular-tabs', { signal }),
+      ])
 
-  const loadData = useCallback(async () => {
-    try {
-      const homeRes = await api.get('/homepage')
-      const data = homeRes.data || {}
-
-      const homeHeroImages = data.heroImages || data.heroMedia || []
-      if (Array.isArray(homeHeroImages) && homeHeroImages.length > 0) {
-        setHeroImages(homeHeroImages)
-      } else {
-        const heroRes = await api.get('/hero-media')
-        const heroData = heroRes.data
-        const heroList = Array.isArray(heroData) ? heroData : []
-        setHeroImages(heroList)
-      }
-    } catch (err) {
-      console.warn('[HOME] Failed to load data, fetching individual endpoints:', err?.message)
-      try {
-        const [heroRes] = await Promise.allSettled([
-          api.get('/hero-media'),
-        ])
-        if (heroRes.status === 'fulfilled') {
-          const heroData = heroRes.value.data
-          const heroList = Array.isArray(heroData) ? heroData : (heroData || [])
+      if (homeRes.status === 'fulfilled') {
+        const data = homeRes.value.data || {}
+        const homeHeroImages = data.heroImages || data.heroMedia || []
+        if (Array.isArray(homeHeroImages) && homeHeroImages.length > 0) {
+          setHeroImages(homeHeroImages)
+        } else {
+          const heroRes2 = await api.get('/hero-media', { signal })
+          const heroData = heroRes2.data
+          const heroList = Array.isArray(heroData) ? heroData : []
           setHeroImages(heroList)
         }
-      } catch (fallbackErr) {
-        console.warn('[HOME] Fallback fetch failed:', fallbackErr?.message)
+      } else {
+        const heroRes2 = await api.get('/hero-media', { signal })
+        const heroData = heroRes2.data
+        const heroList = Array.isArray(heroData) ? heroData : (heroData || [])
+        setHeroImages(heroList)
+      }
+
+      if (circularRes.status === 'fulfilled') {
+        setCircularTabs(circularRes.value.data || {})
+      }
+    } catch (err) {
+      if (err?.name !== 'CanceledError' && err?.code !== 'ERR_CANCELED') {
+        console.warn('[HOME] Failed to load data:', err?.message)
       }
     } finally {
-      // loading state removed — hero renders immediately
+      clearApiCache('/homepage')
     }
   }, [])
 
-useEffect(() => {
-    loadData()
-    loadCircularTabs()
-  }, [loadData, loadCircularTabs])
+  useEffect(() => {
+    const controller = new AbortController()
+    loadData(controller.signal)
+    return () => controller.abort()
+  }, [loadData])
 
   useEffect(() => {
     const handler = (event) => {
       const payload = getAdminDataChangedPayload(event)
       if (
         payload?.type === 'hero-images-changed' ||
-        payload?.type === 'settings-changed'
+        payload?.type === 'settings-changed' ||
+        payload?.type === 'circular-tabs-changed'
       ) {
+        if (payload?.type === 'circular-tabs-changed') {
+          clearApiCache('/circular-tabs')
+        }
         clearApiCache('/homepage')
         loadData()
-      }
-      if (payload?.type === 'circular-tabs-changed') {
-        clearApiCache('/circular-tabs')
-        loadCircularTabs()
       }
     }
     window.addEventListener(ADMIN_DATA_CHANGED_EVENT, handler)
     return () => window.removeEventListener(ADMIN_DATA_CHANGED_EVENT, handler)
-  }, [loadData, loadCircularTabs])
+  }, [loadData])
 
   return (
     <main>
@@ -107,15 +104,19 @@ useEffect(() => {
         <HeroSection heroImages={heroImages} className="w-full" />
       </SectionErrorBoundary>
 
-      {/* CIRCULAR NAVIGATION */}
-      <SectionErrorBoundary sectionName="CircularNavigation" fallback={<EmptySection />}>
-        <CircularNavigationGrid circularTabs={circularTabs} />
-      </SectionErrorBoundary>
+       {/* CIRCULAR NAVIGATION */}
+       <SectionErrorBoundary sectionName="CircularNavigation" fallback={<EmptySection />}>
+         <Suspense fallback={<EmptySection />}>
+           <CircularNavigationGrid circularTabs={circularTabs} />
+         </Suspense>
+       </SectionErrorBoundary>
 
-      {/* MOBILE CIRCULAR NAVIGATION */}
-      <SectionErrorBoundary sectionName="MobileCircularNavigation" fallback={<EmptySection />}>
-        <MobileCircularNavigation circularTabs={circularTabs} />
-      </SectionErrorBoundary>
+       {/* MOBILE CIRCULAR NAVIGATION */}
+       <SectionErrorBoundary sectionName="MobileCircularNavigation" fallback={<EmptySection />}>
+         <Suspense fallback={<EmptySection />}>
+           <MobileCircularNavigation circularTabs={circularTabs} />
+         </Suspense>
+       </SectionErrorBoundary>
 
       {/* INTERNAL LINKS */}
       <section className="bg-[var(--bg)] px-6 md:px-12 lg:px-20 py-12">

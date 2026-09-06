@@ -100,6 +100,7 @@ async function createProduct(data, files, variantFiles = []) {
   const createData = { ...data }
   const images = []
   const storagePaths = []
+  let uploadedPaths = []
 
   if (Array.isArray(files)) {
     const uploadPromises = files.map((f) => uploadFile(f.buffer, f.mimetype, 'products'))
@@ -107,7 +108,10 @@ async function createProduct(data, files, variantFiles = []) {
     results.forEach((result) => {
       if (result.status === 'fulfilled') {
         images.push(result.value.url)
-        if (result.value.path) storagePaths.push(result.value.path)
+        if (result.value.path) {
+          storagePaths.push(result.value.path)
+          uploadedPaths.push(result.value.path)
+        }
       }
     })
   }
@@ -128,36 +132,49 @@ async function createProduct(data, files, variantFiles = []) {
   const rawVariants = Array.isArray(data.variants) ? data.variants : []
   delete createData.variants
 
-  const item = await prisma.product.create({
-    data: {
-      ...createData,
-      variants: {
-        create: await Promise.all(
-          rawVariants.map(async (v, idx) => {
-            const imageFiles = variantFiles.filter((vf) => vf && vf.index === idx)
-            let image = v.image || ''
-            let storagePath = v.storagePath || ''
-            if (imageFiles.length > 0) {
-              const uploaded = await uploadFile(imageFiles[0].buffer, imageFiles[0].mimetype, 'product-variants')
-              image = uploaded.url
-              if (uploaded.path) storagePath = uploaded.path
-            }
-            return {
-              color: v.color || 'Default',
-              image: image || null,
-              stock: Number(v.stock) || 0,
-              price: v.price ? Number(v.price) : null,
-              storagePath: storagePath || null,
-            }
-          }),
-        ),
+  let item
+  try {
+    item = await prisma.product.create({
+      data: {
+        ...createData,
+        variants: {
+          create: await Promise.all(
+            rawVariants.map(async (v, idx) => {
+              const imageFiles = variantFiles.filter((vf) => vf && vf.index === idx)
+              let image = v.image || ''
+              let storagePath = v.storagePath || ''
+              if (imageFiles.length > 0) {
+                const uploaded = await uploadFile(imageFiles[0].buffer, imageFiles[0].mimetype, 'product-variants')
+                image = uploaded.url
+                if (uploaded.path) {
+                  storagePath = uploaded.path
+                  uploadedPaths.push(uploaded.path)
+                }
+              }
+              return {
+                color: v.color || 'Default',
+                image: image || null,
+                stock: Number(v.stock) || 0,
+                price: v.price ? Number(v.price) : null,
+                storagePath: storagePath || null,
+              }
+            }),
+          ),
+        },
       },
-    },
-    include: { variants: true },
-  })
+      include: { variants: true },
+    })
+  } catch (err) {
+    // Clean up uploaded files if DB creation fails
+    if (uploadedPaths.length > 0) {
+      deleteFiles(uploadedPaths).catch(() => {})
+    }
+    throw err
+  }
 
   // Invalidate products cache after creation
-  invalidateCache('products:list')
+  invalidateCachePattern('products:list')
+  invalidateCachePattern('products:')
   return mapProduct(item)
 }
 
@@ -169,6 +186,7 @@ async function updateProduct(id, data, files, variantFiles = []) {
   if (!existing) throw failure(404, 'Product not found')
 
   const updateData = { ...data }
+  let newUploadedPaths = []
 
   if (Array.isArray(files) && files.length > 0) {
     const uploadPromises = files.map((f) => uploadFile(f.buffer, f.mimetype, 'products'))
@@ -178,7 +196,10 @@ async function updateProduct(id, data, files, variantFiles = []) {
     results.forEach((result) => {
       if (result.status === 'fulfilled') {
         newImages.push(result.value.url)
-        if (result.value.path) newStoragePaths.push(result.value.path)
+        if (result.value.path) {
+          newStoragePaths.push(result.value.path)
+          newUploadedPaths.push(result.value.path)
+        }
       }
     })
     const images = [...newImages, ...(existing.images || [])]
@@ -216,7 +237,10 @@ async function updateProduct(id, data, files, variantFiles = []) {
         if (imageFiles.length > 0) {
           const uploaded = await uploadFile(imageFiles[0].buffer, imageFiles[0].mimetype, 'product-variants')
           image = uploaded.url
-          if (uploaded.path) storagePath = uploaded.path
+          if (uploaded.path) {
+            storagePath = uploaded.path
+            newUploadedPaths.push(uploaded.path)
+          }
         }
         return {
           color: v.color || 'Default',
@@ -228,51 +252,47 @@ async function updateProduct(id, data, files, variantFiles = []) {
       }),
     )
 
-    await prisma.productVariant.deleteMany({ where: { productId: id } })
-    if (oldVariantPaths.length > 0) {
-      await deleteFiles(oldVariantPaths)
-    }
+    try {
+      await prisma.productVariant.deleteMany({ where: { productId: id } })
+      if (oldVariantPaths.length > 0) {
+        await deleteFiles(oldVariantPaths)
+      }
 
-    updatedItem = await prisma.product.update({
-      where: { id },
-      data: {
-        ...updateData,
-        variants: {
-          create: newVariants,
+      updatedItem = await prisma.product.update({
+        where: { id },
+        data: {
+          ...updateData,
+          variants: {
+            create: newVariants,
+          },
         },
-      },
-      include: { variants: true },
-    })
+        include: { variants: true },
+      })
+    } catch (err) {
+      // Clean up newly uploaded files if DB update fails
+      if (newUploadedPaths.length > 0) {
+        deleteFiles(newUploadedPaths).catch(() => {})
+      }
+      throw err
+    }
   } else {
-    updatedItem = await prisma.product.update({
-      where: { id },
-      data: updateData,
-      include: { variants: true },
-    })
+    try {
+      updatedItem = await prisma.product.update({
+        where: { id },
+        data: updateData,
+        include: { variants: true },
+      })
+    } catch (err) {
+      if (newUploadedPaths.length > 0) {
+        deleteFiles(newUploadedPaths).catch(() => {})
+      }
+      throw err
+    }
   }
 
+  invalidateCachePattern('products:list')
+  invalidateCachePattern('products:')
   return mapProduct(updatedItem)
-}
-
-async function deleteProduct(id) {
-  const existing = await prisma.product.findUnique({
-    where: { id },
-    include: { variants: true },
-  })
-  if (!existing) throw failure(404, 'Product not found')
-
-  const pathsToDelete = [
-    ...(existing.storagePaths || []),
-    ...(existing.variants || []).map((v) => v.storagePath).filter(Boolean),
-  ]
-
-  try {
-    await deleteFiles(pathsToDelete)
-  } catch {
-    // best effort cleanup
-  }
-
-  await prisma.product.delete({ where: { id } })
 }
 
 async function deleteProductImage(id, imageId) {

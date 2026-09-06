@@ -110,6 +110,9 @@ const PrefetchOnIdle = () => {
       () => import('@pages/public/AboutPage'),
       () => import('@pages/public/WorkWithUsPage'),
       () => import('@pages/public/TestimonialsPage'),
+      () => import('@pages/public/BlogPage'),
+      () => import('@pages/public/SocialsPage'),
+      () => import('@pages/public/ContactPage'),
     ]
 
     const idleCallback = window.requestIdleCallback || ((cb) => setTimeout(cb, 1000))

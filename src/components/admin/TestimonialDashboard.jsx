@@ -12,6 +12,7 @@ import {
 import { toast } from 'react-hot-toast'
 import { api } from '../../services/api'
 import { dispatchAdminDataChanged } from '../../utils/adminEvents'
+import { getOptimizedUrl, buildSrcSet } from '../../utils/cloudinaryHelpers'
 
 export const TestimonialDashboard = () => {
   const [testimonials, setTestimonials] = useState([])
@@ -201,14 +202,17 @@ export const TestimonialDashboard = () => {
                 className="group relative bg-[var(--bg)]/40 rounded-2xl overflow-hidden border border-[var(--border)]/40"
               >
                 <div className="relative aspect-[4/3]">
-                  {t.photoUrl ? (
-                    <img
-                      src={t.photoUrl}
-                      alt="Testimonial"
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
+                   {t.photoUrl ? (
+                     <img
+                       src={getOptimizedUrl(t.photoUrl, { width: 400, crop: 'fill' })}
+                       srcSet={buildSrcSet(t.photoUrl) || undefined}
+                       sizes="(max-width: 768px) 50vw, 33vw"
+                       alt="Testimonial"
+                       className="w-full h-full object-cover"
+                       loading="lazy"
+                       decoding="async"
+                     />
+                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-[var(--primary)]/30">
                       <Image size={40} />
                     </div>
@@ -288,11 +292,13 @@ export const TestimonialDashboard = () => {
               >
                 {form.photoPreview ? (
                   <div className="relative">
-                    <img
-                      src={form.photoPreview}
-                      alt="Preview"
-                      className="w-full max-h-64 mx-auto object-contain rounded-xl"
-                    />
+                         <img
+                          src={form.photoPreview}
+                          alt="Preview"
+                          className="w-full max-h-64 mx-auto object-contain rounded-xl"
+                          loading="lazy"
+                          decoding="async"
+                        />
                     <div className="absolute top-2 right-2 flex gap-1">
                       <motion.button
                         whileHover={{ scale: 1.1 }}

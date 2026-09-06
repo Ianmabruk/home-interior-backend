@@ -99,6 +99,8 @@ const IDEMPOTENCY_CACHE_MAX = 1000
 // Evicts oldest entries when exceeding max size to prevent OOM.
 const pendingOrders = new Map()
 const recentOrderCache = new Map()
+const MAX_PENDING_ORDERS = 100
+const MAX_RECENT_ORDERS = 1000
 
 function pruneCache(cache, maxSize) {
   if (cache.size <= maxSize) return
@@ -154,170 +156,171 @@ async function setCachedOrder(signature, order) {
   pruneCache(recentOrderCache, IDEMPOTENCY_CACHE_MAX)
 }
 
-async function createOrder(data) {
-  try {
+  async function createOrder(data) {
+    try {
+      const enrichedItems = Array.isArray(data.items) ? data.items : (() => { try { return JSON.parse(data.items || '[]') } catch { return [] } })()
+      if (!enrichedItems.length) {
+        throw failure(400, 'Order must contain at least one item')
+      }
+
+      // Use server-computed total for idempotency signature (not client-supplied total)
+      const signature = buildOrderSignature(data)
+
+      // Check pending (in-flight) orders first to deduplicate concurrent requests
+      if (pendingOrders.has(signature)) {
+        return pendingOrders.get(signature)
+      }
+
+      // Check idempotency cache
+      const cached = await getCachedOrder(signature)
+      if (cached) return cached
+
+      const promise = createOrderInternal(data, signature)
+      pendingOrders.set(signature, promise)
+      try {
+        const order = await promise
+        await setCachedOrder(signature, order)
+        // Schedule notifications asynchronously after order is created
+        scheduleOrderNotifications(order, data)
+        return order
+      } finally {
+        pendingOrders.delete(signature)
+        pruneCache(pendingOrders, MAX_PENDING_ORDERS)
+      }
+    } catch (err) {
+      console.error('[orders] createOrder failed:', err)
+      if (err?.status) throw err
+      throw failure(500, err?.message || 'Failed to create order')
+    }
+  }
+
+  async function createOrderInternal(data, signature) {
+    const t0 = Date.now()
     const enrichedItems = Array.isArray(data.items) ? data.items : (() => { try { return JSON.parse(data.items || '[]') } catch { return [] } })()
     if (!enrichedItems.length) {
       throw failure(400, 'Order must contain at least one item')
     }
 
-    // Use server-computed total for idempotency signature (not client-supplied total)
-    const signature = buildOrderSignature(data)
+    const productIds = enrichedItems.map((i) => i.productId).filter(Boolean)
+    console.log(`[ORDER ${signature}] INTERNAL_START ${Date.now() - t0}ms items=${enrichedItems.length} products=${productIds.length}`)
 
-    // Check pending (in-flight) orders first to deduplicate concurrent requests
-    if (pendingOrders.has(signature)) {
-      return pendingOrders.get(signature)
-    }
-
-    // Check idempotency cache
-    const cached = await getCachedOrder(signature)
-    if (cached) return cached
-
-    const promise = createOrderInternal(data, signature)
-    pendingOrders.set(signature, promise)
+    // Use transaction to batch all database operations
+    // This reduces round trips from 4+ to 1
     try {
-      const order = await promise
-      await setCachedOrder(signature, order)
-      // Schedule notifications asynchronously after order is created
-      scheduleOrderNotifications(order, data)
-      return order
-    } finally {
-      pendingOrders.delete(signature)
-    }
-  } catch (err) {
-    console.error('[orders] createOrder failed:', err)
-    if (err?.status) throw err
-    throw failure(500, err?.message || 'Failed to create order')
-  }
-}
+      const result = await withRetryTransaction(() =>
+        prisma.$transaction(async (tx) => {
+        const txT0 = Date.now()
+        // Fetch products within transaction
+        const products = productIds.length > 0 ? await tx.product.findMany({
+          where: { id: { in: productIds } },
+          include: { variants: true },
+        }) : []
+        console.log(`[ORDER ${signature}] TX_PRODUCTS_FETCHED ${Date.now() - txT0}ms count=${products.length}`)
 
-async function createOrderInternal(data, signature) {
-  const t0 = Date.now()
-  const enrichedItems = Array.isArray(data.items) ? data.items : (() => { try { return JSON.parse(data.items || '[]') } catch { return [] } })()
-  if (!enrichedItems.length) {
-    throw failure(400, 'Order must contain at least one item')
-  }
+        const productMap = new Map(products.map((p) => [p.id, p]))
 
-  const productIds = enrichedItems.map((i) => i.productId).filter(Boolean)
-  console.log(`[ORDER ${signature}] INTERNAL_START ${Date.now() - t0}ms items=${enrichedItems.length} products=${productIds.length}`)
+        const finalItems = enrichedItems.map((item) => {
+          const product = productMap.get(item.productId)
+          const variant = product?.variants?.find((v) => v.id === item.variantId)
+          const dbPrice = variant?.price || product?.price || 0
+          if (item.price !== undefined && Math.abs(Number(item.price) - dbPrice) > 0.01) {
+            throw failure(400, `Price mismatch for product ${item.productId}`)
+          }
+          return {
+            productId: item.productId,
+            variantId: item.variantId,
+            quantity: item.quantity,
+            price: dbPrice,
+            name: product?.name || 'Unknown Product',
+            image: variant?.image || product?.mainImage || (Array.isArray(product?.images) ? product.images[0] : '') || '',
+            selectedVariant: variant ? {
+              id: variant.id,
+              color: variant.color,
+              colorHex: variant.colorHex,
+              image: variant.image,
+              price: variant.price,
+              stock: variant.stock,
+            } : null,
+          }
+        })
 
-  // Use transaction to batch all database operations
-  // This reduces round trips from 4+ to 1
-  try {
-    const result = await withRetryTransaction(() =>
-      prisma.$transaction(async (tx) => {
-      const txT0 = Date.now()
-      // Fetch products within transaction
-      const products = productIds.length > 0 ? await tx.product.findMany({
-        where: { id: { in: productIds } },
-        include: { variants: true },
-      }) : []
-      console.log(`[ORDER ${signature}] TX_PRODUCTS_FETCHED ${Date.now() - txT0}ms count=${products.length}`)
-
-      const productMap = new Map(products.map((p) => [p.id, p]))
-
-      const finalItems = enrichedItems.map((item) => {
-        const product = productMap.get(item.productId)
-        const variant = product?.variants?.find((v) => v.id === item.variantId)
-        const dbPrice = variant?.price || product?.price || 0
-        if (item.price !== undefined && Math.abs(Number(item.price) - dbPrice) > 0.01) {
-          throw failure(400, `Price mismatch for product ${item.productId}`)
+        const missingProducts = enrichedItems.filter((i) => i.productId && !productMap.has(i.productId))
+        if (missingProducts.length > 0) {
+          console.warn(`[ORDER ${signature}] Missing products for IDs: ${missingProducts.map((i) => i.productId).join(', ')}`)
         }
-        return {
-          productId: item.productId,
-          variantId: item.variantId,
-          quantity: item.quantity,
-          price: dbPrice,
-          name: product?.name || 'Unknown Product',
-          image: variant?.image || product?.mainImage || (Array.isArray(product?.images) ? product.images[0] : '') || '',
-          selectedVariant: variant ? {
-            id: variant.id,
-            color: variant.color,
-            colorHex: variant.colorHex,
-            image: variant.image,
-            price: variant.price,
-            stock: variant.stock,
-          } : null,
-        }
-      })
 
-      const missingProducts = enrichedItems.filter((i) => i.productId && !productMap.has(i.productId))
-      if (missingProducts.length > 0) {
-        console.warn(`[ORDER ${signature}] Missing products for IDs: ${missingProducts.map((i) => i.productId).join(', ')}`)
-      }
+        const serverTotal = finalItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0)
 
-      const serverTotal = finalItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0)
+        // Generate tracking number (no extra SELECT query needed)
+        const trackingNumber = generateTrackingNumber()
+        console.log(`[ORDER ${signature}] TX_ORDER_CREATE_START ${Date.now() - txT0}ms`)
 
-      // Generate tracking number (no extra SELECT query needed)
-      const trackingNumber = generateTrackingNumber()
-      console.log(`[ORDER ${signature}] TX_ORDER_CREATE_START ${Date.now() - txT0}ms`)
+        // Create order within transaction
+        const created = await tx.order.create({
+          data: {
+            ...data,
+            items: JSON.stringify(finalItems),
+            total: serverTotal,
+            trackingNumber,
+          },
+        })
+        console.log(`[ORDER ${signature}] TX_ORDER_CREATED ${Date.now() - txT0}ms id=${created.id}`)
 
-      // Create order within transaction
-      const created = await tx.order.create({
-        data: {
-          ...data,
-          items: JSON.stringify(finalItems),
-          total: serverTotal,
-          trackingNumber,
-        },
-      })
-      console.log(`[ORDER ${signature}] TX_ORDER_CREATED ${Date.now() - txT0}ms id=${created.id}`)
+        // Stock validation and updates within transaction
+        const stockT0 = Date.now()
+        for (const item of finalItems) {
+          if (!item.productId) continue
+          const product = productMap.get(item.productId)
+          if (!product) continue
 
-      // Stock validation and updates within transaction
-      const stockT0 = Date.now()
-      for (const item of finalItems) {
-        if (!item.productId) continue
-        const product = productMap.get(item.productId)
-        if (!product) continue
-
-        const qty = Number(item.quantity) || 1
-        if (product.variants && item.variantId) {
-          const variant = product.variants.find((v) => v.id === item.variantId)
-          if (!variant || variant.stock < qty) {
+          const qty = Number(item.quantity) || 1
+          if (product.variants && item.variantId) {
+            const variant = product.variants.find((v) => v.id === item.variantId)
+            if (!variant || variant.stock < qty) {
+              throw failure(400, `Insufficient stock for ${product.name}`)
+            }
+            // Update variant stock only — do NOT also decrement parent product stock
+            await tx.productVariant.update({
+              where: { id: variant.id },
+              data: { stock: { decrement: qty } },
+            })
+            continue
+          }
+          if (product.stock < qty) {
             throw failure(400, `Insufficient stock for ${product.name}`)
           }
-          // Update variant stock only — do NOT also decrement parent product stock
-          await tx.productVariant.update({
-            where: { id: variant.id },
+          // Update product stock (no variant involved)
+          await tx.product.update({
+            where: { id: product.id },
             data: { stock: { decrement: qty } },
           })
-          continue
         }
-        if (product.stock < qty) {
-          throw failure(400, `Insufficient stock for ${product.name}`)
-        }
-        // Update product stock (no variant involved)
-        await tx.product.update({
-          where: { id: product.id },
-          data: { stock: { decrement: qty } },
-        })
-      }
-      console.log(`[ORDER ${signature}] TX_STOCK_UPDATED ${Date.now() - stockT0}ms items=${finalItems.length}`)
+        console.log(`[ORDER ${signature}] TX_STOCK_UPDATED ${Date.now() - stockT0}ms items=${finalItems.length}`)
 
-      const order = parseOrder(created)
-      console.log(`[ORDER ${signature}] TX_COMMIT ${Date.now() - txT0}ms total=${Date.now() - t0}ms`)
-      return order
-    }, {
-      isolationLevel: 'ReadCommitted',
-      maxWait: 5000,
-      timeout: 10000,
-    })
-  )
-  console.log(`[ORDER ${signature}] INTERNAL_COMPLETE ${Date.now() - t0}ms`)
-  return result
-  } catch (err) {
-    console.error(`[ORDER ${signature}] INTERNAL_FAILED ${Date.now() - t0}ms`, err?.code, err?.message || err)
-    if (err?.status) throw err
-    // Handle unique constraint violation on tracking number — retry with new number
-    if (err?.code === 'P2002') {
-      const retryCount = (err?._retryCount || 0) + 1
-      if (retryCount > 3) throw failure(500, 'Failed to generate unique tracking number')
-      err._retryCount = retryCount
-      return createOrderInternal(data, signature)
+        const order = parseOrder(created)
+        console.log(`[ORDER ${signature}] TX_COMMIT ${Date.now() - txT0}ms total=${Date.now() - t0}ms`)
+        return order
+      }, {
+        isolationLevel: 'ReadCommitted',
+        maxWait: 5000,
+        timeout: 10000,
+      })
+    )
+    console.log(`[ORDER ${signature}] INTERNAL_COMPLETE ${Date.now() - t0}ms`)
+    return result
+    } catch (err) {
+      console.error(`[ORDER ${signature}] INTERNAL_FAILED ${Date.now() - t0}ms`, err?.code, err?.message || err)
+      if (err?.status) throw err
+      // Handle unique constraint violation on tracking number — retry with new number
+      if (err?.code === 'P2002') {
+        const retryCount = (err?._retryCount || 0) + 1
+        if (retryCount > 3) throw failure(500, 'Failed to generate unique tracking number')
+        err._retryCount = retryCount
+        return createOrderInternal(data, signature)
+      }
+      throw failure(500, err?.message || 'Failed to create order')
     }
-    throw failure(500, err?.message || 'Failed to create order')
   }
-}
 
 // Schedule notifications asynchronously (fire-and-forget with retry)
 function scheduleOrderNotifications(created, data) {

@@ -42,13 +42,15 @@ export const ShopPage = memo(({ category }) => {
   const { formatPrice } = useCurrency()
   const reduceMotion = useIsMobile()
 
-  const loadProducts = useCallback(async () => {
+  const loadProducts = useCallback(async (signal) => {
     try {
       const params = filter !== 'all' ? { category: filter } : {}
-      const res = await api.get('/products', { params })
+      const res = await api.get('/products', { params, signal })
       setProducts(res.data || [])
     } catch (err) {
-      console.warn('[SHOP] Failed to load:', err?.message)
+      if (err?.name !== 'CanceledError' && err?.code !== 'ERR_CANCELED') {
+        console.warn('[SHOP] Failed to load:', err?.message)
+      }
       setProducts([])
     } finally {
       setLoading(false)
@@ -56,7 +58,9 @@ export const ShopPage = memo(({ category }) => {
   }, [filter])
 
   useEffect(() => {
-    loadProducts()
+    const controller = new AbortController()
+    loadProducts(controller.signal)
+    return () => controller.abort()
   }, [loadProducts])
 
   useEffect(() => {
@@ -179,6 +183,7 @@ export const ShopPage = memo(({ category }) => {
                           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                           loading="lazy"
                           decoding="async"
+                          fetchPriority={index === 0 ? 'high' : undefined}
                           width={600}
                           height={450}
                         />

@@ -34,6 +34,17 @@ const CONTENT_PATHS = [
 const requestCache = new Map()
 const CACHE_TTL = 5 * 60 * 1000
 
+function cleanExpiredCacheEntries() {
+  const now = Date.now()
+  for (const [key, entry] of requestCache) {
+    if (now - entry.timestamp > CACHE_TTL) {
+      requestCache.delete(key)
+    }
+  }
+}
+
+setInterval(cleanExpiredCacheEntries, 60 * 1000)
+
 let refreshingPromise = null
 let refreshFailed = false
 let csrfToken = null
@@ -72,14 +83,6 @@ api.interceptors.request.use((config) => {
   const url = config.url || ''
   if (CONTENT_PATHS.some((p) => url === p || url.startsWith(p + '/'))) {
     config.url = '/content' + url
-  }
-
-  if (config.method === 'get') {
-    const cacheKey = `get:${config.url}:${JSON.stringify(config.params || {})}`
-    const cached = requestCache.get(cacheKey)
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      config.meta = { ...config.meta, __cachedResponse: cached.data }
-    }
   }
 
   return config
