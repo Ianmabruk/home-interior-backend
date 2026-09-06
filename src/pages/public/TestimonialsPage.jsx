@@ -51,7 +51,7 @@ export const TestimonialsPage = () => {
         const res = await api.get('/testimonials')
         setTestimonials(res.data || [])
       } catch {
-        setTestimonials([])
+        // keep existing testimonials visible on failure
       } finally {
         setLoading(false)
       }

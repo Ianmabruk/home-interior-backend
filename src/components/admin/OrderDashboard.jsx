@@ -117,8 +117,7 @@ export const OrderDashboard = () => {
       setOrders(res.data?.data || res.data || [])
       setPagination(res.data?.pagination || null)
     } catch {
-      setOrders([])
-      setPagination(null)
+      // keep existing orders visible on failure
     } finally {
       setLoading(false)
     }

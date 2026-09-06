@@ -17,7 +17,6 @@ export const ChatPage = () => {
       setMessages(res.data || [])
     } catch (err) {
       console.warn('[CHAT] Failed to load messages:', err?.message)
-      setMessages([])
     } finally {
       setLoading(false)
     }

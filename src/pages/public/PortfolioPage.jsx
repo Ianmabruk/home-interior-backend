@@ -37,7 +37,6 @@ export const PortfolioPage = memo(() => {
       setPortfolio(res.data || [])
     } catch (err) {
       console.warn('[PORTFOLIO] Failed to load:', err?.message)
-      setPortfolio([])
     } finally {
       setLoading(false)
     }

@@ -72,7 +72,6 @@ export const BlogPage = memo(() => {
       setFeaturedBlog(featured)
     } catch (err) {
       console.warn('[BlogPage] Failed to load blogs:', err?.message)
-      setBlogs([])
     } finally {
       setLoading(false)
     }

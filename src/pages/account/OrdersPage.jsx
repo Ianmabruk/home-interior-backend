@@ -56,7 +56,6 @@ export const OrdersPage = () => {
     } catch (err) {
       if (controller.signal.aborted) return
       setError(err?.message || 'Failed to load orders')
-      setOrders([])
     } finally {
       if (!controller.signal.aborted) setLoading(false)
     }

@@ -114,7 +114,7 @@ export const BlogDetailPage = () => {
       const res = await api.get(`/blog/${blog.id}/related`)
       setRelated(Array.isArray(res.data) ? res.data : [])
     } catch {
-      setRelated([])
+      // keep existing related posts visible on failure
     }
   }
 

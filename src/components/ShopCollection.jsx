@@ -28,7 +28,7 @@ export const ShopCollection = () => {
         const res = await api.get('/products', { params: { sort: '-createdAt', limit: 20 } })
         if (!cancelled) setAllProducts(Array.isArray(res.data) ? res.data : [])
       } catch {
-        if (!cancelled) setAllProducts([])
+        // keep existing products visible on failure
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -45,7 +45,7 @@ export const ShopCollection = () => {
           const res = await api.get('/products', { params: { sort: '-createdAt', limit: 20 } })
           if (!cancelled) setAllProducts(Array.isArray(res.data) ? res.data : [])
         } catch {
-          if (!cancelled) setAllProducts([])
+          // keep existing products visible on failure
         }
       }
       loadData()

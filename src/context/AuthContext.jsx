@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { api } from '../services/api'
+import { useAppLifecycle } from '../hooks/useAppLifecycle'
 
 const AuthContext = createContext(null)
 
@@ -11,9 +12,10 @@ export function AuthProvider({ children }) {
   })
   const cancelledRef = useRef(false)
 
-  const fetchUser = useCallback(async () => {
+  const validateSession = useCallback(async () => {
     const token = localStorage.getItem('hok_access_token')
     if (!token) {
+      setUser(null)
       setLoading(false)
       return
     }
@@ -22,9 +24,11 @@ export function AuthProvider({ children }) {
       const res = await api.get('/auth/me')
       if (!cancelledRef.current) setUser(res.data || null)
     } catch (err) {
-      const status = err?.response?.status
-      if (status === 401) {
-        localStorage.removeItem('hok_access_token')
+      if (!cancelledRef.current) {
+        const status = err?.response?.status
+        if (status === 401) {
+          localStorage.removeItem('hok_access_token')
+        }
         setUser(null)
       }
     } finally {
@@ -33,9 +37,18 @@ export function AuthProvider({ children }) {
   }, [])
 
   useEffect(() => {
-    fetchUser()
+    validateSession()
     return () => { cancelledRef.current = true }
-  }, [fetchUser])
+  }, [validateSession])
+
+  useAppLifecycle({
+    onVisible: () => {
+      const token = localStorage.getItem('hok_access_token')
+      if (token && !user) {
+        validateSession()
+      }
+    },
+  })
 
   useEffect(() => {
     const handler = () => {
@@ -96,8 +109,9 @@ export function AuthProvider({ children }) {
       register,
       logout,
       refreshUser,
+      validateSession,
     }),
-    [user, loading, login, register, logout, refreshUser],
+    [user, loading, login, register, logout, refreshUser, validateSession],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

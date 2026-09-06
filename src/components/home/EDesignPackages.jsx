@@ -86,7 +86,7 @@ export const EDesignPackages = memo(({ packages: propPackages }) => {
         const mapped = items.map(mapPackage)
         if (!cancelled) setPackages(mapped)
       } catch {
-        if (!cancelled) setPackages([])
+        // keep existing packages visible on failure
       } finally {
         if (!cancelled) setLoading(false)
       }

@@ -29,7 +29,6 @@ export const FeaturedProjects = () => {
         if (!cancelled) setProjects(sorted.slice(0, 8))
       } catch (err) {
         console.warn('[FEATURED] Failed to load projects:', err?.message)
-        if (!cancelled) setProjects([])
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -48,7 +47,6 @@ export const FeaturedProjects = () => {
           if (!cancelled) setProjects(sorted.slice(0, 8))
         } catch (err) {
           console.warn('[FEATURED] Failed to load projects:', err?.message)
-          if (!cancelled) setProjects([])
         }
       }
       loadData()

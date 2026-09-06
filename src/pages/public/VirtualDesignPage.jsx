@@ -46,7 +46,6 @@ export const VirtualDesignPage = () => {
       setDesigns(res.data || [])
     } catch (err) {
       console.warn('[VIRTUAL DESIGN] Failed to load:', err?.message)
-      setDesigns([])
     } finally {
       setLoading(false)
     }

@@ -58,7 +58,6 @@ export const ServicesPage = memo(() => {
       setServices(res.data || [])
     } catch (err) {
       console.warn('[SERVICES] Failed to load:', err?.message)
-      setServices([])
     } finally {
       setLoading(false)
     }

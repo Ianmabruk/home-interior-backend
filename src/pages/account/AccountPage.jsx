@@ -52,7 +52,6 @@ export const AccountPage = () => {
       setOrders(res.data?.data || res.data || [])
     } catch (err) {
       console.warn('[ACCOUNT] Failed to load orders:', err?.message)
-      setOrders([])
     } finally {
       setLoadingOrders(false)
     }

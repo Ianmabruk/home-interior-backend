@@ -24,9 +24,7 @@ export const AboutPage = memo(() => {
       setAboutImages(Array.isArray(imagesRes.data) ? imagesRes.data : [])
       setTeam([])
     } catch {
-      setAboutData(null)
-      setAboutImages([])
-      setTeam([])
+      // keep existing data visible on failure
     } finally {
       setLoading(false)
     }

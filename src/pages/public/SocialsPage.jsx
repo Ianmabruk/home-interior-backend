@@ -58,7 +58,6 @@ export const SocialsPage = memo(() => {
       setSocialItems(Array.isArray(res.data) ? res.data : [])
     } catch (err) {
       console.warn('[SOCIALS] Failed to load:', err?.message)
-      setSocialItems([])
     } finally {
       setLoading(false)
     }

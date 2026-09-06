@@ -51,7 +51,6 @@ export const ShopPage = memo(({ category }) => {
       if (err?.name !== 'CanceledError' && err?.code !== 'ERR_CANCELED') {
         console.warn('[SHOP] Failed to load:', err?.message)
       }
-      setProducts([])
     } finally {
       setLoading(false)
     }
