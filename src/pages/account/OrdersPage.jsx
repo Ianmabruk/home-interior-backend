@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Package, Eye, Loader2, AlertTriangle, ClipboardList, Home, ShoppingBag } from 'lucide-react'
+import { Package, Eye, Loader2, AlertTriangle, ClipboardList, Home, ShoppingBag, Copy } from 'lucide-react'
 import { api, clearApiCache } from '@services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '@utils/adminEvents'
 import { PageMeta } from '@hooks/usePageMeta'
@@ -166,7 +166,7 @@ export const OrdersPage = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="font-display text-lg font-medium text-[var(--primary)] truncate">
-                          Order #{String(order._id || order.id || '').slice(-8).toUpperCase()}
+                          Order #{order.trackingNumber || String(order._id || order.id || '').slice(-8).toUpperCase()}
                         </h3>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-2xs font-medium border ${statusColor}`}>
                           {STATUS_LABELS[statusKey] || order.status || 'Pending'}
@@ -175,13 +175,25 @@ export const OrdersPage = () => {
                       <p className="text-sm text-[var(--primary)]/60">{items.length} item{items.length !== 1 ? 's' : ''} · {formatPrice(Number(order.total || 0))}</p>
                       <p className="text-2xs text-[var(--primary)]/40 mt-1">{new Date(order.createdAt).toLocaleDateString()}</p>
                     </div>
-                    <Link
-                      to={`/account/orders/${order._id || order.id}`}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/70 transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                    >
-                      <Eye size={12} />
-                      View
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      {order.trackingNumber && (
+                        <button
+                          onClick={() => navigator.clipboard.writeText(order.trackingNumber)}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/70 transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                          title="Copy order number"
+                        >
+                          <Copy size={12} />
+                          Copy
+                        </button>
+                      )}
+                      <Link
+                        to={`/account/orders/${order._id || order.id}`}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/70 transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                      >
+                        <Eye size={12} />
+                        View
+                      </Link>
+                    </div>
                   </div>
 
                   {items.length > 0 && (

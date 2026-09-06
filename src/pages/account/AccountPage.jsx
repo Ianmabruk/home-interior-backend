@@ -237,7 +237,7 @@ export const AccountPage = () => {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-1">
-                            <span className="font-medium text-[var(--primary)]">Order #{order._id?.slice(-8).toUpperCase()}</span>
+                            <span className="font-medium text-[var(--primary)]">Order #{order.trackingNumber || order._id?.slice(-8).toUpperCase()}</span>
                             <StatusBadge status={order.status} />
                           </div>
                           <p className="text-sm text-[var(--primary)]/50">{order.items?.length || 0} items · {formatPrice(order.total || 0)}</p>

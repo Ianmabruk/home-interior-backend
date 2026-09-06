@@ -35,7 +35,7 @@ function formatStatusDate(dateStr) {
 }
 
 export const TrackOrderPage = () => {
-  const [trackingNumber, setTrackingNumber] = useState('')
+  const [orderNumber, setOrderNumber] = useState('')
   const [contact, setContact] = useState('')
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
@@ -49,12 +49,12 @@ export const TrackOrderPage = () => {
     setError('')
     setResult(null)
     try {
-      const res = await api.post('/orders/track', { trackingNumber: trackingNumber.trim().toUpperCase(), contact: contact.trim() })
+      const res = await api.post('/orders/track', { trackingNumber: orderNumber.trim().toUpperCase(), contact: contact.trim() })
       setResult(res.data?.data || res.data)
     } catch (err) {
       const status = err?.response?.status
       if (status === 404) {
-        setError('We couldn\'t find an order with that tracking number and contact details. Please double-check and try again.')
+        setError('We couldn\'t find an order with that order number and mobile number. Please double-check and try again.')
       } else if (status === 429) {
         setError('Too many attempts. Please wait a moment and try again.')
       } else {
@@ -63,7 +63,7 @@ export const TrackOrderPage = () => {
     } finally {
       setLoading(false)
     }
-  }, [trackingNumber, contact, loading])
+  }, [orderNumber, contact, loading])
 
   if (result) {
     const items = Array.isArray(result.items) ? result.items : []
@@ -199,7 +199,7 @@ export const TrackOrderPage = () => {
               )}
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button onClick={() => { setResult(null); setTrackingNumber(''); setContact('') }} className="btn-luxury-primary inline-flex items-center gap-2">
+              <button onClick={() => { setResult(null); setOrderNumber(''); setContact('') }} className="btn-luxury-primary inline-flex items-center gap-2">
                 <Search size={14} strokeWidth={1.5} />
                 Track Another Order
               </button>
@@ -223,32 +223,32 @@ export const TrackOrderPage = () => {
               <Package size={32} strokeWidth={1.5} />
             </div>
             <h1 className="font-display text-3xl md:text-4xl font-medium text-[var(--primary)] mb-2">Track Your Order</h1>
-            <p className="text-[var(--primary)]/60">Enter your tracking number and email or phone number to view your order status.</p>
+            <p className="text-[var(--primary)]/60">Enter your order number and mobile number to view your order status.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-[var(--border)]/40 p-6 md:p-8 shadow-[0_10px_40px_rgba(42,36,31,0.06)]">
             <div className="space-y-4">
               <div>
-                <label htmlFor="tracking" className="block text-sm font-medium text-[var(--primary)] mb-1.5">Tracking Number</label>
+                <label htmlFor="orderNumber" className="block text-sm font-medium text-[var(--primary)] mb-1.5">Order Number</label>
                 <input
-                  id="tracking"
+                  id="orderNumber"
                   type="text"
                   required
-                  value={trackingNumber}
-                  onChange={(e) => setTrackingNumber(e.target.value)}
+                  value={orderNumber}
+                  onChange={(e) => setOrderNumber(e.target.value)}
                   placeholder="HOK-2026-8F42K9"
                   className="w-full rounded-xl border border-[var(--border)]/60 bg-white px-4 py-3 text-sm text-[var(--primary)] placeholder:text-[var(--primary)]/30 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40 focus:border-[var(--accent)] transition"
                 />
               </div>
               <div>
-                <label htmlFor="contact" className="block text-sm font-medium text-[var(--primary)] mb-1.5">Email or Phone Number</label>
+                <label htmlFor="contact" className="block text-sm font-medium text-[var(--primary)] mb-1.5">Mobile Number</label>
                 <input
                   id="contact"
                   type="text"
                   required
                   value={contact}
                   onChange={(e) => setContact(e.target.value)}
-                  placeholder="you@example.com or +254 7XX XXX XXX"
+                  placeholder="07XXXXXXXX"
                   className="w-full rounded-xl border border-[var(--border)]/60 bg-white px-4 py-3 text-sm text-[var(--primary)] placeholder:text-[var(--primary)]/30 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40 focus:border-[var(--accent)] transition"
                 />
               </div>

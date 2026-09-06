@@ -77,12 +77,6 @@ export const OrderConfirmationPage = () => {
   const tax = subtotal * 0.16
   const total = Number(order.total || subtotal + shipping + tax)
 
-  const handleCopyTracking = async () => {
-    if (order.trackingNumber) {
-      await navigator.clipboard.writeText(order.trackingNumber)
-    }
-  }
-
   const handleConfirmPayment = async () => {
     setPaymentConfirming(true)
     setPaymentError(null)
@@ -117,44 +111,29 @@ export const OrderConfirmationPage = () => {
             </div>
             <h1 className="font-display text-3xl md:text-4xl font-medium text-[var(--primary)] mb-2">Order Confirmed!</h1>
             <p className="text-[var(--primary)]/60">Thank you for your purchase. Your order has been received.</p>
-            {order.trackingNumber && (
-              <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-[var(--border)]/40">
-                <span className="text-xs font-medium text-[var(--primary)]/60">Tracking Number:</span>
-                <span className="text-sm font-semibold text-[var(--primary)]">{order.trackingNumber}</span>
-                <button
-                  onClick={handleCopyTracking}
-                  className="p-1 rounded hover:bg-[var(--secondary)]/20 transition-colors"
-                  aria-label="Copy tracking number"
-                >
-                  <Copy size={12} strokeWidth={1.5} />
-                </button>
-              </div>
-            )}
-              <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] text-sm">
-                <Mail size={14} strokeWidth={1.5} />
-                <span>Please check your email for order confirmation and payment details.</span>
-              </div>
-              <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-[var(--border)]/40">
-                <Phone size={14} strokeWidth={1.5} className="text-[var(--primary)]/50" />
-                <span className="text-xs font-medium text-[var(--primary)]/60">M-Pesa:</span>
-                <span className="text-sm font-semibold text-[var(--primary)]">{MPESA_NUMBER}</span>
-                <button
-                  onClick={() => navigator.clipboard.writeText('0723057487')}
-                  className="p-1 rounded hover:bg-[var(--secondary)]/20 transition-colors"
-                  aria-label="Copy payment number"
-                >
-                  <Copy size={12} strokeWidth={1.5} />
-                </button>
-              </div>
-            <div className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-[var(--border)]/40">
-              <span className="text-xs font-medium text-[var(--primary)]/60">Order ID:</span>
-              <span className="text-sm font-semibold text-[var(--primary)]">
-                #{String(order._id || order.id || '').slice(-8).toUpperCase()}
-              </span>
+            <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-[var(--border)]/40">
+              <span className="text-xs font-medium text-[var(--primary)]/60">Order Number:</span>
+              <span className="text-sm font-semibold text-[var(--primary)]">{order.trackingNumber || '#' + String(order._id || order.id || '').slice(-8).toUpperCase()}</span>
               <button
-                onClick={() => navigator.clipboard.writeText(String(order._id || order.id || ''))}
+                onClick={() => navigator.clipboard.writeText(order.trackingNumber || String(order._id || order.id || ''))}
                 className="p-1 rounded hover:bg-[var(--secondary)]/20 transition-colors"
-                aria-label="Copy order ID"
+                aria-label="Copy order number"
+              >
+                <Copy size={12} strokeWidth={1.5} />
+              </button>
+            </div>
+            <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] text-sm">
+              <Mail size={14} strokeWidth={1.5} />
+              <span>Please check your email for order confirmation and payment details.</span>
+            </div>
+            <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-[var(--border)]/40">
+              <Phone size={14} strokeWidth={1.5} className="text-[var(--primary)]/50" />
+              <span className="text-xs font-medium text-[var(--primary)]/60">M-Pesa:</span>
+              <span className="text-sm font-semibold text-[var(--primary)]">{MPESA_NUMBER}</span>
+              <button
+                onClick={() => navigator.clipboard.writeText('0723057487')}
+                className="p-1 rounded hover:bg-[var(--secondary)]/20 transition-colors"
+                aria-label="Copy payment number"
               >
                 <Copy size={12} strokeWidth={1.5} />
               </button>

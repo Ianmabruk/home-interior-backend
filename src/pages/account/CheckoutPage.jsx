@@ -158,14 +158,9 @@ export const CheckoutPage = () => {
             </div>
             <h1 className="font-display text-3xl md:text-4xl font-medium text-[var(--primary)] mb-4">Order Received</h1>
             <p className="text-[var(--primary)]/60 mb-2 max-w-md mx-auto">Thank you for your order! Please complete payment to confirm your order.</p>
-            {orderId && (
-              <p className="text-sm text-[var(--primary)]/50 mb-2">
-                Order Number: <span className="font-semibold text-[var(--primary)]">#{String(orderId).slice(-8).toUpperCase()}</span>
-              </p>
-            )}
             {trackingNumber && (
               <p className="text-sm text-[var(--primary)]/50 mb-6">
-                Tracking Number: <span className="font-semibold text-[var(--accent)]">{trackingNumber}</span>
+                Order Number: <span className="font-semibold text-[var(--primary)]">{trackingNumber}</span>
               </p>
             )}
 

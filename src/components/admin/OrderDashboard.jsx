@@ -267,7 +267,7 @@ export const OrderDashboard = () => {
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="min-w-0">
                     <p className="text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/40 truncate">
-                      #{String(order._id || order.id || '').slice(-8).toUpperCase()}
+                      #{order.trackingNumber || String(order._id || order.id || '').slice(-8).toUpperCase()}
                     </p>
                     <p className="text-sm font-medium text-[var(--primary)] truncate mt-0.5">
                       {order.name || 'Guest'}
@@ -385,16 +385,16 @@ export const OrderDashboard = () => {
                   {viewOrder.phone && <p className="text-sm text-[var(--primary)]/60">{viewOrder.phone}</p>}
                 </div>
                 <div>
-                  <p className="text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/50">Order ID</p>
-                  <p className="mt-1 text-sm font-mono text-[var(--primary)]">{viewOrder._id || viewOrder.id}</p>
+                  <p className="text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/50">Order Number</p>
+                  <p className="mt-1 text-sm font-mono text-[var(--primary)]">{viewOrder.trackingNumber || viewOrder._id || viewOrder.id}</p>
                   <p className="text-sm text-[var(--primary)]/60">{formatFullDate(viewOrder.createdAt)}</p>
                 </div>
               </div>
 
-                 {viewOrder.trackingNumber && (
-                   <div>
-                     <p className="text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/50 mb-2">Tracking Number</p>
-                     <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/20">
+              {viewOrder.trackingNumber && (
+                <div>
+                  <p className="text-2xs font-semibold uppercase tracking-widest text-[var(--primary)]/50 mb-2">Tracking Number</p>
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/20">
                        <span className="text-sm font-semibold text-[var(--accent)]">{viewOrder.trackingNumber}</span>
                      </div>
                    </div>
