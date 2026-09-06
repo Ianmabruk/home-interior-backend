@@ -120,23 +120,13 @@ async function request(method, url, config = {}) {
 
 function combineSignals(a, b) {
   if (!b) return a
-  return {
-    aborted: false,
-    onabort: null,
-    addEventListener: (type, listener) => {
-      a.addEventListener('abort', () => {
-        if (a.aborted) listener({ type: 'abort' })
-      })
-      b.addEventListener('abort', () => {
-        if (b.aborted) listener({ type: 'abort' })
-      })
-    },
-    removeEventListener: () => {},
-    dispatchEvent: () => false,
-    throwIfAborted: () => {
-      if (a.aborted) throw new DOMException('Aborted', 'AbortError')
-    },
-  }
+  const combined = new AbortController()
+  const handler = () => combined.abort()
+  if (a.aborted) handler()
+  else a.addEventListener('abort', handler)
+  if (b.aborted) handler()
+  else b.addEventListener('abort', handler)
+  return combined.signal
 }
 
 const api = {
