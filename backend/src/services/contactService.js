@@ -16,28 +16,19 @@ export const contactService = {
 }
 
 async function getContact() {
-  try {
-    const settings = await prisma.siteSetting.findMany({
-      where: { key: { in: CONTACT_KEYS } },
-    })
+  const settings = await prisma.siteSetting.findMany({
+    where: { key: { in: CONTACT_KEYS } },
+  })
 
-    const result = {}
-    for (const s of settings) {
-      result[s.key] = parseJson(s.value) || s.value
-    }
+  const result = {}
+  for (const s of settings) {
+    result[s.key] = parseJson(s.value) || s.value
+  }
 
-    return {
-      phoneNumbers: result['contact.phoneNumbers'] || [],
-      emails: result['contact.emails'] || [],
-      addresses: result['contact.addresses'] || [],
-      businessHours: result['contact.businessHours'] || '',
-    }
-  } catch {
-    return {
-      phoneNumbers: [],
-      emails: [],
-      addresses: [],
-      businessHours: '',
-    }
+  return {
+    phoneNumbers: result['contact.phoneNumbers'] || [],
+    emails: result['contact.emails'] || [],
+    addresses: result['contact.addresses'] || [],
+    businessHours: result['contact.businessHours'] || '',
   }
 }

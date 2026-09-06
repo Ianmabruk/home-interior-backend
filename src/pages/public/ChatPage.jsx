@@ -9,22 +9,38 @@ export const ChatPage = () => {
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const messagesEndRef = useRef(null)
 
   const loadMessages = useCallback(async () => {
+    setError(null)
     try {
       const res = await api.get('/chat')
       setMessages(res.data || [])
     } catch (err) {
       console.warn('[CHAT] Failed to load messages:', err?.message)
+      setError(err)
     } finally {
       setLoading(false)
     }
   }, [])
 
+  const retry = useCallback(() => {
+    setLoading(true)
+    loadMessages()
+  }, [loadMessages])
+
   useEffect(() => {
     loadMessages()
   }, [loadMessages])
+
+  useEffect(() => {
+    const handleOnline = () => {
+      if (error) loadMessages()
+    }
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
+  }, [error, loadMessages])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -64,6 +80,18 @@ export const ChatPage = () => {
     return (
       <main className="min-h-screen bg-[var(--bg)] flex items-center justify-center">
         <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--accent)]" />
+      </main>
+    )
+  }
+
+  if (error && messages.length === 0) {
+    return (
+      <main className="min-h-screen bg-[var(--bg)] flex items-center justify-center">
+        <div className="text-center">
+          <p className="font-display text-xl text-[var(--primary)]/60 mb-2">Unable to load messages</p>
+          <p className="text-sm text-[var(--primary)]/40 mb-4">Please check your connection and try again.</p>
+          <button onClick={retry} className="btn-luxury-primary">Retry</button>
+        </div>
       </main>
     )
   }

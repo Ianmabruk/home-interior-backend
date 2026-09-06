@@ -39,17 +39,25 @@ const EmptySection = () => (
 export const VirtualDesignPage = () => {
   const [designs, setDesigns] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const loadDesigns = useCallback(async () => {
+    setError(null)
     try {
       const res = await api.get('/virtual-design')
       setDesigns(res.data || [])
     } catch (err) {
       console.warn('[VIRTUAL DESIGN] Failed to load:', err?.message)
+      setError(err)
     } finally {
       setLoading(false)
     }
   }, [])
+
+  const retry = useCallback(() => {
+    setLoading(true)
+    loadDesigns()
+  }, [loadDesigns])
 
   useEffect(() => {
     loadDesigns()
@@ -64,8 +72,29 @@ export const VirtualDesignPage = () => {
     return () => window.removeEventListener(ADMIN_DATA_CHANGED_EVENT, handler)
   }, [loadDesigns])
 
+  useEffect(() => {
+    const handleOnline = () => {
+      if (error) loadDesigns()
+    }
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
+  }, [error, loadDesigns])
+
   if (loading) {
     return <main><SkeletonVirtualDesign /></main>
+  }
+
+  if (error && designs.length === 0) {
+    return (
+      <main>
+        <section className="bg-[var(--bg)]/40 bg-gradient-to-b from-[var(--secondary)]/20 via-[var(--bg)] to-[var(--accent)]/5 px-6 md:px-12 lg:px-20 py-20 md:py-32">
+          <div className="container-wide text-center">
+            <p className="text-[var(--primary)]/60 mb-4">Unable to load designs. Please check your connection.</p>
+            <button onClick={retry} className="btn-luxury-primary">Retry</button>
+          </div>
+        </section>
+      </main>
+    )
   }
 
   return (

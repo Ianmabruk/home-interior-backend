@@ -41,14 +41,10 @@ export const workWithUsService = {
 }
 
 async function listWorkWithUs() {
-  try {
-    const items = await withRetry(() => prisma.workWithUs.findMany({
-      orderBy: { createdAt: 'desc' },
-    }))
-    return items.map(mapWorkWithUs)
-  } catch {
-    return []
-  }
+  const items = await withRetry(() => prisma.workWithUs.findMany({
+    orderBy: { createdAt: 'desc' },
+  }))
+  return items.map(mapWorkWithUs)
 }
 
 async function getWorkWithUs(id) {
@@ -82,15 +78,11 @@ async function deleteWorkWithUs(id) {
 }
 
 async function getWorkWithUsContent() {
-  try {
-    const items = await withRetry(() => prisma.workWithUs.findMany({
-      where: { type: 'content', isActive: true },
-      orderBy: { displayOrder: 'asc' },
-    }))
-    return items.map(mapWorkWithUs)
-  } catch {
-    return []
-  }
+  const items = await withRetry(() => prisma.workWithUs.findMany({
+    where: { type: 'content', isActive: true },
+    orderBy: { displayOrder: 'asc' },
+  }))
+  return items.map(mapWorkWithUs)
 }
 
 async function createWorkWithUsContent(data, file, circularFile) {

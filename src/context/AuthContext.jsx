@@ -28,8 +28,9 @@ export function AuthProvider({ children }) {
         const status = err?.response?.status
         if (status === 401) {
           localStorage.removeItem('hok_access_token')
+          setUser(null)
         }
-        setUser(null)
+        // On 5xx / network errors, keep existing user state and retry later
       }
     } finally {
       if (!cancelledRef.current) setLoading(false)
@@ -44,7 +45,7 @@ export function AuthProvider({ children }) {
   useAppLifecycle({
     onVisible: () => {
       const token = localStorage.getItem('hok_access_token')
-      if (token && !user) {
+      if (token) {
         validateSession()
       }
     },

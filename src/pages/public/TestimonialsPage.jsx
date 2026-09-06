@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Star, Quote, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -42,22 +42,39 @@ const renderStars = (rating, size = 14) => (
 export const TestimonialsPage = () => {
   const [testimonials, setTestimonials] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
 
-  useEffect(() => {
-    const fetchTestimonials = async () => {
-      try {
-        const res = await api.get('/testimonials')
-        setTestimonials(res.data || [])
-      } catch {
-        // keep existing testimonials visible on failure
-      } finally {
-        setLoading(false)
-      }
+  const fetchTestimonials = useCallback(async () => {
+    setError(null)
+    try {
+      const res = await api.get('/testimonials')
+      setTestimonials(res.data || [])
+    } catch (err) {
+      console.warn('[TESTIMONIALS] Failed to load:', err?.message)
+      setError(err)
+    } finally {
+      setLoading(false)
     }
-    fetchTestimonials()
   }, [])
+
+  const retry = useCallback(() => {
+    setLoading(true)
+    fetchTestimonials()
+  }, [fetchTestimonials])
+
+  useEffect(() => {
+    fetchTestimonials()
+  }, [fetchTestimonials])
+
+  useEffect(() => {
+    const handleOnline = () => {
+      if (error) fetchTestimonials()
+    }
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
+  }, [error, fetchTestimonials])
 
   const activeTestimonials = useMemo(() => {
     return testimonials.filter((t) => t.isActive !== false)
@@ -97,6 +114,21 @@ export const TestimonialsPage = () => {
 
   if (loading) {
     return <SkeletonTestimonials />
+  }
+
+  if (error && testimonials.length === 0) {
+    return (
+      <main>
+        <section className="relative min-h-[50vh] md:min-h-[60vh] flex items-center justify-center">
+          <div className="absolute inset-0 bg-gradient-to-b from-[var(--primary)] via-[var(--primary)]/80 to-[var(--bg)]" />
+          <div className="relative z-10 container-wide px-6 md:px-12 lg:px-20 text-center">
+            <h1 className="font-display text-5xl md:text-7xl lg:text-8xl font-semibold text-white leading-tight">Testimonials</h1>
+            <p className="mt-6 text-lg md:text-xl text-white/70 max-w-3xl mx-auto">Unable to load testimonials. Please check your connection.</p>
+            <button onClick={retry} className="mt-6 btn-luxury-primary">Retry</button>
+          </div>
+        </section>
+      </main>
+    )
   }
 
   const isImageOnly = (t) => t.photoUrl && !t.content && !t.testimonial && !t.rating

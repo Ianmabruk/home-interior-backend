@@ -31,14 +31,10 @@ export const testimonialService = {
 }
 
 async function listTestimonials() {
-  try {
-    const items = await prisma.testimonial.findMany({
-      orderBy: { displayOrder: 'asc' },
-    })
-    return items.map(mapTestimonial)
-  } catch {
-    return []
-  }
+  const items = await prisma.testimonial.findMany({
+    orderBy: { displayOrder: 'asc' },
+  })
+  return items.map(mapTestimonial)
 }
 
 async function getTestimonial(id) {

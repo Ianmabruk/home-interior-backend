@@ -27,14 +27,10 @@ export const serviceService = {
 }
 
 async function listServices() {
-  try {
-    const items = await prisma.service.findMany({
-      orderBy: { displayOrder: 'asc' },
-    })
-    return items.map(mapService)
-  } catch {
-    return []
-  }
+  const items = await prisma.service.findMany({
+    orderBy: { displayOrder: 'asc' },
+  })
+  return items.map(mapService)
 }
 
 async function getService(id) {

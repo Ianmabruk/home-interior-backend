@@ -25,14 +25,10 @@ export const heroMediaService = {
 }
 
 async function listHeroMedia() {
-  try {
-    const items = await prisma.heroMedia.findMany({
-      orderBy: { displayOrder: 'asc' },
-    })
-    return items.map(mapHero)
-  } catch {
-    return []
-  }
+  const items = await prisma.heroMedia.findMany({
+    orderBy: { displayOrder: 'asc' },
+  })
+  return items.map(mapHero)
 }
 
 async function getHeroMedia(id) {

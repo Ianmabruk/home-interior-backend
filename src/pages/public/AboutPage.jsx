@@ -12,9 +12,11 @@ export const AboutPage = memo(() => {
   const [aboutImages, setAboutImages] = useState([])
   const [team, setTeam] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const reduceMotion = useIsMobile()
 
   const loadAbout = useCallback(async () => {
+    setError(null)
     try {
       const [aboutRes, imagesRes] = await Promise.all([
         api.get('/about'),
@@ -23,12 +25,18 @@ export const AboutPage = memo(() => {
       setAboutData(aboutRes.data || null)
       setAboutImages(Array.isArray(imagesRes.data) ? imagesRes.data : [])
       setTeam([])
-    } catch {
-      // keep existing data visible on failure
+    } catch (err) {
+      console.warn('[ABOUT] Failed to load:', err?.message)
+      setError(err)
     } finally {
       setLoading(false)
     }
   }, [])
+
+  const retry = useCallback(() => {
+    setLoading(true)
+    loadAbout()
+  }, [loadAbout])
 
   useEffect(() => {
     loadAbout()
@@ -42,6 +50,14 @@ export const AboutPage = memo(() => {
     window.addEventListener(ADMIN_DATA_CHANGED_EVENT, handler)
     return () => window.removeEventListener(ADMIN_DATA_CHANGED_EVENT, handler)
   }, [loadAbout])
+
+  useEffect(() => {
+    const handleOnline = () => {
+      if (error) loadAbout()
+    }
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
+  }, [error, loadAbout])
 
   const story =
     aboutData?.story ||
@@ -77,6 +93,20 @@ export const AboutPage = memo(() => {
                 <div className="skeleton h-10 w-32" />
               </div>
             </div>
+          </div>
+        </section>
+      </main>
+    )
+  }
+
+  if (error && !aboutData) {
+    return (
+      <main>
+        <section className="bg-[var(--bg)] px-6 md:px-12 lg:px-20 py-20 md:py-32">
+          <div className="container-wide text-center">
+            <h1 className="font-display text-5xl md:text-7xl font-semibold text-white leading-tight">About Us</h1>
+            <p className="mt-6 text-lg md:text-xl text-white/70 max-w-3xl mx-auto">Unable to load about content. Please check your connection.</p>
+            <button onClick={retry} className="mt-6 btn-luxury-primary">Retry</button>
           </div>
         </section>
       </main>

@@ -119,10 +119,6 @@ export const portfolioService = {
 }
 
 async function listPortfolio({ sort, limit = 100 } = {}) {
-  try {
-    // Default ordering is deterministic and respects the persisted displayOrder.
-    // Existing projects that share the same displayOrder (e.g. the default 0)
-    // fall back to createdAt so the order is never random/insertion-based.
     let orderBy
     if (sort) {
       const field = sort.startsWith('-') ? sort.slice(1) : sort
@@ -131,9 +127,6 @@ async function listPortfolio({ sort, limit = 100 } = {}) {
     } else {
       orderBy = [{ displayOrder: 'asc' }, { createdAt: 'desc' }]
     }
-    // Fetch portfolio projects AND their images in a single query using include.
-    // This avoids the N+1 query problem where we previously made a separate
-    // database query for each project's images.
     const items = await prisma.portfolioProject.findMany({
       orderBy,
       take: Number(limit) || 100,
@@ -145,11 +138,7 @@ async function listPortfolio({ sort, limit = 100 } = {}) {
       },
     })
     return items.map((item) => mapPortfolio(item, item.portfolioImages))
-  } catch (err) {
-    console.error('[portfolioService] listPortfolio error:', err?.message || err)
-    return []
   }
-}
 
 async function getPortfolio(id) {
   try {

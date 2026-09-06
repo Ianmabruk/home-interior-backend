@@ -3,9 +3,6 @@ import { contactService } from './contactService.js'
 import { circularTabService } from './circularTabService.js'
 
 async function getHomepage() {
-  try {
-    // Apply Promise.allSettled directly to the query promises so that
-    // if one query times out or fails, the rest of the homepage still loads.
     const results = await Promise.allSettled([
       withTimeout(prisma.portfolioProject.findMany({
         where: { published: true },
@@ -89,16 +86,21 @@ async function getHomepage() {
         select: { id: true, name: true, platform: true, imageUrl: true, link: true, isActive: true, homepageCircularImage: true },
       })),
       withTimeout(contactService.getContact()),
+      circularTabService.getHomepageCircularTabs(),
     ])
+
+    const allFailed = results.every((r) => r.status === 'rejected')
+    if (allFailed) {
+      const errors = results.map((r) => r.reason?.message || r.reason).filter(Boolean)
+      console.error('[homepageService] All homepage queries failed:', errors)
+      throw new Error('Database connection failed')
+    }
 
     const getResult = (index, fallback) => {
       if (results[index]?.status === 'fulfilled') return results[index].value
       return fallback
     }
 
-      // Defensive guard: ensure each result is an array (in case Prisma or the
-      // retry wrapper returns an unexpected type). This prevents "X.map is not a function"
-      // errors that would crash the entire homepage response.
       const asArray = (val) => Array.isArray(val) ? val : []
       const portfolio = asArray(getResult(0, []))
       const virtualDesigns = asArray(getResult(1, []))
@@ -113,10 +115,10 @@ async function getHomepage() {
       const blog = asArray(getResult(10, []))
       const socialItems = asArray(getResult(11, []))
       const contact = getResult(12, null)
+      const circularTabs = getResult(13, {})
 
       const featuredPortfolio = portfolio.filter((p) => p.featured).slice(0, 3)
 
-      // Defensive: blog must be an array before calling .map()
       const blogArray = Array.isArray(blog) ? blog : []
 
       const mappedBlog = blogArray.map((item) => ({
@@ -134,9 +136,6 @@ async function getHomepage() {
         imageUrl: item.imageUrl,
         mediaUrls: item.mediaUrls || [],
       }))
-
-      // Fetch centralized circular tabs
-      const circularTabs = await circularTabService.getHomepageCircularTabs()
 
        return {
         portfolio,
@@ -159,30 +158,6 @@ async function getHomepage() {
         shopWithUsHomepageImage: shopWithUsImage?.value || null,
         circularTabs,
       }
-} catch (err) {
-    console.error('[homepageService] Failed to load homepage data:', err)
-    return {
-      portfolio: [],
-      virtualDesigns: [],
-      virtualInteriorDesign: [],
-      services: [],
-      about: null,
-      aboutImages: [],
-      testimonials: [],
-      featuredPortfolio: [],
-      featuredVirtualDesigns: [],
-      heroImages: [],
-      heroMedia: [],
-      featuredProject: null,
-      products: [],
-      blog: [],
-      socialItems: [],
-      contact: null,
-      workWithUs: [],
-      shopWithUsHomepageImage: null,
-      circularTabs: {},
-    }
-  }
 }
 
 export const homepageService = {

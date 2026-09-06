@@ -38,11 +38,13 @@ const ALLOWED_CATEGORIES = ['Wall Artwork', 'Mirrors', 'Throw Pillows']
 export const ShopPage = memo(({ category }) => {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [filter, setFilter] = useState(category || 'all')
   const { formatPrice } = useCurrency()
   const reduceMotion = useIsMobile()
 
   const loadProducts = useCallback(async (signal) => {
+    setError(null)
     try {
       const params = filter !== 'all' ? { category: filter } : {}
       const res = await api.get('/products', { params, signal })
@@ -50,11 +52,18 @@ export const ShopPage = memo(({ category }) => {
     } catch (err) {
       if (err?.name !== 'CanceledError' && err?.code !== 'ERR_CANCELED') {
         console.warn('[SHOP] Failed to load:', err?.message)
+        setError(err)
       }
     } finally {
       setLoading(false)
     }
   }, [filter])
+
+  const retry = useCallback(() => {
+    setLoading(true)
+    const controller = new AbortController()
+    loadProducts(controller.signal)
+  }, [loadProducts])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -73,6 +82,14 @@ export const ShopPage = memo(({ category }) => {
     window.addEventListener(ADMIN_DATA_CHANGED_EVENT, handler)
     return () => window.removeEventListener(ADMIN_DATA_CHANGED_EVENT, handler)
   }, [loadProducts])
+
+  useEffect(() => {
+    const handleOnline = () => {
+      if (error) retry()
+    }
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
+  }, [error, retry])
 
   const categories = useMemo(() => {
     const present = new Set(products.map((p) => p.category).filter(Boolean))
@@ -123,6 +140,19 @@ export const ShopPage = memo(({ category }) => {
 
   if (loading) {
     return <main><SkeletonShop /></main>
+  }
+
+  if (error && products.length === 0) {
+    return (
+      <main>
+        <section className="bg-[var(--bg)]/40 bg-gradient-to-b from-[var(--primary)]/5 via-[var(--bg)] to-[var(--accent)]/5 px-6 md:px-12 lg:px-20 py-20 md:py-32">
+          <div className="container-wide text-center">
+            <p className="text-[var(--primary)]/60 mb-4">Unable to load products. Please check your connection.</p>
+            <button onClick={retry} className="btn-luxury-primary">Retry</button>
+          </div>
+        </section>
+      </main>
+    )
   }
 
   return (

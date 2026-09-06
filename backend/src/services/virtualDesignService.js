@@ -34,7 +34,6 @@ export const virtualDesignService = {
 }
 
 async function listVirtualDesigns(filters = {}) {
-  try {
     const where = {}
     if (filters.packageType) where.packageType = filters.packageType
     if (filters.published !== undefined) where.published = filters.published
@@ -43,10 +42,7 @@ async function listVirtualDesigns(filters = {}) {
       orderBy: { displayOrder: 'asc' },
     })
     return items.map(mapVD)
-  } catch {
-    return []
   }
-}
 
 async function getVirtualDesign(id) {
   try {

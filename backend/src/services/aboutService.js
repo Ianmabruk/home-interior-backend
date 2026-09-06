@@ -25,12 +25,8 @@ export const aboutService = {
 }
 
 async function getAbout() {
-  try {
-    const item = await prisma.about.findFirst({ orderBy: { createdAt: 'desc' } })
-    return item ? mapAbout(item) : null
-  } catch {
-    return null
-  }
+  const item = await prisma.about.findFirst({ orderBy: { createdAt: 'desc' } })
+  return item ? mapAbout(item) : null
 }
 
 async function createOrUpdateAbout(data, file, socialFile, homepageCircularImageFile, removeHomepageCircularImage = false) {

@@ -29,18 +29,26 @@ const SkeletonPortfolio = () => (
 export const PortfolioPage = memo(() => {
   const [portfolio, setPortfolio] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE)
 
   const loadPortfolio = useCallback(async () => {
+    setError(null)
     try {
       const res = await api.get('/portfolio')
       setPortfolio(res.data || [])
     } catch (err) {
       console.warn('[PORTFOLIO] Failed to load:', err?.message)
+      setError(err)
     } finally {
       setLoading(false)
     }
   }, [])
+
+  const retry = useCallback(() => {
+    setLoading(true)
+    loadPortfolio()
+  }, [loadPortfolio])
 
   useEffect(() => {
     loadPortfolio()
@@ -57,6 +65,14 @@ export const PortfolioPage = memo(() => {
     window.addEventListener(ADMIN_DATA_CHANGED_EVENT, handler)
     return () => window.removeEventListener(ADMIN_DATA_CHANGED_EVENT, handler)
   }, [loadPortfolio])
+
+  useEffect(() => {
+    const handleOnline = () => {
+      if (error) loadPortfolio()
+    }
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
+  }, [error, loadPortfolio])
 
   useEffect(() => {
     setVisibleCount(INITIAL_VISIBLE)
@@ -99,6 +115,21 @@ export const PortfolioPage = memo(() => {
 
   if (loading) {
     return <main><SkeletonPortfolio /></main>
+  }
+
+  if (error && portfolio.length === 0) {
+    return (
+      <main>
+        <section className="relative min-h-[40vh] md:min-h-[50vh] flex items-center justify-center">
+          <div className="absolute inset-0 bg-gradient-to-b from-[var(--primary)] via-[var(--primary)]/90 to-[var(--bg)]" />
+          <div className="relative z-10 px-6 md:px-12 text-center">
+            <h1 className="font-display text-5xl md:text-7xl font-semibold text-white leading-tight">Portfolio</h1>
+            <p className="mt-4 text-white/70 text-lg md:text-xl max-w-xl mx-auto">Unable to load projects. Please check your connection.</p>
+            <button onClick={retry} className="mt-6 btn-luxury-primary">Retry</button>
+          </div>
+        </section>
+      </main>
+    )
   }
 
   const visibleProjects = portfolio.slice(0, visibleCount)

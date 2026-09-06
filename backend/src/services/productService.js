@@ -48,7 +48,6 @@ export const productService = {
 }
 
 async function listProducts({ sort = '-createdAt', limit = 100, featured } = {}) {
-  try {
     const cacheKey = `products:list:${sort}:${limit}:${featured}`
     const cached = getCached(cacheKey)
     if (cached) return cached
@@ -68,13 +67,9 @@ async function listProducts({ sort = '-createdAt', limit = 100, featured } = {})
     const result = items.map(mapProduct)
     setCached(cacheKey, result, PRODUCTS_CACHE_TTL)
     return result
-  } catch {
-    return []
   }
-}
 
 async function getAllProducts({ sort = '-createdAt', limit = 500 } = {}) {
-  try {
     const orderBy = sort?.startsWith('-') ? { [sort.slice(1)]: 'desc' } : { createdAt: 'asc' }
     const items = await prisma.product.findMany({
       orderBy,
@@ -82,10 +77,7 @@ async function getAllProducts({ sort = '-createdAt', limit = 500 } = {}) {
       include: { variants: true },
     })
     return { items: items.map(mapProduct) }
-  } catch {
-    return { items: [] }
   }
-}
 
 async function getProduct(id) {
   const item = await prisma.product.findUnique({

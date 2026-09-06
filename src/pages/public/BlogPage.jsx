@@ -31,6 +31,7 @@ export const BlogPage = memo(() => {
   const [tags, setTags] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadingMeta, setLoadingMeta] = useState(true)
+  const [error, setError] = useState(null)
   const [searchParams, setSearchParams] = useSearchParams()
   const reduceMotion = useIsMobile()
 
@@ -54,6 +55,7 @@ export const BlogPage = memo(() => {
   }, [])
 
   const loadBlogs = useCallback(async () => {
+    setError(null)
     try {
       const params = new URLSearchParams({
         page: String(currentPage),
@@ -72,10 +74,18 @@ export const BlogPage = memo(() => {
       setFeaturedBlog(featured)
     } catch (err) {
       console.warn('[BlogPage] Failed to load blogs:', err?.message)
+      setError(err)
     } finally {
       setLoading(false)
     }
   }, [currentPage, searchTerm, activeCategory, activeTag])
+
+  const retry = useCallback(() => {
+    setLoading(true)
+    setLoadingMeta(true)
+    loadBlogs()
+    loadMeta()
+  }, [loadBlogs, loadMeta])
 
   useEffect(() => {
     loadBlogs()
@@ -97,6 +107,14 @@ export const BlogPage = memo(() => {
     window.addEventListener(ADMIN_DATA_CHANGED_EVENT, handler)
     return () => window.removeEventListener(ADMIN_DATA_CHANGED_EVENT, handler)
   }, [loadBlogs, loadMeta])
+
+  useEffect(() => {
+    const handleOnline = () => {
+      if (error) retry()
+    }
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
+  }, [error, retry])
 
   const handleSearch = (e) => {
     const value = e.target.value.trim()
@@ -307,7 +325,13 @@ export const BlogPage = memo(() => {
 
         {/* Blog Grid */}
         <SectionErrorBoundary sectionName="BlogGrid">
-          {loading ? (
+          {error && blogs.length === 0 ? (
+            <div className="text-center py-20">
+              <p className="font-display text-2xl text-[var(--primary)]/30 mb-3">Unable to load blog posts</p>
+              <p className="text-sm text-[var(--primary)]/40 mb-4">Please check your connection and try again.</p>
+              <button onClick={retry} className="btn-luxury-primary">Retry</button>
+            </div>
+          ) : loading ? (
             <SkeletonGrid />
           ) : displayBlogs.length === 0 ? (
             <div className="text-center py-20">

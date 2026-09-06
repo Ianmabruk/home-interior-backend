@@ -34,6 +34,7 @@ const SkeletonServices = () => (
 export const ServicesPage = memo(() => {
   const [services, setServices] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [formOpen, setFormOpen] = useState(false)
   const [_selectedService, setSelectedService] = useState(null)
   const [formData, setFormData] = useState({
@@ -53,15 +54,22 @@ export const ServicesPage = memo(() => {
   const fileInput2Ref = useRef(null)
 
   const loadServices = useCallback(async () => {
+    setError(null)
     try {
       const res = await api.get('/services')
       setServices(res.data || [])
     } catch (err) {
       console.warn('[SERVICES] Failed to load:', err?.message)
+      setError(err)
     } finally {
       setLoading(false)
     }
   }, [])
+
+  const retry = useCallback(() => {
+    setLoading(true)
+    loadServices()
+  }, [loadServices])
 
   useEffect(() => {
     loadServices()
@@ -75,6 +83,14 @@ export const ServicesPage = memo(() => {
     window.addEventListener(ADMIN_DATA_CHANGED_EVENT, handler)
     return () => window.removeEventListener(ADMIN_DATA_CHANGED_EVENT, handler)
   }, [loadServices])
+
+  useEffect(() => {
+    const handleOnline = () => {
+      if (error) loadServices()
+    }
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
+  }, [error, loadServices])
 
   const handleImageChange = (field, e) => {
     const file = e.target.files?.[0]
@@ -149,6 +165,20 @@ export const ServicesPage = memo(() => {
 
   if (loading) {
     return <main><SkeletonServices /></main>
+  }
+
+  if (error && services.length === 0) {
+    return (
+      <main>
+        <section className="bg-[var(--bg)] px-6 md:px-12 lg:px-20 py-20 md:py-32">
+          <div className="container-wide text-center">
+            <h2 className="font-display text-4xl font-medium leading-tight text-[var(--primary)] md:text-5xl lg:text-6xl">What We Do</h2>
+            <p className="mt-4 text-base text-[var(--primary)]/60">Unable to load services. Please check your connection.</p>
+            <button onClick={retry} className="mt-6 btn-luxury-primary">Retry</button>
+          </div>
+        </section>
+      </main>
+    )
   }
 
   return (

@@ -39,14 +39,10 @@ export const socialService = {
 }
 
 async function getSocialItems() {
-  try {
-    const items = await prisma.socialItem.findMany({
-      orderBy: { displayOrder: 'asc' },
-    })
-    return items.map(mapSocialItem)
-  } catch {
-    return []
-  }
+  const items = await prisma.socialItem.findMany({
+    orderBy: { displayOrder: 'asc' },
+  })
+  return items.map(mapSocialItem)
 }
 
 async function createSocialItem(data, file, circularFile) {

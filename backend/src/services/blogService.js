@@ -105,66 +105,54 @@ export const blogService = {
 }
 
 async function listBlogs() {
-  try {
-    const items = await prisma.blog.findMany({
-      where: { published: true },
-      orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
-    })
-    return items.map(mapBlog)
-  } catch {
-    return []
-  }
+  const items = await prisma.blog.findMany({
+    where: { published: true },
+    orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
+  })
+  return items.map(mapBlog)
 }
 
 async function listPublishedBlogs(params = {}) {
   const { search, category, tag, page = 1, limit = 12, sort } = params
 
-  try {
-    const where = buildBlogWhere({ search, category, status: 'published' })
-    if (tag) where.tags = { has: tag }
+  const where = buildBlogWhere({ search, category, status: 'published' })
+  if (tag) where.tags = { has: tag }
 
-    const skip = (Math.max(1, Number(page)) - 1) * Math.max(1, Number(limit))
-    const take = Math.min(100, Math.max(1, Number(limit)))
+  const skip = (Math.max(1, Number(page)) - 1) * Math.max(1, Number(limit))
+  const take = Math.min(100, Math.max(1, Number(limit)))
 
-    const [items, total] = await Promise.all([
-      prisma.blog.findMany({ where, orderBy: buildBlogOrderBy(sort), skip, take }),
-      prisma.blog.count({ where }),
-    ])
+  const [items, total] = await Promise.all([
+    prisma.blog.findMany({ where, orderBy: buildBlogOrderBy(sort), skip, take }),
+    prisma.blog.count({ where }),
+  ])
 
-    return {
-      items: items.map(mapBlog),
-      total,
-      page: Number(page) || 1,
-      limit: take,
-      totalPages: Math.ceil(total / take),
-    }
-  } catch {
-    return { items: [], total: 0, page: 1, limit: 12, totalPages: 0 }
+  return {
+    items: items.map(mapBlog),
+    total,
+    page: Number(page) || 1,
+    limit: take,
+    totalPages: Math.ceil(total / take),
   }
 }
 
 async function getAllBlogs(params = {}) {
   const { search, category, status, page = 1, limit = 50, sort } = params
 
-  try {
-    const where = buildBlogWhere({ search, category, status })
-    const skip = (Math.max(1, Number(page)) - 1) * Math.max(1, Number(limit))
-    const take = Math.min(200, Math.max(1, Number(limit)))
+  const where = buildBlogWhere({ search, category, status })
+  const skip = (Math.max(1, Number(page)) - 1) * Math.max(1, Number(limit))
+  const take = Math.min(200, Math.max(1, Number(limit)))
 
-    const [items, total] = await Promise.all([
-      prisma.blog.findMany({ where, orderBy: buildBlogOrderBy(sort), skip, take }),
-      prisma.blog.count({ where }),
-    ])
+  const [items, total] = await Promise.all([
+    prisma.blog.findMany({ where, orderBy: buildBlogOrderBy(sort), skip, take }),
+    prisma.blog.count({ where }),
+  ])
 
-    return {
-      items: items.map(mapBlog),
-      total,
-      page: Number(page) || 1,
-      limit: take,
-      totalPages: Math.ceil(total / take),
-    }
-  } catch {
-    return { items: [], total: 0, page: 1, limit: 50, totalPages: 0 }
+  return {
+    items: items.map(mapBlog),
+    total,
+    page: Number(page) || 1,
+    limit: take,
+    totalPages: Math.ceil(total / take),
   }
 }
 

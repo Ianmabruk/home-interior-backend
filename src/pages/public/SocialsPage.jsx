@@ -51,17 +51,25 @@ const SkeletonSocials = () => (
 export const SocialsPage = memo(() => {
   const [socialItems, setSocialItems] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const loadSocials = useCallback(async () => {
+    setError(null)
     try {
       const res = await api.get('/socials')
       setSocialItems(Array.isArray(res.data) ? res.data : [])
     } catch (err) {
       console.warn('[SOCIALS] Failed to load:', err?.message)
+      setError(err)
     } finally {
       setLoading(false)
     }
   }, [])
+
+  const retry = useCallback(() => {
+    setLoading(true)
+    loadSocials()
+  }, [loadSocials])
 
   useEffect(() => {
     loadSocials()
@@ -76,6 +84,14 @@ export const SocialsPage = memo(() => {
     return () => window.removeEventListener(ADMIN_DATA_CHANGED_EVENT, handler)
   }, [loadSocials])
 
+  useEffect(() => {
+    const handleOnline = () => {
+      if (error) loadSocials()
+    }
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
+  }, [error, loadSocials])
+
   const activeItems = socialItems.filter((item) => item.isActive !== false && item.link && item.link.trim() !== '')
 
   const displayItems = activeItems.length > 0 ? activeItems : SOCIAL_LINKS.map((link, index) => ({
@@ -89,6 +105,21 @@ export const SocialsPage = memo(() => {
 
   if (loading) {
     return <main><SkeletonSocials /></main>
+  }
+
+  if (error && socialItems.length === 0) {
+    return (
+      <main>
+        <section className="relative min-h-[50vh] md:min-h-[60vh] flex items-center justify-center">
+          <div className="absolute inset-0 bg-gradient-to-b from-[var(--primary)] via-[var(--primary)]/80 to-[var(--bg)]" />
+          <div className="relative z-10 container-wide px-6 md:px-12 lg:px-20 text-center">
+            <h1 className="font-display text-5xl md:text-7xl lg:text-8xl font-semibold text-white leading-tight">Socials</h1>
+            <p className="mt-6 text-lg md:text-xl text-white/70 max-w-3xl mx-auto">Unable to load social links. Please check your connection.</p>
+            <button onClick={retry} className="mt-6 btn-luxury-primary">Retry</button>
+          </div>
+        </section>
+      </main>
+    )
   }
 
   return (

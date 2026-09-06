@@ -166,6 +166,33 @@ function cleanExpiredCacheEntries() {
 
 setInterval(cleanExpiredCacheEntries, 60 * 1000)
 
+const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504])
+const MAX_RETRIES = 2
+const BASE_DELAY = 1000
+
+function getRetryDelay(attempt) {
+  return Math.min(BASE_DELAY * Math.pow(2, attempt), 8000)
+}
+
+async function withRetry(fn, signal) {
+  let lastError
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await fn()
+    } catch (err) {
+      lastError = err
+      if (attempt >= MAX_RETRIES) break
+      if (signal?.aborted) break
+      const status = err?.response?.status || err?.status
+      if (!RETRYABLE_STATUS.has(status) && status !== undefined) break
+      if (err?.name === 'AbortError' || err?.code === 'ERR_CANCELED') break
+      if (err?.name === 'TypeError' && !status) break
+      await new Promise((r) => setTimeout(r, getRetryDelay(attempt)))
+    }
+  }
+  throw lastError
+}
+
 let csrfToken = null
 
 function setStoredCsrfToken(token) {
@@ -189,16 +216,9 @@ api.get = function (url, config = {}) {
     ...(config.headers || {}),
   }
 
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), timeout)
-  const signal = config.signal
-    ? combineSignals(controller.signal, config.signal)
-    : controller.signal
-
   const cacheKey = `get:${rewritten}:${JSON.stringify(config?.params || {})}`
   const cached = requestCache.get(cacheKey)
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    clearTimeout(timeoutId)
     return Promise.resolve({
       data: cached.data,
       status: 200,
@@ -216,52 +236,63 @@ api.get = function (url, config = {}) {
         .join('&')
     : ''
 
-  return fetch(`${fullUrl}${params}`, {
-    method: 'GET',
-    headers,
-    signal,
-    credentials: 'include',
-  })
-    .then(async (response) => {
-      clearTimeout(timeoutId)
-      const contentType = response.headers.get('content-type') || ''
-      const isJson = contentType.includes('application/json')
-      const data = isJson ? await response.json() : undefined
+  return withRetry(
+    () => {
+      const attemptController = new AbortController()
+      const attemptTimeoutId = setTimeout(() => attemptController.abort(), timeout)
+      const signal = config.signal
+        ? combineSignals(attemptController.signal, config.signal)
+        : attemptController.signal
 
-      if (!response.ok) {
-        const message =
-          (data && typeof data === 'object' && data.message) ||
-          data ||
-          response.statusText ||
-          'Request failed'
-        const error = new Error(message)
-        error.status = response.status
-        error.response = { status: response.status, data }
-        throw error
-      }
+      return fetch(`${fullUrl}${params}`, {
+        method: 'GET',
+        headers,
+        signal,
+        credentials: 'include',
+      })
+        .then(async (response) => {
+          clearTimeout(attemptTimeoutId)
+          const contentType = response.headers.get('content-type') || ''
+          const isJson = contentType.includes('application/json')
+          const data = isJson ? await response.json() : undefined
 
-      if (data && typeof data === 'object' && 'success' in data && data.success === true) {
-        const result = { ...response, data: data.data ?? null }
-        if (data.meta) result.meta = data.meta
-        if (data.data?.csrfToken) setStoredCsrfToken(data.data.csrfToken)
-        requestCache.set(cacheKey, { data: result.data, timestamp: Date.now() })
-        return result
-      }
+          if (!response.ok) {
+            const message =
+              (data && typeof data === 'object' && data.message) ||
+              data ||
+              response.statusText ||
+              'Request failed'
+            const error = new Error(message)
+            error.status = response.status
+            error.response = { status: response.status, data }
+            throw error
+          }
 
-      if (data?.csrfToken) setStoredCsrfToken(data.csrfToken)
-      requestCache.set(cacheKey, { data, timestamp: Date.now() })
-      return { data, status: response.status, headers: response.headers, config: { url: rewritten, method: 'get' } }
-    })
-    .catch((err) => {
-      clearTimeout(timeoutId)
-      if (err.name === 'AbortError') {
-        const canceled = new Error('Request canceled')
-        canceled.name = 'CanceledError'
-        canceled.code = 'ERR_CANCELED'
-        throw canceled
-      }
-      throw err
-    })
+          if (data && typeof data === 'object' && 'success' in data && data.success === true) {
+            const result = { ...response, data: data.data ?? null }
+            if (data.meta) result.meta = data.meta
+            if (data.data?.csrfToken) setStoredCsrfToken(data.data.csrfToken)
+            requestCache.set(cacheKey, { data: result.data, timestamp: Date.now() })
+            return result
+          }
+
+          if (data?.csrfToken) setStoredCsrfToken(data.csrfToken)
+          requestCache.set(cacheKey, { data, timestamp: Date.now() })
+          return { data, status: response.status, headers: response.headers, config: { url: rewritten, method: 'get' } }
+        })
+        .catch((err) => {
+          clearTimeout(attemptTimeoutId)
+          if (err.name === 'AbortError') {
+            const canceled = new Error('Request canceled')
+            canceled.name = 'CanceledError'
+            canceled.code = 'ERR_CANCELED'
+            throw canceled
+          }
+          throw err
+        })
+    },
+    config.signal,
+  )
 }
 
 api.post = function (url, data, config = {}) {
