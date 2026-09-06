@@ -409,12 +409,27 @@ model Order {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  statusHistory OrderStatusHistory[]
 
   @@map("orders")
   @@index([email, createdAt(desc)])
   @@index([status, createdAt(desc)])
   @@index([userId])
   @@index([trackingNumber])
+}
+
+model OrderStatusHistory {
+  id                String   @id @default(cuid())
+  orderId           String   @map("order_id") @db.Text
+  status            String   @db.Text
+  customerNote      String?  @db.Text @map("customer_note")
+  estimatedDelivery String?  @db.Text @map("estimated_delivery")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_status_history")
+  @@index([orderId, createdAt(desc)])
 }
 
 model CartItem {

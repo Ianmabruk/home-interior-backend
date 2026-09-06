@@ -28,6 +28,12 @@ function getStatusIndex(status) {
   return 0
 }
 
+function formatStatusDate(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' at ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+}
+
 export const TrackOrderPage = () => {
   const [trackingNumber, setTrackingNumber] = useState('')
   const [contact, setContact] = useState('')
@@ -38,23 +44,31 @@ export const TrackOrderPage = () => {
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault()
+    if (loading) return
     setLoading(true)
     setError('')
     setResult(null)
     try {
-      const res = await api.post('/orders/track', { trackingNumber, contact })
+      const res = await api.post('/orders/track', { trackingNumber: trackingNumber.trim().toUpperCase(), contact: contact.trim() })
       setResult(res.data?.data || res.data)
-    } catch {
-      setError("We couldn't verify this order. Please check your tracking number and contact details.")
+    } catch (err) {
+      const status = err?.response?.status
+      if (status === 404) {
+        setError('We couldn\'t find an order with that tracking number and contact details. Please double-check and try again.')
+      } else if (status === 429) {
+        setError('Too many attempts. Please wait a moment and try again.')
+      } else {
+        setError('Something went wrong while looking up your order. Please try again in a moment.')
+      }
     } finally {
       setLoading(false)
     }
-  }, [trackingNumber, contact])
-
-  const currentStatusIndex = result ? getStatusIndex(result.status) : -1
+  }, [trackingNumber, contact, loading])
 
   if (result) {
     const items = Array.isArray(result.items) ? result.items : []
+    const statusHistory = Array.isArray(result.statusHistory) ? result.statusHistory : []
+
     return (
       <main className="min-h-screen bg-[var(--bg)] py-12 md:py-16">
         <PageMeta title={`Track Order ${result.trackingNumber} — HOK Interiors`} description="Track your order status." />
@@ -70,28 +84,53 @@ export const TrackOrderPage = () => {
 
             <div className="bg-white rounded-3xl border border-[var(--border)]/40 p-6 md:p-8 shadow-[0_10px_40px_rgba(42,36,31,0.06)] mb-6">
               <h2 className="font-display text-xl font-medium text-[var(--primary)] mb-6">Order Timeline</h2>
-              <div className="relative">
-                {STATUS_FLOW.map((step, idx) => {
-                  const isCompleted = idx <= currentStatusIndex && currentStatusIndex >= 0
-                  const isCurrent = idx === currentStatusIndex
-                  return (
-                    <div key={step.key + idx} className="flex gap-4 mb-6 last:mb-0">
-                      <div className="flex flex-col items-center">
-                        <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${isCompleted ? 'bg-[var(--accent)] border-[var(--accent)]' : 'border-[var(--border)] bg-white'}`}>
-                          {isCompleted && <CheckCircle2 size={12} className="text-white" strokeWidth={2.5} />}
+              {statusHistory.length > 0 ? (
+                <div className="relative">
+                  {statusHistory.map((entry, idx) => {
+                    const entryIndex = getStatusIndex(entry.status)
+                    const isCompleted = entryIndex >= 0 && entryIndex <= getStatusIndex(result.status)
+                    return (
+                      <div key={entry.id || idx} className="flex gap-4 mb-6 last:mb-0">
+                        <div className="flex flex-col items-center">
+                          <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${isCompleted ? 'bg-[var(--accent)] border-[var(--accent)]' : 'border-[var(--border)] bg-white'}`}>
+                            {isCompleted && <CheckCircle2 size={12} className="text-white" strokeWidth={2.5} />}
+                          </div>
+                          {idx < statusHistory.length - 1 && (
+                            <div className={`w-0.5 h-10 ${isCompleted ? 'bg-[var(--accent)]' : 'bg-[var(--border)]'}`} />
+                          )}
                         </div>
-                        {idx < STATUS_FLOW.length - 1 && (
-                          <div className={`w-0.5 h-10 ${isCompleted ? 'bg-[var(--accent)]' : 'bg-[var(--border)]'}`} />
-                        )}
+                        <div>
+                          <p className={`text-sm font-medium ${isCompleted ? 'text-[var(--primary)]' : 'text-[var(--primary)]/40'}`}>{entry.status || 'Unknown'}</p>
+                          {entry.customerNote && <p className="text-xs text-[var(--primary)]/60 mt-0.5">{entry.customerNote}</p>}
+                          {entry.estimatedDelivery && <p className="text-xs text-[var(--accent)] mt-0.5">Est. Delivery: {entry.estimatedDelivery}</p>}
+                          <p className="text-2xs text-[var(--primary)]/40 mt-0.5">{formatStatusDate(entry.createdAt)}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className={`text-sm font-medium ${isCompleted ? 'text-[var(--primary)]' : 'text-[var(--primary)]/40'}`}>{step.label}</p>
-                        {isCurrent && <p className="text-xs text-[var(--accent)] mt-0.5">Currently being prepared</p>}
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="relative">
+                  {STATUS_FLOW.map((step, idx) => {
+                    const isCompleted = idx <= getStatusIndex(result.status) && getStatusIndex(result.status) >= 0
+                    return (
+                      <div key={step.key + idx} className="flex gap-4 mb-6 last:mb-0">
+                        <div className="flex flex-col items-center">
+                          <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${isCompleted ? 'bg-[var(--accent)] border-[var(--accent)]' : 'border-[var(--border)] bg-white'}`}>
+                            {isCompleted && <CheckCircle2 size={12} className="text-white" strokeWidth={2.5} />}
+                          </div>
+                          {idx < STATUS_FLOW.length - 1 && (
+                            <div className={`w-0.5 h-10 ${isCompleted ? 'bg-[var(--accent)]' : 'bg-[var(--border)]'}`} />
+                          )}
+                        </div>
+                        <div>
+                          <p className={`text-sm font-medium ${isCompleted ? 'text-[var(--primary)]' : 'text-[var(--primary)]/40'}`}>{step.label}</p>
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
 
             <div className="bg-white rounded-3xl border border-[var(--border)]/40 p-6 md:p-8 shadow-[0_10px_40px_rgba(42,36,31,0.06)] mb-6">

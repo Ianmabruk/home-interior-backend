@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Package, Eye, Loader2, AlertTriangle, ClipboardList, Home, ShoppingBag } from 'lucide-react'
-import { api } from '@services/api'
+import { api, clearApiCache } from '@services/api'
 import { ADMIN_DATA_CHANGED_EVENT, getAdminDataChangedPayload } from '@utils/adminEvents'
 import { PageMeta } from '@hooks/usePageMeta'
 import { useAuth } from '@context/AuthContext'
@@ -31,32 +31,51 @@ export const OrdersPage = () => {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const controllerRef = useRef(null)
 
   const loadOrders = useCallback(async () => {
-    if (!user?.id && !user?.email) return
+    if (!user?.id && !user?.email) {
+      setLoading(false)
+      setOrders([])
+      return
+    }
+    if (controllerRef.current) {
+      controllerRef.current.abort()
+    }
+    const controller = new AbortController()
+    controllerRef.current = controller
+
     setLoading(true)
     setError(null)
     try {
-      const res = await api.get('/orders/me')
+      const res = await api.get('/orders/me', { signal: controller.signal })
+      if (controller.signal.aborted) return
       const data = res.data?.data || res.data || []
       const sorted = Array.isArray(data) ? data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) : []
       setOrders(sorted)
     } catch (err) {
+      if (controller.signal.aborted) return
       setError(err?.message || 'Failed to load orders')
       setOrders([])
     } finally {
-      setLoading(false)
+      if (!controller.signal.aborted) setLoading(false)
     }
   }, [user])
 
   useEffect(() => {
     loadOrders()
+    return () => {
+      if (controllerRef.current) {
+        controllerRef.current.abort()
+      }
+    }
   }, [loadOrders])
 
   useEffect(() => {
     const handler = (event) => {
       const payload = getAdminDataChangedPayload(event)
       if (payload?.type === 'orders-changed') {
+        clearApiCache('/orders/me')
         loadOrders()
       }
     }

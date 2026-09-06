@@ -111,10 +111,12 @@ export const CheckoutPage = () => {
       try { localStorage.setItem('hok_order_placed', '1') } catch {
         // ignore localStorage errors
       }
-      if (newOrderId) {
-        setTimeout(() => navigate(`/order-confirmation/${newOrderId}`), 5000)
+      if (newTrackingNumber) {
+        setTimeout(() => navigate(`/track-order?tracking=${newTrackingNumber}`), 2000)
+      } else if (newOrderId) {
+        setTimeout(() => navigate(`/order-confirmation/${newOrderId}`), 2000)
       } else {
-        setTimeout(() => navigate('/shop'), 5000)
+        setTimeout(() => navigate('/shop'), 2000)
       }
     } catch (err) {
       setError(err?.message || 'Failed to place order')

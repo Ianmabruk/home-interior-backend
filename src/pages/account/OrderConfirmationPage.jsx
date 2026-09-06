@@ -19,19 +19,29 @@ export const OrderConfirmationPage = () => {
   const [paymentError, setPaymentError] = useState(null)
 
   useEffect(() => {
+    const controller = new AbortController()
     const loadOrder = async () => {
       setLoading(true)
       setError(null)
       try {
-        const res = await api.get(`/orders/${id}`)
+        const res = await api.get(`/orders/${id}`, { signal: controller.signal })
         setOrder(res.data?.data || res.data)
-      } catch {
-        setError('Order not found')
+      } catch (err) {
+        if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return
+        const status = err?.response?.status
+        if (status === 401 || status === 403) {
+          setError('Please log in to view this order, or use the tracking page with your tracking number.')
+        } else if (status === 404) {
+          setError('Order not found')
+        } else {
+          setError(err?.message || 'Failed to load order')
+        }
       } finally {
-        setLoading(false)
+        if (!controller.signal.aborted) setLoading(false)
       }
     }
     if (id) loadOrder()
+    return () => controller.abort()
   }, [id])
 
   if (loading) {
@@ -288,6 +298,23 @@ export const OrderConfirmationPage = () => {
               </div>
             </div>
           </div>
+
+          {order.statusHistory && order.statusHistory.length > 0 && (
+            <div className="bg-white rounded-3xl border border-[var(--border)]/40 p-6 md:p-8 shadow-[0_10px_40px_rgba(42,36,31,0.06)] mb-6">
+              <h2 className="font-display text-xl font-medium text-[var(--primary)] mb-4">Status History</h2>
+              <div className="space-y-3">
+                {order.statusHistory.map((entry) => (
+                  <div key={entry.id} className="flex items-start justify-between gap-4 pb-3 border-b border-[var(--border)]/40 last:border-0 last:pb-0">
+                    <div>
+                      <p className="text-sm font-medium text-[var(--primary)] capitalize">{entry.status}</p>
+                      {entry.customerNote && <p className="text-xs text-[var(--primary)]/60 mt-0.5">{entry.customerNote}</p>}
+                    </div>
+                    <p className="text-2xs text-[var(--primary)]/40 whitespace-nowrap">{new Date(entry.createdAt).toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             {order.trackingNumber && (

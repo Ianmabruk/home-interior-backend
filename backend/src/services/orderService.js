@@ -2,6 +2,7 @@ import { prisma, withRetry, withRetryTransaction } from '../config/database.js'
 import { failure } from '../utils/response.js'
 import { sendOrderConfirmationEmail, default as emailService } from './emailService.js'
 import { getRedisClient, isRedisAvailable } from '../config/redis.js'
+import { invalidateCachePattern } from '../utils/cache.js'
 
 const TRACKING_PREFIX = 'HOK'
 const TRACKING_LENGTH = 6
@@ -28,6 +29,7 @@ export const orderService = {
   getAllOrders,
   updateOrderStatus,
   trackOrder,
+  getOrderStatusHistory,
 }
 
 function parseOrder(order) {
@@ -298,6 +300,17 @@ async function setCachedOrder(signature, order) {
         console.log(`[ORDER ${signature}] TX_STOCK_UPDATED ${Date.now() - stockT0}ms items=${finalItems.length}`)
 
         const order = parseOrder(created)
+
+        // Create initial status history entry within the same transaction
+        await tx.orderStatusHistory.create({
+          data: {
+            orderId: created.id,
+            status: created.status,
+            customerNote: created.customerNote,
+            estimatedDelivery: created.estimatedDelivery,
+          },
+        })
+
         console.log(`[ORDER ${signature}] TX_COMMIT ${Date.now() - txT0}ms total=${Date.now() - t0}ms`)
         return order
       }, {
@@ -382,17 +395,30 @@ function scheduleOrderNotifications(created, data) {
 async function getOrder(id) {
   const order = await withRetry(() => prisma.order.findUnique({
     where: { id },
+    include: { statusHistory: { orderBy: { createdAt: 'asc' } } },
   }))
   if (!order) throw failure(404, 'Order not found')
-  return parseOrder(order)
+  const parsed = parseOrder(order)
+  parsed.statusHistory = (order.statusHistory || []).map((entry) => ({
+    id: entry.id,
+    orderId: entry.orderId,
+    status: entry.status,
+    customerNote: entry.customerNote,
+    estimatedDelivery: entry.estimatedDelivery,
+    createdAt: entry.createdAt,
+  }))
+  return parsed
 }
 
 async function getUserOrders(emailOrId) {
-  const where = emailOrId ? { OR: [{ email: emailOrId }, { userId: emailOrId }] } : {}
+  const trimmed = String(emailOrId || '').trim()
+  if (!trimmed) return []
+  const where = { OR: [{ email: trimmed }, { userId: trimmed }] }
   const orders = await withRetry(() => prisma.order.findMany({
     where,
     orderBy: { createdAt: 'desc' },
   }))
+  invalidateCachePattern('orders:')
   return orders.map(parseOrder)
 }
 
@@ -425,6 +451,25 @@ async function updateOrderStatus(id, updateData) {
     where: { id },
     data: updateData,
   }))
+
+  // Create status history entry if status or note/delivery changed
+  if (updateData.status || updateData.customerNote !== undefined || updateData.estimatedDelivery !== undefined) {
+    try {
+      await prisma.orderStatusHistory.create({
+        data: {
+          orderId: id,
+          status: updateData.status || order.status,
+          customerNote: updateData.customerNote ?? order.customerNote,
+          estimatedDelivery: updateData.estimatedDelivery ?? order.estimatedDelivery,
+        },
+      })
+    } catch (historyErr) {
+      console.error(`[orders] Failed to create status history for order ${id}:`, historyErr?.message || historyErr)
+    }
+  }
+
+  invalidateCachePattern('order:')
+  invalidateCachePattern('orders:')
   return parseOrder(order)
 }
 
@@ -432,10 +477,11 @@ async function trackOrder(trackingNumber, contact) {
   if (!trackingNumber || !contact) {
     throw failure(400, 'Tracking number and contact are required')
   }
+  const normalizedTracking = String(trackingNumber).trim().toUpperCase()
   const contactLower = String(contact).trim().toLowerCase()
   const order = await withRetry(() => prisma.order.findFirst({
     where: {
-      trackingNumber,
+      trackingNumber: normalizedTracking,
       OR: [
         { email: { equals: contactLower, mode: 'insensitive' } },
         { phone: { equals: contact, mode: 'insensitive' } },
@@ -445,5 +491,36 @@ async function trackOrder(trackingNumber, contact) {
   if (!order) {
     throw failure(404, 'We couldn\'t verify this order. Please check your tracking number and contact details.')
   }
-  return parseOrderSafe(order)
+
+  const history = await withRetry(() => prisma.orderStatusHistory.findMany({
+    where: { orderId: order.id },
+    orderBy: { createdAt: 'asc' },
+  }))
+
+  return {
+    ...parseOrderSafe(order),
+    statusHistory: history.map((entry) => ({
+      id: entry.id,
+      orderId: entry.orderId,
+      status: entry.status,
+      customerNote: entry.customerNote,
+      estimatedDelivery: entry.estimatedDelivery,
+      createdAt: entry.createdAt,
+    })),
+  }
+}
+
+async function getOrderStatusHistory(orderId) {
+  const history = await withRetry(() => prisma.orderStatusHistory.findMany({
+    where: { orderId },
+    orderBy: { createdAt: 'desc' },
+  }))
+  return history.map((entry) => ({
+    id: entry.id,
+    orderId: entry.orderId,
+    status: entry.status,
+    customerNote: entry.customerNote,
+    estimatedDelivery: entry.estimatedDelivery,
+    createdAt: entry.createdAt,
+  }))
 }

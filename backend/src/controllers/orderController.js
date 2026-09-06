@@ -2,6 +2,8 @@ import { asyncHandler } from '../middleware/asyncHandler.js'
 import { orderService } from '../services/orderService.js'
 import { emailService } from '../services/emailService.js'
 import { triggerNewOrderNotification } from '../services/notificationService.js'
+import { invalidateCachePattern } from '../utils/cache.js'
+import { optionalAuth } from '../middleware/auth.js'
 
 const ALLOWED_STATUSES = [
   'order placed',
@@ -59,7 +61,7 @@ export const orderController = {
       paymentDetails: rawPayment,
       total: Number(req.body.total) || 0,
     }
-    console.log(`[ORDER ${orderId}] VALIDATION_COMPLETE ${Date.now() - t0}ms`)
+    console.log(`[ORDER ${orderId}] VALIDATION_COMPLETE ${Date.now() - t0}ms userId=${data.userId || 'guest'}`)
 
     let order
     try {
@@ -69,6 +71,9 @@ export const orderController = {
       throw err
     }
     console.log(`[ORDER ${orderId}] DB_TRANSACTION_COMPLETE ${Date.now() - t0}ms`)
+
+    invalidateCachePattern('order:')
+    invalidateCachePattern('orders:')
 
     // Fire-and-forget admin push notification (new order). Never block the
     // customer response on push delivery; failure is logged but non-fatal.
@@ -139,6 +144,11 @@ export const orderController = {
     res.json({ success: true, data: order })
   }),
 
+  getStatusHistory: asyncHandler(async (req, res) => {
+    const history = await orderService.getOrderStatusHistory(req.params.id)
+    res.json({ success: true, data: history })
+  }),
+
   updateStatus: asyncHandler(async (req, res) => {
     const { status, customerNote, estimatedDelivery } = req.body
     if (!status) {
@@ -153,6 +163,9 @@ export const orderController = {
     if (customerNote !== undefined) updateData.customerNote = customerNote
     if (estimatedDelivery !== undefined) updateData.estimatedDelivery = estimatedDelivery
     const order = await orderService.updateOrderStatus(req.params.id, updateData)
+
+    invalidateCachePattern('order:')
+    invalidateCachePattern('orders:')
 
     // Notify the customer of the status change (best-effort; never block the update).
     if (previous && order.email && previous.status !== normalizedStatus) {
