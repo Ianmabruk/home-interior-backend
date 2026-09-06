@@ -61,8 +61,6 @@ export const HomePage = memo(() => {
       if (err?.name !== 'CanceledError' && err?.code !== 'ERR_CANCELED') {
         console.warn('[HOME] Failed to load data:', err?.message)
       }
-    } finally {
-      clearApiCache('/homepage')
     }
   }, [])
 
@@ -80,11 +78,10 @@ export const HomePage = memo(() => {
         payload?.type === 'settings-changed' ||
         payload?.type === 'circular-tabs-changed'
       ) {
-        if (payload?.type === 'circular-tabs-changed') {
-          clearApiCache('/circular-tabs')
-        }
         clearApiCache('/homepage')
-        loadData()
+        clearApiCache('/circular-tabs')
+        const controller = new AbortController()
+        loadData(controller.signal)
       }
     }
     window.addEventListener(ADMIN_DATA_CHANGED_EVENT, handler)

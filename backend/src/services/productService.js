@@ -1,7 +1,7 @@
 import { prisma } from '../config/database.js'
-import { uploadFile, deleteFiles } from '../uploads/uploadService.js'
+import { uploadFile, deleteFiles, deleteFile } from '../uploads/uploadService.js'
 import { failure } from '../utils/response.js'
-import { getCached, setCached, invalidateCache } from '../utils/cache.js'
+import { getCached, setCached, invalidateCachePattern } from '../utils/cache.js'
 
 const PRODUCTS_CACHE_TTL = 30000 // 30 seconds
 
@@ -293,6 +293,30 @@ async function updateProduct(id, data, files, variantFiles = []) {
   invalidateCachePattern('products:list')
   invalidateCachePattern('products:')
   return mapProduct(updatedItem)
+}
+
+async function deleteProduct(id) {
+  const existing = await prisma.product.findUnique({
+    where: { id },
+    include: { variants: true },
+  })
+  if (!existing) throw failure(404, 'Product not found')
+
+  const allPaths = [
+    ...(Array.isArray(existing.images) ? existing.images.filter(Boolean) : []),
+    ...(Array.isArray(existing.storagePaths) ? existing.storagePaths.filter(Boolean) : []),
+    ...(existing.variants || []).map((v) => v.storagePath).filter(Boolean),
+  ]
+
+  if (allPaths.length > 0) {
+    await deleteFiles(allPaths).catch(() => {})
+  }
+
+  await prisma.product.delete({ where: { id } })
+
+  invalidateCachePattern('products:list')
+  invalidateCachePattern('products:')
+  return { success: true, message: 'Product deleted' }
 }
 
 async function deleteProductImage(id, imageId) {

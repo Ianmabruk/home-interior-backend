@@ -84,15 +84,18 @@ export default defineConfig({
             },
           },
           {
-            // Read-only public content APIs — StaleWhileRevalidate so return
-            // visitors get instant cached content while the SW silently updates
-            // in the background. Cache time is kept short (60s) so admin
-            // changes appear quickly without blocking first paint.
+            // Read-only public content APIs — NetworkFirst so admin
+            // uploads appear on the public site immediately. The cache is only
+            // used as an offline fallback (clientsClaim + skipWaiting keep the
+            // SW fresh on deploy). Without this, StaleWhileRevalidate served
+            // cached API responses for up to 5 minutes, making admin content
+            // "not appear" on the user site.
             urlPattern: /\/api\/(content|products|portfolio|testimonials|virtual-design|services|about|socials|blog|hero-media|work-with-us|circular-tabs)(\/.*)?$/i,
-            handler: 'StaleWhileRevalidate',
+            handler: 'NetworkFirst',
             options: {
               cacheName: 'api-content',
-              expiration: { maxEntries: 80, maxAgeSeconds: 60 },
+              networkTimeoutSeconds: 10,
+              expiration: { maxEntries: 80, maxAgeSeconds: 60 * 5 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },
