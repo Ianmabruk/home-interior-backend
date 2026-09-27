@@ -1,6 +1,29 @@
 import bcrypt from 'bcryptjs'
 import { prisma } from '../config/database.js'
 import { env } from '../config/env.js'
+
+// ---------------------------------------------------------------------------
+// SAFETY GUARD
+// The Render build command runs `npm run seed` on every deploy. Run unguarded
+// against an empty production database, this script inserts default content
+// (services, testimonials, hero, circular tabs, virtual designs) and creates an
+// admin account with the fallback password `admin123` — which would make a
+// failed or partial database import look like a working site full of
+// placeholder data.
+//
+// Seeding is therefore opt-in. To seed deliberately:
+//   ALLOW_PRODUCTION_SEED=true npm run seed
+// or locally:
+//   npm run seed:unsafe
+// ---------------------------------------------------------------------------
+if (process.env.ALLOW_PRODUCTION_SEED !== 'true' && env?.nodeEnv === 'production') {
+  console.warn(
+    '[seed] SKIPPED: seeding is disabled in production because it would insert ' +
+    'placeholder content over real data. Set ALLOW_PRODUCTION_SEED=true to override.',
+  )
+  process.exit(0)
+}
+
 import { CIRCULAR_TAB_DEFINITIONS } from '../constants/circularTabs.js'
 
 async function seed() {

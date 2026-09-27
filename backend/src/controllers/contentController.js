@@ -57,7 +57,10 @@ export const contentController = {
       const siteNameSetting = await prisma.siteSetting.findUnique({
         where: { key: 'siteName' },
       })
-      const notificationSiteName = siteNameSetting?.value || siteName
+      // `siteName` is not defined in this scope. Referring to it threw a
+      // ReferenceError, so the first newsletter signup against a database with
+      // no `siteName` SiteSetting row returned HTTP 500.
+      const notificationSiteName = siteNameSetting?.value || 'HOK Interiors'
 
       sendNewsletterNotificationEmail({
         subscriberEmail: normalizedEmail,

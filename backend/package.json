@@ -15,7 +15,8 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "node scripts/migrate-deploy.js",
-    "migrate:deploy": "node scripts/migrate-deploy.js"
+    "migrate:deploy": "node scripts/migrate-deploy.js",
+    "seed:unsafe": "ALLOW_PRODUCTION_SEED=true node src/seeds/seed.js"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",
