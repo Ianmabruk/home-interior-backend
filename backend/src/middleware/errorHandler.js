@@ -38,6 +38,14 @@ export function errorHandler(err, req, res, next) {
     return res.status(404).json({ success: false, message: 'Record not found' })
   }
 
+  // Infrastructure/connectivity failures (DB asleep, cold start, network blip).
+  // Answer with a generic, actionable message and never the raw Prisma code.
+  if (err?.code === 'P1001' || err?.code === 'P1002' || err?.code === 'P1008' || err?.code === 'P1009' || err?.code === 'P2024') {
+    res.setHeader('X-Server-ID', SERVER_ID)
+    console.error(`[${SERVER_ID}] [${req.method} ${req.originalUrl}] database unavailable:`, err?.message)
+    return res.status(503).json({ success: false, message: 'Service temporarily unavailable. Please try again.' })
+  }
+
   const isOperational = err instanceof ApiError
 
   const status = isOperational
@@ -57,7 +65,14 @@ export function errorHandler(err, req, res, next) {
 
   res.setHeader('X-Server-ID', SERVER_ID)
   const body = { success: false, message }
-  if (err?.code) body.code = err.code
-  if (err?.details) body.details = err.details
+  // Only surface metadata on client errors we authored. Library errors (Prisma
+  // P####, driver codes) can carry connection strings, hostnames and query text,
+  // so their code/details are logged server-side and never serialised.
+  // Our own codes are SCREAMING_SNAKE_CASE, e.g. TOTAL_IMAGE_LIMIT_EXCEEDED.
+  const isAppCode = typeof err?.code === 'string' && /^[A-Z][A-Z0-9]*(_[A-Z0-9]+)+$/.test(err.code)
+  if (status < 500) {
+    if (isAppCode) body.code = err.code
+    if (err?.details) body.details = err.details
+  }
   res.status(status).json(body)
 }
