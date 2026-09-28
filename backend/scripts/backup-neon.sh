@@ -54,10 +54,17 @@ if printf '%s' "$PG_URL" | grep -qE '://[^:]+:[^@]+@'; then
   export PGPASSWORD="$PGPASSWORD_VALUE"
 fi
 PGHOST_VALUE="$(printf '%s' "$PG_URL" | sed -E 's|.*://[^@]*@([^:/?]+).*|\1|')"
+# A Neon URL usually has no explicit port. The sed below leaves the input
+# untouched when there is no ":digits" after the host, so the result must be
+# validated as digits before being used as PGPORT.
 PGPORT_VALUE="$(printf '%s' "$PG_URL" | sed -E 's|.*://[^@]*@[^:/?]+:([0-9]+).*|\1|')"
-[ -n "$PGPORT_VALUE" ] || PGPORT_VALUE=5432
+case "$PGPORT_VALUE" in
+  ''|*[!0-9]*) PGPORT_VALUE=5432 ;;
+esac
 PGDATABASE="$(printf '%s' "$PG_URL" | sed -E 's|.*://[^@]*@[^/]*/([^?]*).*|\1|')"
 export PGHOST="$PGHOST_VALUE" PGPORT="$PGPORT_VALUE" PGUSER="$PGUSER_NAME" PGDATABASE
+# Neon requires TLS.
+export PGSSLMODE="${PGSSLMODE:-require}"
 
 mkdir -p "$OUT"
 chmod 700 "$OUT"
@@ -68,6 +75,16 @@ log "[backup] destination: $OUT"
 log "[backup] testing source connection..."
 psql -v ON_ERROR_STOP=1 -tAc "SELECT 1" >/dev/null 2>&1 \
   || fail "cannot connect to the source database"
+
+# pg_dump refuses to dump a server newer than itself ("server version mismatch").
+# The server version is only knowable after connecting, so check it here and fail
+# with an actionable message rather than a bare abort.
+SERVER_VER="$(psql -tAc 'SHOW server_version;' 2>/dev/null | cut -d. -f1)"
+DUMP_VER="$(pg_dump --version | awk '{print $NF}' | cut -d. -f1)"
+if [ -n "$SERVER_VER" ] && [ -n "$DUMP_VER" ] && [ "$DUMP_VER" -lt "$SERVER_VER" ]; then
+  fail "pg_dump is $DUMP_VER but the server is PostgreSQL $SERVER_VER. pg_dump cannot dump a newer server.
+  Install a matching client, e.g. postgresql-client-$SERVER_VER, and re-run with its bin/ first on PATH."
+fi
 
 # --- 2. schema + globals + data ---
 log "[backup] dumping schema and data (custom format, compressed)..."
