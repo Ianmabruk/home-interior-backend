@@ -6,9 +6,10 @@ set -euo pipefail
 
 export LD_LIBRARY_PATH=/tmp/kilo/pg18/root/usr/lib/x86_64-linux-gnu
 PGB=/tmp/kilo/pg18/root/usr/lib/postgresql/18/bin
-API="https://home-interior-backend.onrender.com/api"
+API="${API_URL:-https://home-interior-backend.onrender.com/api}"
 TEST_ADMIN="e2e_test@hokinteriors.co.ke"
-NEON="postgresql://neondb_owner:npg_ch9xEKC1ARYT@ep-summer-fog-axxu83jz.c-4.us-east-2.aws.neon.tech:5432/neondb?sslmode=require"
+# Credentials come from the environment, never from this file.
+NEON="${NEON_DATABASE_URL:?set NEON_DATABASE_URL}"
 TEMP_PW="TempVerify-$(date +%s)-Aa1!"
 
 ORIG_HASH_FILE=$(mktemp)
