@@ -23,3 +23,10 @@ backups/
 # Upload artifacts
 backend/src/public/uploads/
 CPANEL_DEPLOYMENT/backend/backend/src/public/uploads/
+
+# Local credential backups and generated clients — never commit
+# backend/.env.postgres.bak holds the live Neon connection string.
+backend/.env.postgres.bak
+backend/.env.mysql.bak
+*.pem
+backend/src/generated/
