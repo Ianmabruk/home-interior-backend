@@ -92,8 +92,16 @@ app.use((req, res, next) => {
   next()
 })
 
+// CLIENT_URL may list several origins, comma or space separated, so a deploy
+// can serve a custom domain plus the Netlify-generated one at the same time.
+// A single value still works exactly as before.
+const configuredOrigins = (process.env.CLIENT_URL || '')
+  .split(/[,\s]+/)
+  .map((o) => o.trim().replace(/\/$/, ''))
+  .filter(Boolean)
+
 const allowedOrigins = [
-  process.env.CLIENT_URL,
+  ...configuredOrigins,
   'https://hokinteriors.com',
   'https://www.hokinteriors.com',
   'https://hokinteriors.co.ke',
@@ -109,8 +117,10 @@ const allowedOrigins = [
 ].filter(Boolean)
 
 const isAllowedOrigin = (origin) => {
+  // Same-document requests (curl, server-to-server, health checks) send no
+  // Origin and are not subject to CORS.
   if (!origin) return true
-  if (allowedOrigins.includes(origin)) return true
+  if (allowedOrigins.includes(origin.replace(/\/$/, ''))) return true
   return false
 }
 
