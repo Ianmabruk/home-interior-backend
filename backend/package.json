@@ -16,7 +16,9 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "node scripts/migrate-deploy.js",
     "migrate:deploy": "node scripts/migrate-deploy.js",
-    "seed:unsafe": "ALLOW_PRODUCTION_SEED=true node src/seeds/seed.js"
+    "seed:unsafe": "ALLOW_PRODUCTION_SEED=true node src/seeds/seed.js",
+    "backup": "bash scripts/backup-neon.sh",
+    "check:media": "node scripts/check-media-integrity.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",
