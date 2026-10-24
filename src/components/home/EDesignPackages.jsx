@@ -124,12 +124,12 @@ export const EDesignPackages = memo(({ packages: propPackages }) => {
       <section className="bg-[var(--bg)] px-6 md:px-12 lg:px-20 py-20 md:py-32" id="e-design">
         <div className="container-wide">
           <div className="mb-16 md:mb-24 text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)] mb-4">
-              E-Design Packages
-            </p>
-            <h2 className="font-display text-4xl font-medium leading-tight text-[var(--primary)] md:text-5xl lg:text-6xl">
-              Design Without Drilling
-            </h2>
+<p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)] mb-4">
+               Design Packages
+             </p>
+             <h2 className="font-display text-4xl font-medium leading-tight text-[var(--primary)] md:text-5xl lg:text-6xl">
+               Design Packages
+             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
             {[1, 2, 3].map((i) => (
@@ -158,15 +158,18 @@ export const EDesignPackages = memo(({ packages: propPackages }) => {
       <div className="container-wide">
         {/* Header */}
         <div className="mb-16 md:mb-24 text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)] mb-4">
-            E-Design Packages
-          </p>
-          <h2 className="font-display text-4xl font-medium leading-tight text-[var(--primary)] md:text-5xl lg:text-6xl">
-            Design Without Drilling
-          </h2>
-          <p className="mt-4 max-w-2xl mx-auto text-base text-[var(--primary)]/60 leading-relaxed">
-            Find the perfect design package for your rental or home. Every package is delivered online with a personalized shopping plan and expert guidance.
-          </p>
+<p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)] mb-4">
+               Design Packages
+             </p>
+<h2 className="font-display text-4xl font-medium leading-tight text-[var(--primary)] md:text-5xl lg:text-6xl">
+               Design Packages
+             </h2>
+             <p className="mt-4 max-w-2xl mx-auto text-base text-[var(--primary)]/60 leading-relaxed">
+               Find the perfect design package for your rental or home.
+             </p>
+             <p className="mt-2 max-w-2xl mx-auto text-base text-[var(--primary)]/60 leading-relaxed">
+               Every package is delivered online with a personalized shopping plan and expert guidance.
+             </p>
         </div>
 
         {/* Trust Indicators */}
