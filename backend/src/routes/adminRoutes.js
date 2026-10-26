@@ -14,6 +14,7 @@ import { heroMediaController } from '../controllers/heroMediaController.js'
 import { testimonialController } from '../controllers/testimonialController.js'
 import { consultationController } from '../controllers/consultationController.js'
 import { orderController } from '../controllers/orderController.js'
+import { addOnController } from '../controllers/addOnController.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { adminOverviewController } from '../controllers/adminOverviewController.js'
 import { websiteAnalyticsController } from '../controllers/websiteAnalyticsController.js'
@@ -91,6 +92,12 @@ router.get('/virtual-designs/:id', virtualDesignController.get)
 router.post('/virtual-designs', uploadFields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }, { name: 'homepageCircularImage', maxCount: 1 }]), virtualDesignController.create)
 router.patch('/virtual-designs/:id', uploadFields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }, { name: 'homepageCircularImage', maxCount: 1 }]), virtualDesignController.update)
 router.delete('/virtual-designs/:id', virtualDesignController.delete)
+
+// Admin Virtual Designs Add-On Services
+router.get('/virtual-designs/add-ons', addOnController.list)
+router.post('/virtual-designs/add-ons', addOnController.create)
+router.patch('/virtual-designs/add-ons/:id', addOnController.update)
+router.delete('/virtual-designs/add-ons/:id', addOnController.delete)
 
 // Admin Services
 router.get('/services', serviceController.list)

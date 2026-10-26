@@ -1,28 +1,8 @@
-import { useState, useEffect, memo } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import { motion, AnimatePresence } from '@components/common/DynamicMotion'
 import { Check, ChevronDown, ChevronUp, Sparkles, Shield, Wifi, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api } from '@services/api'
-
-const fallbackAddOns = [
-  { name: 'Virtual Styling Call (30 min)', price: '3,500' },
-  { name: 'Thrift & Local Sourcing Guide', price: '2,500' },
-  { name: 'Rush 5-Day Delivery', price: '5,000' },
-]
-
-const getStoredAddOns = () => {
-  if (typeof window === 'undefined') return fallbackAddOns
-
-  try {
-    const raw = window.localStorage.getItem('hokVirtualDesignAddOns')
-    if (!raw) return fallbackAddOns
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed) || parsed.length === 0) return fallbackAddOns
-    return parsed.filter((item) => item && typeof item.name === 'string' && typeof item.price === 'string').slice(0, 6)
-  } catch {
-    return fallbackAddOns
-  }
-}
 
 const faqs = [
   {
@@ -39,7 +19,7 @@ const faqs = [
   },
   {
     q: 'How long does each package take?',
-    a: 'Mini Refresh is delivered in 7 days, Signature in 14 days, and Whole Home in 21 days. Rush delivery is available as an add-on for 5-day turnaround.',
+    a: 'Mini Refresh is delivered in 7 days, Signature in 14 days, and Whole Home in 21 days.',
   },
   {
     q: 'What if I need changes?',
@@ -86,14 +66,21 @@ export const EDesignPackages = memo(({ packages: propPackages }) => {
   const [loading, setLoading] = useState(false)
   const [showComparison, setShowComparison] = useState(false)
   const [openFaq, setOpenFaq] = useState(null)
-  const [addOns, setAddOns] = useState(getStoredAddOns)
+  const [addOns, setAddOns] = useState([])
+
+  const loadAddOns = useCallback(async () => {
+    try {
+      const res = await api.get('/virtual-design/add-ons')
+      const data = Array.isArray(res.data) ? res.data : res.data?.items || []
+      setAddOns(data)
+    } catch {
+      setAddOns([])
+    }
+  }, [])
 
   useEffect(() => {
-    setAddOns(getStoredAddOns())
-    const sync = () => setAddOns(getStoredAddOns())
-    window.addEventListener('storage', sync)
-    return () => window.removeEventListener('storage', sync)
-  }, [])
+    loadAddOns()
+  }, [loadAddOns])
 
   useEffect(() => {
     if (propPackages && propPackages.length > 0) {
@@ -285,11 +272,11 @@ export const EDesignPackages = memo(({ packages: propPackages }) => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {addOns.map((addon) => (
               <div
-                key={addon.name}
+                key={addon.id}
                 className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--bg)]/50 p-5"
               >
                 <span className="text-sm font-medium text-[var(--primary)]">{addon.name}</span>
-                <span className="text-sm font-semibold text-[var(--accent)]">KES {addon.price}</span>
+                <span className="text-sm font-semibold text-[var(--accent)]">{addon.currency} {Number(addon.price).toLocaleString()}</span>
               </div>
             ))}
           </div>

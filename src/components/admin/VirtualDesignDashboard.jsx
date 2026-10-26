@@ -16,12 +16,6 @@ import { api } from '../../services/api'
 import { dispatchAdminDataChanged } from '../../utils/adminEvents'
 import { getOptimizedVideoUrl, getVideoPosterUrl, getOptimizedUrl } from '../../utils/cloudinaryHelpers'
 
-const FALLBACK_ADD_ONS = [
-  { name: 'Virtual Styling Call (30 min)', price: '3500' },
-  { name: 'Thrift & Local Sourcing Guide', price: '2500' },
-  { name: 'Rush 5-Day Delivery', price: '5000' },
-]
-
 const INITIAL_FORM = {
   title: '',
   description: '',
@@ -47,6 +41,7 @@ export const VirtualDesignDashboard = () => {
   const [galleryFiles, setGalleryFiles] = useState([])
   const [galleryPreviews, setGalleryPreviews] = useState([])
   const [loading, setLoading] = useState(false)
+  const [addOnsLoading, setAddOnsLoading] = useState(false)
   const [deleteId, setDeleteId] = useState(null)
   const [isDragOverMain, setIsDragOverMain] = useState(false)
   const [isDragOverGallery, setIsDragOverGallery] = useState(false)
@@ -54,21 +49,9 @@ export const VirtualDesignDashboard = () => {
   const [error, setError] = useState('')
   const [optimisticDeletes, setOptimisticDeletes] = useState(new Set())
   const [featureInput, setFeatureInput] = useState('')
-  const [addOnServices, setAddOnServices] = useState(() => {
-    if (typeof window === 'undefined') return FALLBACK_ADD_ONS
-    try {
-      const raw = window.localStorage.getItem('hokVirtualDesignAddOns')
-      if (!raw) return FALLBACK_ADD_ONS
-      const parsed = JSON.parse(raw)
-      if (!Array.isArray(parsed) || parsed.length === 0) return FALLBACK_ADD_ONS
-      return parsed.map((item) => ({
-        name: String(item?.name || '').trim(),
-        price: String(item?.price || '').trim(),
-      })).filter((item) => item.name || item.price)
-    } catch {
-      return FALLBACK_ADD_ONS
-    }
-  })
+  const [addOnServices, setAddOnServices] = useState([])
+  const [editingAddOnId, setEditingAddOnId] = useState(null)
+  const [addOnForm, setAddOnForm] = useState({ name: '', price: '', currency: 'KES', durationMinutes: '', description: '', isActive: true, displayOrder: '0' })
   const mainFileRef = useRef(null)
   const videoRef = useRef(null)
   const galleryFileRef = useRef(null)
@@ -83,6 +66,19 @@ export const VirtualDesignDashboard = () => {
     }
    }, [])
 
+  const loadAddOns = useCallback(async () => {
+    setAddOnsLoading(true)
+    try {
+      const res = await api.get('/admin/virtual-designs/add-ons')
+      const data = Array.isArray(res.data) ? res.data : res.data?.items || []
+      setAddOnServices(data)
+    } catch {
+      setAddOnServices([])
+    } finally {
+      setAddOnsLoading(false)
+    }
+  }, [])
+
   useEffect(() => { load() }, [load])
 
   useEffect(() => {
@@ -92,9 +88,14 @@ export const VirtualDesignDashboard = () => {
   }, [load])
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    window.localStorage.setItem('hokVirtualDesignAddOns', JSON.stringify(addOnServices))
-  }, [addOnServices])
+    const handler = () => { loadAddOns() }
+    window.addEventListener('admin-data-changed', handler)
+    return () => window.removeEventListener('admin-data-changed', handler)
+  }, [loadAddOns])
+
+  useEffect(() => {
+    loadAddOns()
+  }, [loadAddOns])
 
   const handleMainFiles = useCallback((files) => {
     const validFiles = Array.from(files).filter(f => f.type.startsWith('image/') || f.type.startsWith('video/'))
@@ -203,15 +204,20 @@ export const VirtualDesignDashboard = () => {
   }, [featureInput])
 
   const addAddOn = useCallback(() => {
-    setAddOnServices((prev) => [...prev, { name: '', price: '' }])
+    setEditingAddOnId(null)
+    setAddOnForm({ name: '', price: '', currency: 'KES', durationMinutes: '', description: '', isActive: true, displayOrder: '0' })
   }, [])
 
-  const updateAddOn = useCallback((index, field, value) => {
-    setAddOnServices((prev) => prev.map((item, idx) => idx === index ? { ...item, [field]: value } : item))
-  }, [])
-
-  const removeAddOn = useCallback((index) => {
-    setAddOnServices((prev) => prev.filter((_, idx) => idx !== index))
+  const removeAddOn = useCallback(async (id) => {
+    try {
+      await api.delete(`/admin/virtual-designs/add-ons/${id}`)
+      setAddOnServices(prev => prev.filter(a => a.id !== id))
+      dispatchAdminDataChanged('addon-changed')
+    } catch (err) {
+      const message = err?.response?.data?.message || err?.message || 'Failed to delete add-on'
+      setError(message)
+      toast.error(message)
+    }
   }, [])
 
   const removeFeature = useCallback((index) => {
@@ -227,6 +233,39 @@ export const VirtualDesignDashboard = () => {
       return { ...f, features }
     })
   }, [])
+
+  const submitAddOn = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      const payload = {
+        name: addOnForm.name,
+        description: addOnForm.description || '',
+        price: Number(addOnForm.price),
+        currency: addOnForm.currency || 'KES',
+        durationMinutes: addOnForm.durationMinutes ? Number(addOnForm.durationMinutes) : null,
+        isActive: addOnForm.isActive !== 'false' && addOnForm.isActive !== false,
+        displayOrder: Number(addOnForm.displayOrder) || 0,
+      }
+      if (editingAddOnId) {
+        await api.patch(`/admin/virtual-designs/add-ons/${editingAddOnId}`, payload)
+      } else {
+        await api.post('/admin/virtual-designs/add-ons', payload)
+      }
+      setEditingAddOnId(null)
+      setAddOnForm({ name: '', price: '', currency: 'KES', durationMinutes: '', description: '', isActive: true, displayOrder: '0' })
+      loadAddOns()
+      dispatchAdminDataChanged('addon-changed')
+      toast.success(editingAddOnId ? 'Add-on updated successfully.' : 'Add-on created successfully.')
+    } catch (err) {
+      console.error('Add-on submit error:', err)
+      const message = err?.response?.data?.message || err?.message || 'Failed to save add-on'
+      setError(message)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const submit = async (e) => {
     e.preventDefault()
@@ -505,32 +544,6 @@ export const VirtualDesignDashboard = () => {
                 className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none placeholder:text-[var(--primary)]/35 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
                 placeholder="e.g. View More"
               />
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Add-On Services</label>
-                <button type="button" onClick={addAddOn} className="text-xs font-semibold text-[var(--accent)]">+ Add</button>
-              </div>
-              <div className="space-y-2">
-                {addOnServices.map((addon, index) => (
-                  <div key={`${addon.name || 'addon'}-${index}`} className="grid grid-cols-[1fr_140px_40px] gap-2">
-                    <input
-                      value={addon.name}
-                      onChange={(e) => updateAddOn(index, 'name', e.target.value)}
-                      className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition"
-                      placeholder="Service name"
-                    />
-                    <input
-                      value={addon.price}
-                      onChange={(e) => updateAddOn(index, 'price', e.target.value)}
-                      className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition"
-                      placeholder="3500"
-                    />
-                    <button type="button" onClick={() => removeAddOn(index)} className="rounded-xl border border-[var(--border)] bg-white p-2 text-[var(--error)] hover:bg-[var(--error)]/5">X</button>
-                  </div>
-                ))}
-              </div>
             </div>
 
             <div className="space-y-2">
@@ -935,6 +948,219 @@ export const VirtualDesignDashboard = () => {
             <p className="text-sm text-[var(--primary)]/40 mt-2">Click "Add Virtual Design" to get started</p>
           </motion.div>
         )}
+      </motion.div>
+
+      {/* Add-On Services Management */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white/80 backdrop-blur-xl border border-[var(--border)]/60 rounded-2xl p-6 shadow-[0_10px_40px_rgba(42,36,31,0.06)]"
+      >
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+          <div>
+            <h3 className="font-display text-2xl text-[var(--primary)]">Add-On Services Management</h3>
+            <p className="text-sm text-[var(--primary)]/50 mt-1">Manage add-on services offered with Virtual Designs packages.</p>
+          </div>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={addAddOn}
+            className="btn-luxury-primary flex items-center gap-2 whitespace-nowrap"
+          >
+            <Plus size={18} strokeWidth={2} />
+            {editingAddOnId ? 'Cancel' : 'Add Add-On'}
+          </motion.button>
+        </div>
+
+        {/* Add-On Form */}
+        {editingAddOnId !== null && (
+          <motion.form
+            initial={{ opacity: 0, height: 0, y: -20 }}
+            animate={{ opacity: 1, height: 'auto', y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -20 }}
+            transition={{ duration: 0.4 }}
+            onSubmit={submitAddOn}
+            className="bg-white/80 backdrop-blur-xl border border-[var(--border)]/60 rounded-xl p-5 space-y-4 mb-6"
+          >
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-[var(--error)]/10 border border-[var(--error)]/20 text-[var(--error)] rounded-xl px-4 py-3 text-sm"
+              >
+                {error}
+              </motion.div>
+            )}
+            <div className="space-y-1">
+              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Service Name</label>
+              <input
+                value={addOnForm.name}
+                onChange={(e) => setAddOnForm((f) => ({ ...f, name: e.target.value }))}
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
+                placeholder="e.g. Virtual Styling Call"
+                required
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Description</label>
+              <textarea
+                value={addOnForm.description}
+                onChange={(e) => setAddOnForm((f) => ({ ...f, description: e.target.value }))}
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition resize-none"
+                placeholder="Describe this add-on service..."
+                rows={2}
+              />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Price</label>
+                <input
+                  type="number"
+                  value={addOnForm.price}
+                  onChange={(e) => setAddOnForm((f) => ({ ...f, price: e.target.value }))}
+                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
+                  placeholder="5000"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Currency</label>
+                <input
+                  value={addOnForm.currency}
+                  onChange={(e) => setAddOnForm((f) => ({ ...f, currency: e.target.value }))}
+                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
+                  placeholder="KES"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Duration (min)</label>
+                <input
+                  type="number"
+                  value={addOnForm.durationMinutes}
+                  onChange={(e) => setAddOnForm((f) => ({ ...f, durationMinutes: e.target.value }))}
+                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
+                  placeholder="120"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]/70">Display Order</label>
+                <input
+                  type="number"
+                  value={addOnForm.displayOrder}
+                  onChange={(e) => setAddOnForm((f) => ({ ...f, displayOrder: e.target.value }))}
+                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition h-12"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={addOnForm.isActive !== 'false' && addOnForm.isActive !== false}
+                  onChange={(e) => setAddOnForm((f) => ({ ...f, isActive: e.target.checked }))}
+                  className="w-5 h-5 rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)] focus:ring-2"
+                />
+                <span className="text-sm text-[var(--primary)]">Active (visible to customers)</span>
+              </label>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="button"
+                onClick={() => { setEditingAddOnId(null); setAddOnForm({ name: '', price: '', currency: 'KES', durationMinutes: '', description: '', isActive: true, displayOrder: '0' }); setError('') }}
+                className="flex-1 rounded-full border border-[var(--border)] bg-white px-6 py-3 text-[11px] font-semibold uppercase tracking-widest text-[var(--primary)]/70 transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              >
+                Cancel
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex-1 rounded-full bg-[var(--primary)] text-white py-3 text-[11px] font-semibold uppercase tracking-wider transition-all duration-300 hover:bg-[var(--primary)]/90 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                disabled={loading}
+                type="submit"
+              >
+                {loading && <Loader2 size={14} className="animate-spin" />}
+                {loading ? 'Saving...' : editingAddOnId ? 'Update Add-On' : 'Create Add-On'}
+              </motion.button>
+            </div>
+          </motion.form>
+        )}
+
+        {/* Add-On List */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {addOnServices.length === 0 && addOnsLoading === false && (
+            <div className="col-span-full py-12 text-center">
+              <p className="text-sm text-[var(--primary)]/50">No add-on services configured yet.</p>
+            </div>
+          )}
+          {addOnServices.map((addon) => (
+            <motion.div
+              layout
+              key={addon.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="border border-[var(--border)]/60 rounded-xl p-4 bg-white/50"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <h4 className="font-display text-lg text-[var(--primary)]">{addon.name}</h4>
+                  {addon.description && (
+                    <p className="text-xs text-[var(--primary)]/50 mt-1 line-clamp-2">{addon.description}</p>
+                  )}
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className="text-sm font-medium text-[var(--accent)]">
+                      {addon.currency} {Number(addon.price).toLocaleString()}
+                    </span>
+                    {addon.durationMinutes && (
+                      <span className="text-xs text-[var(--primary)]/40">{addon.durationMinutes} min</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold ${
+                    addon.isActive ? 'bg-[var(--success)]/10 text-[var(--success)]' : 'bg-[var(--error)]/10 text-[var(--error)]'
+                  }`}>
+                    {addon.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => {
+                      setEditingAddOnId(addon.id)
+                      setAddOnForm({
+                        name: addon.name,
+                        price: String(addon.price),
+                        currency: addon.currency || 'KES',
+                        durationMinutes: addon.durationMinutes ? String(addon.durationMinutes) : '',
+                        description: addon.description || '',
+                        isActive: addon.isActive,
+                        displayOrder: String(addon.displayOrder),
+                      })
+                      setError('')
+                    }}
+                    className="p-2 bg-white/95 backdrop-blur-sm rounded-xl text-[var(--primary)] hover:bg-white shadow-lg border border-[var(--border)]/30"
+                    aria-label="Edit add-on"
+                  >
+                    <Edit size={14} />
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => removeAddOn(addon.id)}
+                    className="p-2 bg-white/95 backdrop-blur-sm rounded-xl text-[var(--error)] hover:bg-white shadow-lg border border-[var(--border)]/30"
+                    aria-label="Delete add-on"
+                  >
+                    <Trash2 size={14} />
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </motion.div>
 
       {/* Delete Confirmation Modal */}

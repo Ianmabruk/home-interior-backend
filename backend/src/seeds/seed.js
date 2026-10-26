@@ -231,6 +231,37 @@ async function seed() {
     console.warn('Seeding: e-design packages seed skipped:', err?.message || err)
   }
 
+  try {
+    const addOnCount = await prisma.addOnService.count()
+    if (addOnCount === 0) {
+      await prisma.addOnService.createMany({
+        data: [
+          {
+            name: 'Virtual Styling Call (120 min)',
+            description: 'One-on-one virtual styling consultation with a HOK designer.',
+            price: 5000,
+            currency: 'KES',
+            durationMinutes: 120,
+            displayOrder: 0,
+            isActive: true,
+          },
+          {
+            name: 'Thrift & Local Sourcing Guide',
+            description: 'Curated guide to thrift stores and local sourcing options for your design.',
+            price: 2500,
+            currency: 'KES',
+            durationMinutes: null,
+            displayOrder: 1,
+            isActive: true,
+          },
+        ],
+      })
+      console.log('Default add-on services created')
+    }
+  } catch (err) {
+    console.warn('Seeding: add-on services seed skipped:', err?.message || err)
+  }
+
   console.log('Seeding complete')
   await prisma.$disconnect()
   if (!critical) process.exit(1)

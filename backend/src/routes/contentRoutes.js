@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { contentController } from '../controllers/contentController.js'
 import { portfolioController } from '../controllers/portfolioController.js'
 import { virtualDesignController } from '../controllers/virtualDesignController.js'
+import { addOnController } from '../controllers/addOnController.js'
 import { uploadFields } from '../middleware/upload.js'
 import { authenticate, authorize } from '../middleware/auth.js'
 import { cacheHeaders } from '../middleware/cacheHeaders.js'
@@ -29,6 +30,7 @@ portfolioRoutes.put('/reorder', authenticate, authorize('ADMIN'), portfolioContr
 export const virtualDesignRoutes = Router()
 virtualDesignRoutes.get('/', cacheHeaders(300, 60), virtualDesignController.list)
 virtualDesignRoutes.get('/:id', cacheHeaders(10, 60), virtualDesignController.get)
+virtualDesignRoutes.get('/add-ons', cacheHeaders(300, 60), addOnController.listPublic)
 virtualDesignRoutes.post('/', authenticate, authorize('ADMIN'), uploadFields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }, { name: 'homepageCircularImage', maxCount: 1 }]), validateZod(virtualDesignSchemas.create), virtualDesignController.create)
 virtualDesignRoutes.patch('/:id', authenticate, authorize('ADMIN'), uploadFields([{ name: 'media', maxCount: 1 }, { name: 'gallery', maxCount: 10 }, { name: 'homepageCircularImage', maxCount: 1 }]), validateZod(virtualDesignSchemas.update), virtualDesignController.update)
 virtualDesignRoutes.delete('/:id', authenticate, authorize('ADMIN'), virtualDesignController.delete)

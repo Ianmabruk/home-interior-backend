@@ -146,6 +146,23 @@ model VirtualDesign {
    @@index([packageType])
  }
 
+model AddOnService {
+  id           String   @id @default(cuid())
+  name         String   @db.Text
+  description  String?  @db.Text
+  price        Float
+  currency     String   @default("KES") @db.Text
+  durationMinutes Int?   @map("duration_minutes")
+  isActive     Boolean  @default(true)
+  displayOrder Int      @default(0) @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+   @@map("add_on_services")
+   @@index([isActive, displayOrder(asc)])
+   @@index([isActive])
+ }
+
 model Product {
   id            String   @id @default(cuid())
   name          String   @db.Text
