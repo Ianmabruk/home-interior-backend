@@ -244,7 +244,11 @@ async function setCachedOrder(signature, order) {
         const finalItems = enrichedItems.map((item) => {
           const product = productMap.get(item.productId)
           const variant = product?.variants?.find((v) => v.id === item.variantId)
-          const dbPrice = variant?.price || product?.price || 0
+          // Authoritative unit price: variant price when set, otherwise the
+          // product's sale price (originalPrice/discountPrice) falling back to
+          // the base price. This matches the frontend cart price exactly so
+          // legitimate carts never trigger a false price mismatch.
+          const dbPrice = variant?.price ?? product?.originalPrice ?? product?.price ?? 0
           if (item.price !== undefined && Math.abs(Number(item.price) - dbPrice) > 0.01) {
             throw failure(400, `Price mismatch for product ${item.productId}`)
           }

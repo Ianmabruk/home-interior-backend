@@ -547,6 +547,11 @@ export const OrderDashboard = () => {
                 <div className="space-y-2">
                   {parseItems(viewOrder.items).map((item, idx) => (
                     <div key={idx} className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--bg)]/50 p-3">
+                      <div className="h-12 w-12 flex-shrink-0 rounded-lg overflow-hidden bg-[var(--secondary)]/30">
+                        {(item.selectedVariant?.image || item.image) && (
+                          <img src={item.selectedVariant?.image || item.image} alt={item.name || 'Product'} className="h-full w-full object-cover" />
+                        )}
+                      </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-[var(--primary)] truncate">{item.name || item.productName || 'Product'}</p>
                         <p className="text-2xs text-[var(--primary)]/50">Qty: {item.quantity || 1}</p>

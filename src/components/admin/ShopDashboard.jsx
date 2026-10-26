@@ -280,6 +280,7 @@ export const ShopDashboard = () => {
   }
 
   const addVariant = () => {
+    const nextIndex = form.variants.length
     setForm((f) => ({
       ...f,
       variants: [
@@ -288,7 +289,7 @@ export const ShopDashboard = () => {
       ],
     }))
     setVariantPreviews((p) => [...p, ''])
-    setVariantFiles((files) => [...files, { index: 0, file: null }])
+    setVariantFiles((files) => [...files, { index: nextIndex, file: null }])
   }
 
   const updateVariant = (index, field, value) => {

@@ -1,9 +1,9 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { motion } from '@components/common/DynamicMotion'
 import { Search, Package, CheckCircle2, Copy } from 'lucide-react'
 import { api } from '@services/api'
 import { PageMeta } from '@hooks/usePageMeta'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useCurrency } from '@context/CurrencyContext'
 import { toast } from 'react-hot-toast'
 
@@ -36,12 +36,24 @@ function formatStatusDate(dateStr) {
 }
 
 export const TrackOrderPage = () => {
-  const [trackingNumber, setTrackingNumber] = useState('')
-  const [contact, setContact] = useState('')
+  const [searchParams] = useSearchParams()
+  const prefilledTrackingNumber = useMemo(() => searchParams.get('tracking')?.trim() || '', [searchParams])
+  const prefilledContact = useMemo(() => searchParams.get('contact')?.trim() || '', [searchParams])
+  const [trackingNumber, setTrackingNumber] = useState(prefilledTrackingNumber)
+  const [contact, setContact] = useState(prefilledContact)
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { formatPrice } = useCurrency()
+
+  useEffect(() => {
+    if (prefilledTrackingNumber) {
+      setTrackingNumber(prefilledTrackingNumber)
+    }
+    if (prefilledContact) {
+      setContact(prefilledContact)
+    }
+  }, [prefilledTrackingNumber, prefilledContact])
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault()

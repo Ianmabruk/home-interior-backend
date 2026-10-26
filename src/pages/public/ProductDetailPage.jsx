@@ -136,6 +136,22 @@ export const ProductDetailPage = () => {
     await addToWishlist(product._id)
   }
 
+  const handleQuantityChange = (event) => {
+    const rawValue = event.target.value
+    if (rawValue === '') {
+      setQuantity(1)
+      return
+    }
+
+    const parsedValue = Number.parseInt(rawValue, 10)
+    if (Number.isNaN(parsedValue)) {
+      setQuantity(1)
+      return
+    }
+
+    setQuantity(Math.min(maxQuantity, Math.max(1, parsedValue)))
+  }
+
   const isInWishlist = product?._id && wishlist.some((item) => item._id === product._id)
   const isInCart = product?._id && cart.some((item) => item._id === product._id && (!selectedVariant || item.selectedVariant?._id === selectedVariant._id))
 
@@ -227,28 +243,29 @@ export const ProductDetailPage = () => {
           </div>
 
           <div className="grid gap-12 lg:grid-cols-2">
-            <div className="relative">
-                <div className="aspect-[4/3] rounded-3xl overflow-hidden bg-[var(--secondary)]/30">
-                {images.length > 0 ? (
-                  <OptimizedImage
-                    src={currentImage}
-                    alt={`${product.name} - Image ${currentImageIndex + 1}`}
-                    className="h-full w-full"
-                    objectFit="contain"
-                    width={1200}
-                    height={900}
-                    priority={true}
-                  />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center text-[var(--primary)]/30">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-                      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-                      <circle cx="9" cy="9" r="2" />
-                      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-                    </svg>
-                  </div>
-                )}
-              </div>
+          <div className="relative">
+            <div className="rounded-3xl overflow-hidden bg-white min-h-[400px] flex items-center justify-center">
+              {images.length > 0 ? (
+                <img
+                  src={getOptimizedUrl(currentImage, { width: 1400 })}
+                  alt={`${product.name} - Image ${currentImageIndex + 1}`}
+                  className="w-full h-auto max-h-[70vh] object-contain object-position-center"
+                  loading="eager"
+                  decoding="async"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none'
+                  }}
+                />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center text-[var(--primary)]/30">
+                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                    <circle cx="9" cy="9" r="2" />
+                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                  </svg>
+                </div>
+              )}
+            </div>
 
               {images.length > 1 && (
                 <div className="mt-4 flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
@@ -306,23 +323,48 @@ export const ProductDetailPage = () => {
                   </div>
                 )}
 
-                {product.variants && product.variants.length > 1 && (
+                {product.variants && product.variants.length > 0 && (
                   <div>
                     <h3 className="text-[11px] font-semibold uppercase tracking-widest text-[var(--accent)] mb-4">Select Variant</h3>
                     <div className="flex flex-wrap gap-3">
-                      {product.variants.map((variant) => (
-                        <button
-                          key={variant._id || variant.id}
-                          onClick={() => { setSelectedVariant(variant); reset() }}
-                          className={`px-5 py-3 rounded-full border transition-all duration-300 ${
-                            selectedVariant?._id === variant._id
-                              ? 'border-[var(--accent)] bg-[var(--accent)] text-white'
-                              : 'border-[var(--border)] text-[var(--primary)] hover:border-[var(--accent)] hover:text-[var(--accent)]'
-                          }`}
-                        >
-                          {variant.color} {variant.size && `/ ${variant.size}`}
-                        </button>
-                      ))}
+                      {product.variants.map((variant) => {
+                        const isSelected =
+                          selectedVariant?._id === variant._id ||
+                          selectedVariant?.id === variant.id ||
+                          (!selectedVariant && product.variants[0]?.id === variant.id)
+                        const label = variant.color || variant.name || 'Default'
+                        return (
+                          <button
+                            key={variant._id || variant.id}
+                            onClick={() => { setSelectedVariant(variant); reset() }}
+                            aria-pressed={isSelected}
+                            aria-label={label}
+                            className={`relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border transition-all duration-300 ${
+                              isSelected
+                                ? 'border-[var(--accent)] bg-[var(--accent)]/10 shadow-[0_0_0_2px_rgba(232,154,67,0.2)]'
+                                : 'border-[var(--border)] bg-white hover:border-[var(--accent)]/60'
+                            }`}
+                          >
+                            {variant.image ? (
+                              <img
+                                src={getOptimizedUrl(variant.image, { width: 400 })}
+                                alt={label}
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                                decoding="async"
+                                onError={(e) => { e.currentTarget.style.display = 'none' }}
+                              />
+                            ) : (
+                              <div className="h-10 w-10 rounded-full" style={{ backgroundColor: variant.colorHex || '#cbd5e1' }} />
+                            )}
+                            {isSelected && (
+                              <div className="absolute -right-1 -bottom-1 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--accent)] text-white shadow-sm">
+                                <CheckCircle size={14} strokeWidth={2} />
+                              </div>
+                            )}
+                          </button>
+                        )
+                      })}
                     </div>
                   </div>
                 )}
@@ -338,7 +380,23 @@ export const ProductDetailPage = () => {
                     >
                       <Minus size={18} strokeWidth={1.5} />
                     </button>
-                    <span className="min-w-[60px] text-center text-lg font-medium text-[var(--primary)]">{quantity}</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={maxQuantity}
+                      value={quantity}
+                      onChange={handleQuantityChange}
+                      onBlur={(event) => {
+                        const nextValue = Number.parseInt(event.target.value, 10)
+                        if (Number.isNaN(nextValue)) {
+                          setQuantity(1)
+                          return
+                        }
+                        setQuantity(Math.min(maxQuantity, Math.max(1, nextValue)))
+                      }}
+                      aria-label="Quantity"
+                      className="min-w-[60px] w-[72px] border-0 bg-transparent px-2 text-center text-lg font-medium text-[var(--primary)] outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
                     <button
                       onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
                       disabled={quantity >= maxQuantity}

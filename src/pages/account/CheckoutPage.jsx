@@ -61,8 +61,7 @@ export const CheckoutPage = () => {
 
   const subtotal = Array.isArray(cart) ? cart.reduce((sum, item) => sum + Number(item.selectedVariant?.price || item.discountPrice || item.price || 0) * item.quantity, 0) : 0
   const shipping = 0
-  const tax = subtotal * 0.16
-  const total = subtotal + shipping + tax
+  const total = subtotal + shipping
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -80,7 +79,7 @@ export const CheckoutPage = () => {
       const orderData = {
         items: cart.map(item => ({
           productId: item._id,
-          variantId: item.selectedVariant?._id,
+          variantId: item.variantId || item.selectedVariant?.id || item.selectedVariant?._id,
           quantity: item.quantity,
           price: item.selectedVariant?.price || item.discountPrice || item.price,
         })),
@@ -112,9 +111,9 @@ export const CheckoutPage = () => {
         // ignore localStorage errors
       }
       if (newTrackingNumber) {
-        setTimeout(() => navigate(`/order-confirmation/${newOrderId}`), 2000)
+        setTimeout(() => navigate(`/track-order?tracking=${encodeURIComponent(newTrackingNumber)}`), 2000)
       } else if (newOrderId) {
-        setTimeout(() => navigate(`/order-confirmation/${newOrderId}`), 2000)
+        setTimeout(() => navigate(`/track-order?tracking=${encodeURIComponent(newOrderId)}`), 2000)
       } else {
         setTimeout(() => navigate('/shop'), 2000)
       }
@@ -303,10 +302,6 @@ export const CheckoutPage = () => {
                     <div className="flex justify-between text-sm">
                       <span className="text-[var(--primary)]/55">Shipping</span>
                       <span className="font-medium text-[var(--primary)] text-green-600">Free</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[var(--primary)]/55">Tax (16%)</span>
-                      <span className="font-medium text-[var(--primary)]">{formatPrice(tax)}</span>
                     </div>
                     <div className="border-t border-[var(--border)]/40 pt-4">
                       <div className="flex justify-between text-lg font-semibold text-[var(--primary)]">

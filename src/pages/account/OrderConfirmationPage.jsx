@@ -75,8 +75,7 @@ export const OrderConfirmationPage = () => {
   const items = Array.isArray(order.items) ? order.items : []
   const subtotal = items.reduce((sum, item) => sum + Number(item.price || item.discountPrice || 0) * (item.quantity || 1), 0)
   const shipping = 0
-  const tax = subtotal * 0.16
-  const total = Number(order.total || subtotal + shipping + tax)
+  const total = Number(order.total || subtotal + shipping)
 
   const handleConfirmPayment = async () => {
     setPaymentConfirming(true)
@@ -110,7 +109,7 @@ export const OrderConfirmationPage = () => {
             <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-[var(--success)]/10 text-[var(--success)] mb-4">
               <CheckCircle size={48} strokeWidth={1.5} />
             </div>
-            <h1 className="font-display text-3xl md:text-4xl font-medium text-[var(--primary)] mb-2">Order Confirmed!</h1>
+            <h1 className="font-display text-3xl md:text-4xl font-medium text-[var(--primary)] mb-2">Order Successful!</h1>
             <p className="text-[var(--primary)]/60">Thank you for your purchase. Your order has been received.</p>
             
             {order.trackingNumber && (
@@ -159,19 +158,16 @@ export const OrderConfirmationPage = () => {
               {items.map((item, idx) => (
                 <div key={idx} className="flex gap-4">
                   <div className="h-16 w-16 flex-shrink-0 rounded-lg overflow-hidden bg-[var(--secondary)]/30">
-                    {item.image && (
-                      <img src={item.image} alt={item.name || 'Product'} className="h-full w-full object-cover" />
+                    {(item.selectedVariant?.image || item.image) && (
+                      <img src={item.selectedVariant?.image || item.image} alt={item.name || 'Product'} className="h-full w-full object-cover" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-[var(--primary)] truncate">{item.name || item.productName || 'Product'}</p>
-                    <p className="text-2xs text-[var(--primary)]/50">Qty: {item.quantity || 1}</p>
                     {item.selectedVariant && (
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="h-2.5 w-2.5 rounded-full border border-[var(--primary)]/10" style={{ backgroundColor: item.selectedVariant.colorHex || '#ccc' }} />
-                        <span className="text-2xs text-[var(--primary)]/60">{item.selectedVariant.color || item.selectedVariant.colorName || ''}</span>
-                      </div>
+                      <p className="text-2xs text-[var(--primary)]/50">{item.selectedVariant.color || item.selectedVariant.colorName || ''}</p>
                     )}
+                    <p className="text-2xs text-[var(--primary)]/50">Qty: {item.quantity || 1}</p>
                   </div>
                   <p className="text-sm font-medium text-[var(--primary)]">{formatPrice(Number(item.price || item.discountPrice || item.total || 0) * (item.quantity || 1))}</p>
                 </div>
@@ -185,10 +181,6 @@ export const OrderConfirmationPage = () => {
               <div className="flex justify-between text-sm">
                 <span className="text-[var(--primary)]/55">Shipping</span>
                 <span className="font-medium text-[var(--primary)] text-green-600">Free</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-[var(--primary)]/55">Estimated Tax (16%)</span>
-                <span className="font-medium text-[var(--primary)]">{formatPrice(tax)}</span>
               </div>
               <div className="border-t border-[var(--border)]/40 pt-4">
                 <div className="flex justify-between text-lg font-semibold text-[var(--primary)]">
