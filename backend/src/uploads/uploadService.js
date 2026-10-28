@@ -3,7 +3,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 import { supabase, isSupabaseConfigured } from '../config/supabase.js'
-import { uploadToCloudinary, deleteFromCloudinary, deleteManyFromCloudinary } from '../config/cloudinary.js'
+import { uploadToCloudinary, deleteFromCloudinary, deleteManyFromCloudinary, isCloudinaryConfigured } from '../config/cloudinary.js'
 import { failure } from '../utils/response.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -139,7 +139,7 @@ export async function uploadFile(buffer, mimetype, folder, originalName) {
     console.warn(`[uploadService] Large upload (${bufferSizeMB}MB) — may approach Cloudinary timeout on slow connections`)
   }
 
-  const useCloudinary = process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET && process.env.SKIP_CLOUDINARY !== 'true'
+  const useCloudinary = isCloudinaryConfigured() && process.env.SKIP_CLOUDINARY !== 'true'
   if (useCloudinary) {
     try {
       const uploaded = await uploadToCloudinary(optimizedBuffer, optimizedMimetype, folder, originalName)
@@ -161,8 +161,19 @@ export async function uploadFile(buffer, mimetype, folder, originalName) {
     } catch (cloudErr) {
       console.error('[uploadService] Cloudinary upload failed:', cloudErr?.message || cloudErr)
 
-      const shouldFallbackToLocal = process.env.NODE_ENV !== 'production' || process.env.FALLBACK_TO_LOCAL_UPLOADS === 'true' || process.env.CLOUDINARY_CLOUD_NAME === undefined || process.env.CLOUDINARY_API_KEY === undefined || process.env.CLOUDINARY_API_SECRET === undefined
-      if (shouldFallbackToLocal) {
+      const isTimeout = cloudErr?.message?.includes('timed out') || cloudErr?.http_code === 408 || cloudErr?.http_code === 504
+      const isTransientServiceError = Number(cloudErr?.http_code) >= 500 || cloudErr?.message?.includes('ECONN') || cloudErr?.message?.includes('fetch failed') || cloudErr?.message?.includes('network')
+
+      if (process.env.NODE_ENV === 'production') {
+        const status = isTimeout ? 408 : (isTransientServiceError ? 502 : 500)
+        const guidance = isTimeout
+          ? ` Upload timed out. The file (${bufferSizeMB}MB) may be too large for the current connection. Try reducing the file size or using a smaller image.`
+          : ''
+        throw failure(status, `Cloudinary upload failed: ${cloudErr?.message || 'Unknown Cloudinary error'}${guidance}`)
+      }
+
+      const allowLocalFallback = process.env.NODE_ENV !== 'production' && process.env.ALLOW_LOCAL_UPLOADS === 'true'
+      if (allowLocalFallback) {
         try {
           const local = await uploadToLocal(optimizedBuffer, optimizedMimetype, folder)
           recordFailedUpload({
@@ -172,7 +183,7 @@ export async function uploadFile(buffer, mimetype, folder, originalName) {
             localPath: local.path,
             mimeType: optimizedMimetype,
           })
-          console.warn('[uploadService] Cloudinary unavailable; saved upload locally instead:', local.path)
+          console.warn('[uploadService] Local dev fallback enabled; saved upload locally instead:', local.path)
           return {
             url: local.url,
             originalUrl: local.url,
@@ -193,10 +204,6 @@ export async function uploadFile(buffer, mimetype, folder, originalName) {
         }
       }
 
-      // Provide a clearer error message for timeout failures.
-      // Use 408 (Request Timeout) so the error handler preserves the message
-      // in production (it only hides messages for status >= 500).
-      const isTimeout = cloudErr?.message?.includes('timed out') || cloudErr?.http_code === 408 || cloudErr?.http_code === 504
       const guidance = isTimeout
         ? ` Upload timed out. The file (${bufferSizeMB}MB) may be too large for the current connection. Try reducing the file size or using a smaller image.`
         : ''
@@ -209,24 +216,28 @@ export async function uploadFile(buffer, mimetype, folder, originalName) {
       return await uploadToSupabase(optimizedBuffer, optimizedMimetype, folder)
     } catch (supErr) {
       console.error('[uploadService] Supabase upload failed:', supErr?.message || supErr)
-      try {
-        const local = await uploadToLocal(optimizedBuffer, optimizedMimetype, folder)
-        recordFailedUpload({
-          time: new Date().toISOString(),
-          reason: supErr?.message || String(supErr),
-          intended: { provider: 'supabase', folder },
-          localPath: local.path,
-          mimeType: optimizedMimetype,
-        })
-        console.warn('[uploadService] Saved failed Supabase upload locally and recorded for retry:', local.path)
-        return local
-      } catch (localErr) {
-        console.error('[uploadService] Saving failed upload locally also failed:', localErr?.message || localErr)
-        if (process.env.NODE_ENV === 'production') {
-          throw failure(500, 'File upload failed and could not be saved locally. Contact support.')
-        }
-        throw failure(500, 'File upload failed. Please try again later.')
+      if (process.env.NODE_ENV === 'production') {
+        throw failure(500, `Supabase upload failed: ${supErr?.message || 'Unknown Supabase error'}`)
       }
+      const allowLocalFallback = process.env.ALLOW_LOCAL_UPLOADS === 'true'
+      if (allowLocalFallback) {
+        try {
+          const local = await uploadToLocal(optimizedBuffer, optimizedMimetype, folder)
+          recordFailedUpload({
+            time: new Date().toISOString(),
+            reason: supErr?.message || String(supErr),
+            intended: { provider: 'supabase', folder },
+            localPath: local.path,
+            mimeType: optimizedMimetype,
+          })
+          console.warn('[uploadService] Local dev fallback enabled; saved failed Supabase upload locally:', local.path)
+          return local
+        } catch (localErr) {
+          console.error('[uploadService] Saving failed upload locally also failed:', localErr?.message || localErr)
+          throw failure(500, 'File upload failed. Please try again later.')
+        }
+      }
+      throw failure(500, `Supabase upload failed: ${supErr?.message || 'Unknown Supabase error'}`)
     }
   }
 

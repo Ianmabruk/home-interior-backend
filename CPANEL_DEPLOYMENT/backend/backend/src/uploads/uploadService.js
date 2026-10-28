@@ -52,9 +52,14 @@ export async function uploadFile(buffer, mimetype, folder) {
     } catch (cloudErr) {
       if (process.env.NODE_ENV === 'production') {
         console.error('[uploadService] Cloudinary upload failed in production:', cloudErr?.message || cloudErr)
-        throw failure(500, 'File upload failed. Please try again later.')
+        throw failure(500, `Cloudinary upload failed: ${cloudErr?.message || 'Unknown Cloudinary error'}`)
       }
-      console.warn(`[uploadService] Cloudinary upload failed, falling back to local storage: ${cloudErr?.message || cloudErr}`)
+      const allowLocalFallback = process.env.ALLOW_LOCAL_UPLOADS === 'true'
+      if (allowLocalFallback) {
+        console.warn(`[uploadService] Local dev fallback enabled; Cloudinary upload failed and saved locally: ${cloudErr?.message || cloudErr}`)
+        return uploadToLocal(buffer, mimetype, folder)
+      }
+      throw failure(500, `Cloudinary upload failed: ${cloudErr?.message || 'Unknown Cloudinary error'}`)
     }
   }
 
@@ -64,9 +69,14 @@ export async function uploadFile(buffer, mimetype, folder) {
     } catch (supErr) {
       if (process.env.NODE_ENV === 'production') {
         console.error('[uploadService] Supabase upload failed in production:', supErr?.message || supErr)
-        throw failure(500, 'File upload failed. Please try again later.')
+        throw failure(500, `Supabase upload failed: ${supErr?.message || 'Unknown Supabase error'}`)
       }
-      console.warn(`[uploadService] Supabase upload failed, falling back to local storage: ${supErr?.message || supErr}`)
+      const allowLocalFallback = process.env.ALLOW_LOCAL_UPLOADS === 'true'
+      if (allowLocalFallback) {
+        console.warn(`[uploadService] Local dev fallback enabled; Supabase upload failed and saved locally: ${supErr?.message || supErr}`)
+        return uploadToLocal(buffer, mimetype, folder)
+      }
+      throw failure(500, `Supabase upload failed: ${supErr?.message || 'Unknown Supabase error'}`)
     }
   }
 

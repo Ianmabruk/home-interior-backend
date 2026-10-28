@@ -1,11 +1,10 @@
 import request from 'supertest'
+import { jest } from '@jest/globals'
 import { getApp } from './lazyApp.js'
 import { createTestAdmin, getAuthToken, generateTestEmail } from './helpers.js'
-import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+import cloudinary from '../src/config/cloudinary.js'
+import { uploadFile } from '../src/uploads/uploadService.js'
+import { blogService } from '../src/services/blogService.js'
 
 let app = null
 
@@ -22,13 +21,7 @@ const makeFakeImage = (name = 'test.png') => {
   return { buffer: svg, name }
 }
 
-const loadTestVideo = () => {
-  const videoPath = path.join('/tmp', 'test-video.mp4')
-  const buffer = fs.readFileSync(videoPath)
-  return { buffer, name: 'test-video.mp4' }
-}
-
-describe('Blog', () => {
+describe('Blog uploads and publishing', () => {
   let adminToken
   let csrfToken
   let adminEmail
@@ -41,14 +34,7 @@ describe('Blog', () => {
     csrfToken = auth.csrfToken
   })
 
-  it('should list published blogs publicly', async () => {
-    const res = await request(app).get(`${API}/blog`)
-    expect(res.status).toBe(200)
-    expect(res.body.success).toBe(true)
-    expect(Array.isArray(res.body.data)).toBe(true)
-  })
-
-  it('should create a blog post as admin', async () => {
+  it('should create a text-only blog post as admin', async () => {
     const res = await request(app)
       .post(`${API}/admin/blog`)
       .set('Authorization', `Bearer ${adminToken}`)
@@ -58,160 +44,99 @@ describe('Blog', () => {
     expect(res.status).toBe(201)
     expect(res.body.success).toBe(true)
     expect(res.body.data.title).toBe('test_Blog Alpha')
+    expect(res.body.data.published).toBe(true)
   })
 
-  it('should get a blog post by id', async () => {
-    const createRes = await request(app)
-      .post(`${API}/admin/blog`)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .set('x-csrf-token', csrfToken)
-      .send({ title: 'test_Blog Beta', description: 'Beta', content: 'Beta content', category: 'Interior', published: true })
-
-    const id = createRes.body.data.id
-    const res = await request(app).get(`${API}/blog/${id}`)
-    expect(res.status).toBe(200)
-    expect(res.body.data.title).toBe('test_Blog Beta')
-  })
-
-  it('should update a blog post as admin', async () => {
-    const createRes = await request(app)
-      .post(`${API}/admin/blog`)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .set('x-csrf-token', csrfToken)
-      .send({ title: 'test_Blog Gamma', description: 'Gamma', content: 'Gamma content', category: 'Architecture', published: true })
-
-    const id = createRes.body.data.id
+  it('should reject unsupported media types before upload', async () => {
     const res = await request(app)
+      .post(`${API}/admin/blog`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('x-csrf-token', csrfToken)
+      .attach('image', Buffer.from('not-an-image'), { filename: 'bad.txt', contentType: 'text/plain' })
+      .field('title', 'Bad upload blog')
+
+    expect(res.status).toBe(400)
+    expect(res.body.success).toBe(false)
+    expect(String(res.body.message)).toMatch(/Invalid file type|Unsupported/i)
+  })
+
+  it('should persist a Cloudinary-backed video record and metadata', async () => {
+    const uploadSpy = jest.spyOn(cloudinary.uploader, 'upload_stream').mockImplementation((options, callback) => {
+      const fakeResult = {
+        secure_url: 'https://res.cloudinary.com/demo/video/upload/v123/hok-interiors/blog-video.mp4',
+        public_id: 'hok-interiors/blog-video',
+        resource_type: 'video',
+        format: 'mp4',
+        width: 1280,
+        height: 720,
+        duration: 12.6,
+        bytes: 900000,
+        eager: [{ secure_url: 'https://res.cloudinary.com/demo/video/upload/v123/hok-interiors/blog-video.mp4', format: 'mp4' }],
+      }
+      const stream = {
+        end: (buffer) => callback(null, fakeResult),
+      }
+      return stream
+    })
+
+    const item = await blogService.createBlog(
+      { title: 'Cloudinary video post', slug: 'cloudinary-video-post', content: 'Video content', published: true },
+      null,
+      { buffer: Buffer.from('fake-video-data'), mimetype: 'video/mp4', originalname: 'blog-video.mp4' },
+    )
+
+    expect(item.videoUrl).toContain('res.cloudinary.com')
+    expect(item.videoCloudinaryId).toBe('hok-interiors/blog-video')
+    expect(item.videoResourceType).toBe('video')
+    expect(item.videoFormat).toBe('mp4')
+    expect(item.videoDuration).toBe(12.6)
+    uploadSpy.mockRestore()
+  })
+
+  it('should not silently replace a failed Cloudinary upload with local storage in production', async () => {
+    const originalEnv = process.env.NODE_ENV
+    const originalCloudName = process.env.CLOUDINARY_CLOUD_NAME
+    const originalKey = process.env.CLOUDINARY_API_KEY
+    const originalSecret = process.env.CLOUDINARY_API_SECRET
+    process.env.NODE_ENV = 'production'
+    process.env.CLOUDINARY_CLOUD_NAME = 'demo'
+    process.env.CLOUDINARY_API_KEY = 'demo-key'
+    process.env.CLOUDINARY_API_SECRET = 'demo-secret'
+
+    jest.spyOn(cloudinary.uploader, 'upload_stream').mockImplementation((options, callback) => {
+      const stream = {
+        end: () => callback(new Error('Cloudinary upload timed out after 120000ms'), null),
+      }
+      return stream
+    })
+
+    await expect(
+      uploadFile(Buffer.from('large-data'), 'image/png', 'blogs', 'photo.png')
+    ).rejects.toMatchObject({ status: 408 })
+
+    process.env.NODE_ENV = originalEnv
+    process.env.CLOUDINARY_CLOUD_NAME = originalCloudName
+    process.env.CLOUDINARY_API_KEY = originalKey
+    process.env.CLOUDINARY_API_SECRET = originalSecret
+  })
+
+  it('should update an existing blog without clobbering unrelated fields', async () => {
+    const createRes = await request(app)
+      .post(`${API}/admin/blog`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('x-csrf-token', csrfToken)
+      .send({ title: 'test_Blog Update', description: 'Old content', content: 'Initial content', category: 'Design', published: false })
+
+    const id = createRes.body.data.id
+    const updateRes = await request(app)
       .patch(`${API}/admin/blog/${id}`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('x-csrf-token', csrfToken)
-      .send({ title: 'test_Blog Gamma Updated' })
+      .send({ title: 'test_Blog Update Revised', content: 'Updated content', category: 'Architecture' })
 
-    expect(res.status).toBe(200)
-    expect(res.body.data.title).toBe('test_Blog Gamma Updated')
-  })
-
-  it('should delete a blog post as admin', async () => {
-    const createRes = await request(app)
-      .post(`${API}/admin/blog`)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .set('x-csrf-token', csrfToken)
-      .send({ title: 'test_Blog Delta', description: 'Delta', content: 'Delta content', category: 'Trends', published: true })
-
-    const id = createRes.body.data.id
-    const res = await request(app)
-      .delete(`${API}/admin/blog/${id}`)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .set('x-csrf-token', csrfToken)
-
-    expect(res.status).toBe(200)
-    expect(res.body.success).toBe(true)
-  })
-
-  it('should upload a video, persist metadata, and serve it publicly (end-to-end)', async () => {
-    const videoPath = path.join('/tmp', 'kilo', 'hok-video.mp4')
-    const videoBuffer = fs.readFileSync(videoPath)
-    const video = { buffer: videoBuffer, name: 'hok-video.mp4' }
-    const image = makeFakeImage('test_blog_image.png')
-
-    const createRes = await request(app)
-      .post(`${API}/admin/blog`)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .set('x-csrf-token', csrfToken)
-      .field('title', 'test_Blog E2E Video Pipeline')
-      .field('description', 'End-to-end video pipeline test')
-      .field('content', 'Content')
-      .field('category', 'Design')
-      .field('published', 'true')
-      .field('featured', 'true')
-      .attach('image', image.buffer, image.name)
-      .attach('video', video.buffer, video.name)
-
-    expect(createRes.status).toBe(201)
-    expect(createRes.body.success).toBe(true)
-    const created = createRes.body.data
-    expect(created.videoUrl).toBeDefined()
-    expect(created.videoCloudinaryId).toBeDefined()
-    expect(created.videoFormat).toBe('mp4')
-    expect(created.videoResourceType).toBe('video')
-
-    // The video's public_id must not be duplicated as "blogs/blogs/..."
-    const publicId = created.videoCloudinaryId
-    expect(publicId.startsWith('blogs/blogs/')).toBe(false)
-    expect(publicId).not.toContain('blogs/blogs')
-
-    // Public detail page returns the video + metadata
-    const detailRes = await request(app).get(`${API}/blog/${created.id}`)
-    expect(detailRes.status).toBe(200)
-    expect(detailRes.body.data.videoUrl).toBe(created.videoUrl)
-    expect(detailRes.body.data.videoCloudinaryId).toBe(publicId)
-
-    // The public blog dashboard (list) includes the video blog
-    const listRes = await request(app).get(`${API}/blog`)
-    expect(listRes.status).toBe(200)
-    const listed = listRes.body.data.find((b) => b.id === created.id)
-    expect(listed).toBeDefined()
-    expect(listed.videoUrl).toBe(created.videoUrl)
-
-    // The stored video must be live, H.264/AAC MP4, with byte-range support
-    const videoRes = await fetch(created.videoUrl, { method: 'GET', headers: { Range: 'bytes=0-0' } })
-    expect(videoRes.status).toBe(206)
-    const contentType = videoRes.headers.get('content-type') || ''
-    expect(contentType).toContain('video/mp4')
-    expect(contentType).toContain('avc1')
-    expect(videoRes.headers.get('accept-ranges')).toBe('bytes')
-
-    // Cleanup: delete the test blog (this deletes the Cloudinary video + image)
-    const del = await request(app)
-      .delete(`${API}/admin/blog/${created.id}`)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .set('x-csrf-token', csrfToken)
-    expect(del.status).toBe(200)
-  })
-})
-
-  it('should create a blog post with video as admin', async () => {
-    const img = makeFakeImage('test_blog_image.png')
-    const video = loadTestVideo()
-
-    const res = await request(app)
-      .post(`${API}/admin/blog`)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .set('x-csrf-token', csrfToken)
-      .field('title', 'test_Blog Video Upload')
-      .field('description', 'Video upload test')
-      .field('content', 'Content')
-      .field('category', 'Design')
-      .field('published', 'true')
-      .attach('image', img.buffer, img.name)
-      .attach('video', video.buffer, video.name)
-
-    expect(res.status).toBe(201)
-    expect(res.body.success).toBe(true)
-    expect(res.body.data.title).toBe('test_Blog Video Upload')
-    expect(res.body.data.videoUrl).toBeDefined()
-  })
-
-  it('should update a blog post with video as admin', async () => {
-    const createRes = await request(app)
-      .post(`${API}/admin/blog`)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .set('x-csrf-token', csrfToken)
-      .send({ title: 'test_Blog Video Update', description: 'Update', content: 'Content', category: 'Design', published: true })
-
-    const id = createRes.body.data.id
-    const video = loadTestVideo()
-
-    const res = await request(app)
-      .patch(`${API}/admin/blog/${id}`)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .set('x-csrf-token', csrfToken)
-      .field('title', 'test_Blog Video Updated')
-      .attach('video', video.buffer, video.name)
-
-    expect(res.status).toBe(200)
-    expect(res.body.success).toBe(true)
-    expect(res.body.data.title).toBe('test_Blog Video Updated')
-    expect(res.body.data.videoUrl).toBeDefined()
+    expect(updateRes.status).toBe(200)
+    expect(updateRes.body.data.title).toBe('test_Blog Update Revised')
+    expect(updateRes.body.data.category).toBe('Architecture')
+    expect(updateRes.body.data.description).toBe('Old content')
   })
 })

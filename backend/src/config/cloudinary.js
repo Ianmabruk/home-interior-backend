@@ -4,7 +4,14 @@ const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME
 const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY
 const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET
 
-const isConfigured = Boolean(CLOUDINARY_CLOUD_NAME && CLOUDINARY_API_KEY && CLOUDINARY_API_SECRET)
+export const isCloudinaryConfigured = () => Boolean(CLOUDINARY_CLOUD_NAME && CLOUDINARY_API_KEY && CLOUDINARY_API_SECRET)
+const isConfigured = isCloudinaryConfigured()
+
+export function assertCloudinaryConfigured() {
+  if (!isConfigured) {
+    throw new Error('Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.')
+  }
+}
 
 // Cloudinary upload timeout. Large portfolio images (>10MB after compression)
 // can take 60-90 seconds to upload on slower connections. 120s provides a
@@ -89,7 +96,7 @@ function isRetryableCloudinaryError(err) {
 
 export const uploadToCloudinary = async (buffer, mimetype, folder, originalName) => {
   if (!isConfigured) {
-    throw new Error('Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.')
+    assertCloudinaryConfigured()
   }
 
   const isVideoUpload = isVideoFile(mimetype, originalName)
