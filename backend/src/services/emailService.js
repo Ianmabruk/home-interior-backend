@@ -1,9 +1,21 @@
 import nodemailer from 'nodemailer'
+import * as brevo from '@getbrevo/brevo'
 import { prisma, withTimeout } from '../config/database.js'
 import { env } from '../config/env.js'
 
-// Lazily create the SMTP transporter so we never construct it before env is ready.
+let brevoClient = null
 let smtpTransport = null
+
+function getBrevoClient() {
+  if (brevoClient) return brevoClient
+  const apiKey = env.brevoApiKey || process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY || ''
+  if (!apiKey) return null
+
+  const client = new brevo.TransactionalEmailsApi()
+  client.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, apiKey)
+  brevoClient = client
+  return brevoClient
+}
 
 function getSmtpTransport() {
   if (smtpTransport) return smtpTransport
@@ -84,13 +96,39 @@ async function recordSent({ eventId, recipient, recipientName, emailType, orderI
   return null
 }
 
-async function sendRawEmail({ eventId, to, name, subject, html, text }) {
+async function sendViaBrevo({ to, name, subject, html, text }) {
+  const client = getBrevoClient()
+  if (!client) {
+    return { sent: false, reason: 'not_configured' }
+  }
+
+  const senderEmail = env.brevoSenderEmail || process.env.BREVO_SENDER_EMAIL || env.email.smtpUser || SUPPORT_EMAIL
+  const senderName = env.brevoSenderName || process.env.BREVO_SENDER_NAME || siteName || 'HOK Interiors'
+
+  const payload = {
+    to: [{ email: to, name: name || 'Customer' }],
+    sender: { email: senderEmail, name: senderName },
+    replyTo: { email: SUPPORT_EMAIL },
+    subject,
+    htmlContent: html,
+    textContent: text || undefined,
+  }
+
+  const result = await client.sendTransacEmail(payload)
+  const body = result?.body || result || {}
+
+  return {
+    sent: true,
+    provider: 'brevo',
+    messageId: body?.messageId || body?.headers?.['x-message-id'] || null,
+  }
+}
+
+export async function sendRawEmail({ eventId, to, name, subject, html, text }) {
   if (!to) {
     return { skipped: true, reason: 'no_recipient' }
   }
 
-  // Idempotency guard: never send the same event twice.
-  // Run this check asynchronously to avoid blocking the order/response.
   if (eventId) {
     const alreadySent = await hasSent(eventId).catch(() => false)
     if (alreadySent) {
@@ -104,35 +142,60 @@ async function sendRawEmail({ eventId, to, name, subject, html, text }) {
   let failureReason = null
 
   try {
-    const transport = getSmtpTransport()
-    if (transport) {
-      // HostPinnacle SMTP (primary)
-      const info = await withTimeout(transport.sendMail({
-        from: SENDER,
-        to,
-        subject,
-        html,
-        text,
-        replyTo: SUPPORT_EMAIL,
-      }), 10000)
-      provider = 'smtp'
-      messageId = info?.messageId || null
+    const brevoResult = await sendViaBrevo({ to, name, subject, html, text })
+    if (brevoResult.sent) {
+      provider = brevoResult.provider
+      messageId = brevoResult.messageId
       status = 'sent'
     } else {
-      console.warn('[emailService] No SMTP_PASSWORD configured. Email not sent (dev mode).')
-      provider = 'none'
-      status = 'skipped'
-      return { skipped: true, reason: 'not_configured' }
+      const transport = getSmtpTransport()
+      if (transport) {
+        const info = await withTimeout(transport.sendMail({
+          from: SENDER,
+          to,
+          subject,
+          html,
+          text,
+          replyTo: SUPPORT_EMAIL,
+        }), 10000)
+        provider = 'smtp'
+        messageId = info?.messageId || null
+        status = 'sent'
+      } else {
+        console.warn('[emailService] No configured email provider available. Email not sent (dev mode).')
+        provider = 'none'
+        status = 'skipped'
+        return { skipped: true, reason: brevoResult.reason || 'not_configured' }
+      }
     }
   } catch (err) {
     console.error('[emailService] send failed:', err?.message || err)
-    status = 'failed'
-    failureReason = err?.message || String(err)
-    provider = 'smtp'
-    // Do NOT throw — order/registration must not be corrupted by email failure.
+    const transport = getSmtpTransport()
+    if (transport) {
+      try {
+        const info = await withTimeout(transport.sendMail({
+          from: SENDER,
+          to,
+          subject,
+          html,
+          text,
+          replyTo: SUPPORT_EMAIL,
+        }), 10000)
+        provider = 'smtp'
+        messageId = info?.messageId || null
+        status = 'sent'
+      } catch (smtpErr) {
+        status = 'failed'
+        failureReason = smtpErr?.message || err?.message || String(err)
+        provider = 'smtp'
+      }
+    } else {
+      status = 'failed'
+      failureReason = err?.message || String(err)
+      provider = 'brevo'
+    }
   }
 
-  // Record sent email asynchronously to avoid blocking the response
   recordSent({
     eventId,
     recipient: to,

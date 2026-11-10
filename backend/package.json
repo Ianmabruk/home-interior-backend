@@ -21,6 +21,7 @@
     "check:media": "node scripts/check-media-integrity.mjs"
   },
   "dependencies": {
+    "@getbrevo/brevo": "^2.3.0",
     "@prisma/client": "^6.8.2",
     "@supabase/supabase-js": "^2.110.8",
     "bcryptjs": "^3.0.2",

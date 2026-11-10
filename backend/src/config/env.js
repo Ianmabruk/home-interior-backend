@@ -20,6 +20,9 @@ export const env = {
   adminPassword: process.env.ADMIN_PASSWORD || process.env.SEED_ADMIN_PASSWORD,
   seedAdminEmail: process.env.SEED_ADMIN_EMAIL || process.env.ADMIN_EMAIL,
   seedAdminPassword: process.env.SEED_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD,
+  brevoApiKey: process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY || '',
+  brevoSenderEmail: process.env.BREVO_SENDER_EMAIL || process.env.SENDINBLUE_SENDER_EMAIL || '',
+  brevoSenderName: process.env.BREVO_SENDER_NAME || 'HOK Interiors',
   email: {
     smtpHost: process.env.SMTP_HOST || 'mail.hokinteriors.co.ke',
     smtpPort: Number(process.env.SMTP_PORT) || 465,
@@ -35,6 +38,7 @@ export function validateEnv() {
   if (!env.jwtAccessSecret) missing.push('JWT_ACCESS_SECRET')
   if (!env.jwtRefreshSecret) missing.push('JWT_REFRESH_SECRET')
   if (!env.databaseUrl) missing.push('DATABASE_URL')
+  if (env.brevoApiKey && !env.brevoSenderEmail) missing.push('BREVO_SENDER_EMAIL')
   const hasCloudinary = process.env.SKIP_CLOUDINARY !== 'true' && process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET
   const hasSupabase = process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
   const isDevWithNoStorage = process.env.NODE_ENV === 'development' && process.env.SKIP_CLOUDINARY === 'true'
