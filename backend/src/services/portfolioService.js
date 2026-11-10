@@ -5,6 +5,10 @@ import { failure } from '../utils/response.js'
 const MAX_IMAGES_PER_SECTION = 40
 const MAX_TOTAL_IMAGES = 80
 
+function uniqueNonEmptyValues(values = []) {
+  return [...new Set((Array.isArray(values) ? values : []).filter((value) => typeof value === 'string' ? value.trim() !== '' : value != null))]
+}
+
 function enforceImageLimit(section, total, existingCount, requestedNew) {
   if (total > MAX_IMAGES_PER_SECTION) {
     const remaining = Math.max(0, MAX_IMAGES_PER_SECTION - existingCount)
@@ -218,8 +222,8 @@ async function createPortfolio(data, file, beforeFiles = [], afterFiles = [], ci
   const tStart = Date.now()
   const createData = { ...data }
 
-  const existingBeforeCount = data.beforeImages?.length || 0
-  const existingAfterCount = data.afterImages?.length || 0
+  const existingBeforeCount = uniqueNonEmptyValues(data.beforeImages).length
+  const existingAfterCount = uniqueNonEmptyValues(data.afterImages).length
 
   // Check limits BEFORE uploading to prevent orphaned Cloudinary files when
   // the total (existing + new) exceeds the maximum allowed per section, or when
@@ -329,17 +333,20 @@ async function updatePortfolio(id, data, file, beforeFiles = [], afterFiles = []
       ? [...(updateData.afterImages || [])]
       : [...(existing.afterImages || [])]
 
+  const uniqueBeforeCount = uniqueNonEmptyValues(beforeImages).length
+  const uniqueAfterCount = uniqueNonEmptyValues(afterImages).length
+
   const uploadPromises = []
   const uploadStart = Date.now()
 
     // Check limits BEFORE uploading to prevent orphaned Cloudinary files.
-    enforceImageLimit('before', beforeImages.length + beforeFiles.length, beforeImages.length, beforeFiles.length)
-    enforceImageLimit('after', afterImages.length + afterFiles.length, afterImages.length, afterFiles.length)
+    enforceImageLimit('before', uniqueBeforeCount + beforeFiles.length, uniqueBeforeCount, beforeFiles.length)
+    enforceImageLimit('after', uniqueAfterCount + afterFiles.length, uniqueAfterCount, afterFiles.length)
     enforceTotalLimit(
-      beforeImages.length + beforeFiles.length,
-      afterImages.length + afterFiles.length,
-      beforeImages.length,
-      afterImages.length,
+      uniqueBeforeCount + beforeFiles.length,
+      uniqueAfterCount + afterFiles.length,
+      uniqueBeforeCount,
+      uniqueAfterCount,
       beforeFiles.length,
       afterFiles.length,
     )

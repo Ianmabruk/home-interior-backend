@@ -143,39 +143,6 @@ export const AboutPage = memo(() => {
         </div>
       </section>
 
-      {activeImages.length > 0 && (
-        <section className="bg-[var(--bg)] px-6 md:px-12 lg:px-20 py-12 md:py-20">
-          <div className="container-wide">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-              {activeImages.map((img, index) => (
-                <motion.div
-                  key={img.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.1, ease: [0.22, 1, 0.36, 1] }}
-                  className="group relative rounded-3xl overflow-hidden shadow-[0_2px_16px_rgba(42,36,31,0.04)] hover:shadow-[0_20px_60px_rgba(42,36,31,0.08)] transition-all duration-500"
-                >
-                  <div className="aspect-[4/5] overflow-hidden">
-                    <img
-                      src={getOptimizedUrl(img.imageUrl, { width: 960, crop: 'limit' })}
-                      srcSet={buildSrcSet(img.imageUrl) || undefined}
-                      sizes={buildSrcSet(img.imageUrl) ? '(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw' : undefined}
-                      alt={`About image ${index + 1}`}
-                      className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                      loading="lazy"
-                      decoding="async"
-                      width={600}
-                      height={750}
-                    />
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
       <motion.section
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}

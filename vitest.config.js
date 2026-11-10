@@ -32,6 +32,7 @@ export default defineConfig({
       '**/server/**',
       '**/backend/**',
       '**/tests/**',
+      '**/backups/**',
       '**/*.spec.js',
       '**/.kilo/**',
     ],

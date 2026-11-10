@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from '@components/common/DynamicMotion'
 import { Search, Trash2, Edit2, Plus, X, Eye, Image } from 'lucide-react'
 import { toast } from 'react-hot-toast'
@@ -48,62 +48,50 @@ export const WorkWithUsDashboard = () => {
   const [deleteContentId, setDeleteContentId] = useState(null)
   const [showContentForm, setShowContentForm] = useState(false)
 
-  const load = async () => {
+  const refreshSubmissions = useCallback(async () => {
+    setLoading(true)
     try {
       const res = await api.get('/admin/work-with-us')
       setSubmissions(res.data || [])
     } catch {
       setSubmissions([])
+    } finally {
+      setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
-      try {
-        const res = await api.get('/admin/work-with-us')
-        setSubmissions(res.data || [])
-      } catch {
-        setSubmissions([])
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
-  }, [])
+    refreshSubmissions()
+  }, [refreshSubmissions])
 
   useEffect(() => {
     const handler = () => {
-      api.get('/admin/work-with-us')
-        .then((res) => setSubmissions(res.data || []))
-        .catch(() => {})
+      refreshSubmissions()
     }
     window.addEventListener('admin-data-changed', handler)
     return () => window.removeEventListener('admin-data-changed', handler)
-  }, [])
+  }, [refreshSubmissions])
 
-  const loadContent = async () => {
+  const loadContent = useCallback(async () => {
     try {
       const res = await api.get('/admin/work-with-us/content')
       setContentItems(res.data || [])
     } catch {
       setContentItems([])
     }
-  }
+  }, [])
 
   useEffect(() => {
     loadContent()
-  }, [])
+  }, [loadContent])
 
   useEffect(() => {
     const handler = () => {
-      api.get('/admin/work-with-us/content')
-        .then((res) => setContentItems(res.data || []))
-        .catch(() => {})
+      loadContent()
     }
     window.addEventListener('admin-data-changed', handler)
     return () => window.removeEventListener('admin-data-changed', handler)
-  }, [])
+  }, [loadContent])
 
   const resetForm = () => {
     setForm({ fullName: '', phone: '', email: '', budget: '', startDate: '', timeline: '', status: 'NEW' })
@@ -121,7 +109,7 @@ export const WorkWithUsDashboard = () => {
       }
       setShowForm(false)
       resetForm()
-      load()
+      refreshSubmissions()
       dispatchAdminDataChanged('work-with-us-changed')
     } catch {
       toast.error('Failed to save submission')
@@ -163,7 +151,7 @@ export const WorkWithUsDashboard = () => {
     try {
       await api.delete(`/admin/work-with-us/${deleteId}`)
       setDeleteId(null)
-      load()
+      refreshSubmissions()
       dispatchAdminDataChanged('work-with-us-changed')
       toast.success('Submission deleted successfully')
     } catch {
@@ -232,7 +220,7 @@ export const WorkWithUsDashboard = () => {
     setEditingContent(null)
   }
 
-  const filtered = submissions.filter((s) => {
+  const filtered = useMemo(() => submissions.filter((s) => {
     if (statusFilter && s.status !== statusFilter) return false
     if (search) {
       const q = search.toLowerCase()
@@ -245,7 +233,7 @@ export const WorkWithUsDashboard = () => {
       )
     }
     return true
-  })
+  }), [search, statusFilter, submissions])
 
   const formatDate = (date) => {
     if (!date) return ''

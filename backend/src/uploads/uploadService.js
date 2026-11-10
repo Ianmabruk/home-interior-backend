@@ -139,7 +139,8 @@ export async function uploadFile(buffer, mimetype, folder, originalName) {
     console.warn(`[uploadService] Large upload (${bufferSizeMB}MB) — may approach Cloudinary timeout on slow connections`)
   }
 
-  const useCloudinary = isCloudinaryConfigured() && process.env.SKIP_CLOUDINARY !== 'true'
+  const shouldUseLocalFallback = process.env.NODE_ENV === 'test' || process.env.ALLOW_LOCAL_UPLOADS === 'true'
+  const useCloudinary = isCloudinaryConfigured() && process.env.SKIP_CLOUDINARY !== 'true' && !shouldUseLocalFallback
   if (useCloudinary) {
     try {
       const uploaded = await uploadToCloudinary(optimizedBuffer, optimizedMimetype, folder, originalName)
@@ -172,7 +173,7 @@ export async function uploadFile(buffer, mimetype, folder, originalName) {
         throw failure(status, `Cloudinary upload failed: ${cloudErr?.message || 'Unknown Cloudinary error'}${guidance}`)
       }
 
-      const allowLocalFallback = process.env.NODE_ENV !== 'production' && process.env.ALLOW_LOCAL_UPLOADS === 'true'
+      const allowLocalFallback = process.env.NODE_ENV === 'test' || process.env.ALLOW_LOCAL_UPLOADS === 'true'
       if (allowLocalFallback) {
         try {
           const local = await uploadToLocal(optimizedBuffer, optimizedMimetype, folder)
@@ -183,7 +184,7 @@ export async function uploadFile(buffer, mimetype, folder, originalName) {
             localPath: local.path,
             mimeType: optimizedMimetype,
           })
-          console.warn('[uploadService] Local dev fallback enabled; saved upload locally instead:', local.path)
+          console.warn('[uploadService] Local fallback enabled; saved upload locally instead:', local.path)
           return {
             url: local.url,
             originalUrl: local.url,
