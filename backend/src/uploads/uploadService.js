@@ -11,9 +11,9 @@ const UPLOADS_DIR = path.join(__dirname, '..', 'public', 'uploads')
 
 const MAX_IMAGE_WIDTH = 2048
 const MAX_IMAGE_HEIGHT = 2048
-const IMAGE_QUALITY = 80
-// Timeout for image processing to prevent blocking on large/corrupt images
-const IMAGE_PROCESSING_TIMEOUT_MS = 15000
+const IMAGE_QUALITY_LEVELS = [80, 72, 64, 56, 48]
+const IMAGE_PROCESSING_TIMEOUT_SECONDS = 60
+export const CLOUDINARY_IMAGE_TARGET_BYTES = 9 * 1024 * 1024
 
 // Pre-upload size check: warn if the optimized buffer is large enough to risk
 // hitting Cloudinary's 120s timeout on slower connections. This is a soft
@@ -29,53 +29,80 @@ function ensureDir(dir) {
   }
 }
 
-async function optimizeImageBuffer(buffer, mimetype) {
+export async function optimizeImageBuffer(buffer, mimetype, maxBytes = null) {
   if (!buffer || !mimetype || !mimetype.startsWith('image/')) {
     return buffer
   }
 
-  // Wrap image processing in a timeout to prevent blocking on large images
-  return Promise.race([
-    processImageBuffer(buffer, mimetype),
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Image processing timeout')), IMAGE_PROCESSING_TIMEOUT_MS)
-    ),
-  ]).catch((err) => {
-    // If processing fails or times out, return the original buffer
-    // The upload will still succeed, just without optimization
+  const mustFit = Number.isFinite(maxBytes) && buffer.length > maxBytes
+  try {
+    const metadata = await sharp(buffer).metadata()
+    const { width, height } = metadata
+
+    if (!width || !height) {
+      if (mustFit) throw new Error('Image dimensions could not be determined')
+      return buffer
+    }
+
+    const needsResize = width > MAX_IMAGE_WIDTH || height > MAX_IMAGE_HEIGHT
+    if (!needsResize && !mustFit) return buffer
+
+    const output = await processImageBuffer(buffer, metadata, maxBytes)
+    if (mustFit && output.length > maxBytes) {
+      throw new Error('Optimized image is still larger than the upload limit')
+    }
+    return output
+  } catch (err) {
+    if (mustFit) {
+      console.warn(`[uploadService] Image optimization failed; rejecting oversized image: ${err?.message || err}`)
+      throw failure(422, "This image could not be optimized below Cloudinary's 10 MB image limit. Try a smaller or lower-resolution image.")
+    }
     console.warn(`[uploadService] Image optimization failed, using original: ${err?.message || err}`)
     return buffer
-  })
+  }
 }
 
-async function processImageBuffer(buffer, mimetype) {
-  const metadata = await sharp(buffer).metadata()
+async function processImageBuffer(buffer, metadata, maxBytes) {
   const { width, height } = metadata
 
   if (!width || !height) {
     return buffer
   }
 
-  if (width <= MAX_IMAGE_WIDTH && height <= MAX_IMAGE_HEIGHT) {
-    return buffer
+  let maxDimension = Math.min(Math.max(width, height), MAX_IMAGE_WIDTH, MAX_IMAGE_HEIGHT)
+  let qualityIndex = 0
+
+  for (let attempt = 0; attempt < 18; attempt++) {
+    const scale = maxDimension / Math.max(width, height)
+    const optimized = await sharp(buffer, { animated: (metadata.pages || 1) > 1 })
+      .timeout({ seconds: IMAGE_PROCESSING_TIMEOUT_SECONDS })
+      .rotate()
+      .resize({
+        width: Math.max(1, Math.round(width * scale)),
+        height: Math.max(1, Math.round(height * scale)),
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .webp({ quality: IMAGE_QUALITY_LEVELS[qualityIndex], effort: 4 })
+      .toBuffer()
+
+    if (!Number.isFinite(maxBytes) || optimized.length <= maxBytes) {
+      return optimized
+    }
+
+    if (qualityIndex < IMAGE_QUALITY_LEVELS.length - 1) {
+      qualityIndex += 1
+      continue
+    }
+
+    if (maxDimension <= 320) break
+    const sizeRatio = Math.sqrt(maxBytes / optimized.length)
+    const scaleDown = Math.max(0.5, Math.min(0.9, sizeRatio * 0.9))
+    maxDimension = Math.max(320, Math.floor(maxDimension * scaleDown))
+    qualityIndex = 1
   }
 
-  const pipeline = sharp(buffer)
-  if (width > MAX_IMAGE_WIDTH || height > MAX_IMAGE_HEIGHT) {
-    pipeline.resize(MAX_IMAGE_WIDTH, MAX_IMAGE_HEIGHT, {
-      fit: 'inside',
-      withoutEnlargement: true,
-    })
-  }
-
-  const optimized = await pipeline
-    .jpeg({ quality: IMAGE_QUALITY, progressive: true })
-    .png({ quality: IMAGE_QUALITY, progressive: true })
-    .webp({ quality: IMAGE_QUALITY })
-    .toFormat('webp')
-    .toBuffer()
-
-  return optimized
+  return buffer
 }
 
 async function uploadToLocal(buffer, mimetype, folder) {
@@ -127,7 +154,13 @@ export async function uploadFile(buffer, mimetype, folder, originalName) {
     throw failure(400, 'No file buffer provided for upload')
   }
 
-  const optimizedBuffer = await optimizeImageBuffer(buffer, mimetype)
+  const shouldUseLocalFallback = process.env.ALLOW_LOCAL_UPLOADS === 'true'
+  const useCloudinary = isCloudinaryConfigured() && process.env.SKIP_CLOUDINARY !== 'true' && !shouldUseLocalFallback
+  const optimizedBuffer = await optimizeImageBuffer(
+    buffer,
+    mimetype,
+    useCloudinary ? CLOUDINARY_IMAGE_TARGET_BYTES : null,
+  )
   const optimizedMimetype = optimizedBuffer !== buffer ? 'image/webp' : mimetype
 
   // Pre-upload size check: warn if the optimized buffer is large enough to
@@ -139,8 +172,6 @@ export async function uploadFile(buffer, mimetype, folder, originalName) {
     console.warn(`[uploadService] Large upload (${bufferSizeMB}MB) — may approach Cloudinary timeout on slow connections`)
   }
 
-  const shouldUseLocalFallback = process.env.ALLOW_LOCAL_UPLOADS === 'true'
-  const useCloudinary = isCloudinaryConfigured() && process.env.SKIP_CLOUDINARY !== 'true' && !shouldUseLocalFallback
   if (useCloudinary) {
     try {
       const uploaded = await uploadToCloudinary(optimizedBuffer, optimizedMimetype, folder, originalName)
