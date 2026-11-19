@@ -9,8 +9,8 @@ import { ApiError } from '../utils/ApiError.js'
 
 const router = Router()
 
-const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-const VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/ogg']
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']
+const VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-m4v', 'video/x-msvideo', 'video/x-matroska']
 const MAX_BATCH_FILES = 50
 
 router.post('/upload', authenticate, validateCsrfToken, uploadSingle('media'), asyncHandler(async (req, res) => {

@@ -1,9 +1,9 @@
 import multer from 'multer'
 import { ApiError } from '../utils/ApiError.js'
+import { MAX_FILE_SIZE_BYTES } from '../constants/upload.js'
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']
 const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-m4v', 'video/x-msvideo', 'video/x-matroska']
-const MAX_FILE_SIZE = 50 * 1024 * 1024
 const MAX_FILES = 75
 
 const ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif']
@@ -44,7 +44,7 @@ export const uploadSingle = (field = 'media', allowedTypes = ALLOWED_IMAGE_TYPES
     : ALLOWED_IMAGE_EXTENSIONS
   return multer({
     storage,
-    limits: { fileSize: MAX_FILE_SIZE },
+    limits: { fileSize: MAX_FILE_SIZE_BYTES },
     fileFilter: (req, file, cb) => {
       if (isAllowedFile(file, allowedTypes, allowedExts)) return cb(null, true)
       cb(new ApiError(400, `Invalid file type: ${file.mimetype}`))
@@ -61,7 +61,7 @@ export const uploadFields = (fields) => {
   const perFieldTypes = new Map(fields.map((f) => [f.name, getAllowedTypesForField(f.name)]))
   return multer({
     storage,
-    limits: { fileSize: MAX_FILE_SIZE, files: MAX_FILES },
+    limits: { fileSize: MAX_FILE_SIZE_BYTES, files: MAX_FILES },
     fileFilter: (req, file, cb) => {
       const allowedTypes = perFieldTypes.get(file.fieldname) || [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES]
       const allowedExts = allowedTypes === undefined ? allExts : getAllowedExtensionsForTypes(allowedTypes)
@@ -77,7 +77,7 @@ export const uploadArray = (field = 'media', maxCount = MAX_FILES) => {
   const allExts = [...ALLOWED_IMAGE_EXTENSIONS, ...ALLOWED_VIDEO_EXTENSIONS]
   return multer({
     storage,
-    limits: { fileSize: MAX_FILE_SIZE, files: maxCount },
+    limits: { fileSize: MAX_FILE_SIZE_BYTES, files: maxCount },
     fileFilter: (req, file, cb) => {
       if (isAllowedFile(file, [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES], allExts)) {
         return cb(null, true)
@@ -91,7 +91,7 @@ export const uploadProductImages = (maxCount = 60) => {
   const allExts = [...ALLOWED_IMAGE_EXTENSIONS, ...ALLOWED_VIDEO_EXTENSIONS]
   return multer({
     storage,
-    limits: { fileSize: MAX_FILE_SIZE, files: maxCount },
+    limits: { fileSize: MAX_FILE_SIZE_BYTES, files: maxCount },
     fileFilter: (req, file, cb) => {
       if (isAllowedFile(file, [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES], allExts)) {
         return cb(null, true)
@@ -105,7 +105,7 @@ export const uploadProductImagesStrict = (maxCount = 60) => {
   const allExts = [...ALLOWED_IMAGE_EXTENSIONS, ...ALLOWED_VIDEO_EXTENSIONS]
   return multer({
     storage,
-    limits: { fileSize: MAX_FILE_SIZE, files: maxCount },
+    limits: { fileSize: MAX_FILE_SIZE_BYTES, files: maxCount },
     fileFilter: (req, file, cb) => {
       if (!isAllowedFile(file, [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES], allExts)) {
         return cb(new ApiError(400, `Invalid file type: ${file.mimetype}`))

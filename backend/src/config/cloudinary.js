@@ -13,10 +13,8 @@ export function assertCloudinaryConfigured() {
   }
 }
 
-// Cloudinary upload timeout. Large portfolio images (>10MB after compression)
-// can take 60-90 seconds to upload on slower connections. 120s provides a
-// comfortable margin while still failing fast enough to surface errors.
-const CLOUDINARY_UPLOAD_TIMEOUT_MS = 120000
+// Allow enough time for 100 MB media uploads on slower connections.
+const CLOUDINARY_UPLOAD_TIMEOUT_MS = 300000
 // Number of retry attempts for transient Cloudinary failures (network errors,
 // timeouts, 5xx responses). Retries use a new public_id each time to avoid
 // duplicate uploads.
@@ -112,7 +110,7 @@ export const uploadToCloudinary = async (buffer, mimetype, folder, originalName)
       const publicId = `${Date.now()}-${Math.random().toString(36).slice(2)}`
 
       const uploadOptions = {
-        resource_type: 'auto',
+        resource_type: isVideoUpload ? 'video' : (mimetype?.startsWith('image/') ? 'image' : 'raw'),
         folder,
         public_id: publicId,
         overwrite: false,
