@@ -1,4 +1,5 @@
 import { v2 as cloudinary } from 'cloudinary'
+import { failure } from '../utils/response.js'
 
 const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME
 const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY
@@ -34,7 +35,7 @@ const VIDEO_EXTENSIONS = new Set([
 // upload call, so playback never waits on a first-request transcode.
 const WEB_VIDEO_EAGER = {
   format: 'mp4',
-  video_codec: 'h264',
+  video_codec: { codec: 'h264', profile: 'baseline', level: '3.1' },
   audio_codec: 'aac',
   pixel_format: 'yuv420p',
   bit_rate: '4m',
@@ -171,16 +172,14 @@ export const uploadToCloudinary = async (buffer, mimetype, folder, originalName)
         // Prefer the eager H.264/AAC/MP4 derivative. It is already generated,
         // so playback is an immediate CDN hit instead of an on-demand transcode.
         const eagerEntry = Array.isArray(result.eager) ? result.eager[0] : null
-        if (eagerEntry?.secure_url) {
-          playableUrl = eagerEntry.secure_url
-          playableFormat = eagerEntry.format || 'mp4'
-        } else if (getFileExtension(result.format) !== 'mp4') {
-          // No derivative and the original is not an MP4 — fail loudly rather
-          // than persisting a record that can never play in a browser.
-          throw new Error(
-            `Cloudinary produced no web-compatible MP4 for "${result.format || 'unknown'}" and the original is not an MP4`
+        if (!eagerEntry?.secure_url || (eagerEntry.format && eagerEntry.format !== 'mp4')) {
+          throw failure(
+            422,
+            "Cloudinary couldn't create the compatible H.264/AAC MP4 playback file. Try a smaller H.264/AAC MP4 video below the current plan's video-transformation limit.",
           )
         }
+        playableUrl = eagerEntry.secure_url
+        playableFormat = eagerEntry.format || 'mp4'
       }
 
       const duration = Number(result.duration)

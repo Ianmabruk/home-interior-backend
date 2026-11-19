@@ -195,9 +195,11 @@ export async function uploadFile(buffer, mimetype, folder, originalName) {
 
       const isTimeout = cloudErr?.message?.includes('timed out') || cloudErr?.http_code === 408 || cloudErr?.http_code === 504
       const isTransientServiceError = Number(cloudErr?.http_code) >= 500 || cloudErr?.message?.includes('ECONN') || cloudErr?.message?.includes('fetch failed') || cloudErr?.message?.includes('network')
+      const clientErrorStatus = Number(cloudErr?.status)
+      const isClientError = clientErrorStatus >= 400 && clientErrorStatus < 500
 
-      if (process.env.NODE_ENV === 'production') {
-        const status = isTimeout ? 408 : (isTransientServiceError ? 502 : 500)
+      if (process.env.NODE_ENV === 'production' || isClientError) {
+        const status = isTimeout ? 408 : (isTransientServiceError ? 502 : (isClientError ? clientErrorStatus : 500))
         const guidance = isTimeout
           ? ` Upload timed out. The file (${bufferSizeMB}MB) may be too large for the current connection. Try reducing the file size or using a smaller image.`
           : ''

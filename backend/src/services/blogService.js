@@ -346,7 +346,8 @@ async function createBlog(data, imageFile, videoFile, contentFiles = [], homepag
       if (!createData.cloudinaryId) createData.cloudinaryId = uploaded.publicId || uploaded.path
     } catch (err) {
       console.error('[blogService.createBlog] Video upload failed:', err?.message)
-      throw failure(500, `Video upload failed: ${err?.message || 'Unknown error'}`)
+      const status = err?.status >= 400 && err.status < 500 ? err.status : 500
+      throw failure(status, `Video upload failed: ${err?.message || 'Unknown error'}`)
     }
   }
 
@@ -439,7 +440,8 @@ async function updateBlog(id, data, imageFile, videoFile, contentFiles = [], rem
       if (!updateData.cloudinaryId) updateData.cloudinaryId = uploaded.publicId || uploaded.path
     } catch (err) {
       console.error('[blogService.updateBlog] Video upload failed:', err?.message)
-      throw failure(500, `Video upload failed: ${err?.message || 'Unknown error'}`)
+      const status = err?.status >= 400 && err.status < 500 ? err.status : 500
+      throw failure(status, `Video upload failed: ${err?.message || 'Unknown error'}`)
     }
    } else if (removeVideo) {
     // Explicitly remove the video when requested
