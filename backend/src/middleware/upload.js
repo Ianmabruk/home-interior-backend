@@ -1,6 +1,6 @@
 import multer from 'multer'
 import { ApiError } from '../utils/ApiError.js'
-import { MAX_FILE_SIZE_BYTES } from '../constants/upload.js'
+import { MAX_FILE_SIZE_BYTES, MAX_VIDEO_FILE_SIZE_BYTES } from '../constants/upload.js'
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']
 const ALLOWED_VIDEO_TYPES = [
@@ -45,9 +45,11 @@ function getAllowedExtensionsForTypes(allowedTypes) {
 
 export const uploadSingle = (field = 'media', allowedTypes = ALLOWED_IMAGE_TYPES) => {
   const allowedExts = allowedTypes ? getAllowedExtensionsForTypes(allowedTypes) : ALLOWED_IMAGE_EXTENSIONS
+  const isVideoField = field === 'video' || (allowedTypes && allowedTypes.some(t => t.startsWith('video/')))
+  const fileSizeLimit = isVideoField ? MAX_VIDEO_FILE_SIZE_BYTES : MAX_FILE_SIZE_BYTES
   return multer({
     storage,
-    limits: { fileSize: MAX_FILE_SIZE_BYTES },
+    limits: { fileSize: fileSizeLimit },
     fileFilter: (req, file, cb) => {
       if (isAllowedFile(file, allowedTypes, allowedExts)) return cb(null, true)
       cb(new ApiError(400, `Invalid file type: ${file.mimetype}`))
@@ -57,19 +59,27 @@ export const uploadSingle = (field = 'media', allowedTypes = ALLOWED_IMAGE_TYPES
 
 export const uploadFields = (fields) => {
   const perFieldTypes = new Map()
+  const perFieldSizeLimits = new Map()
   for (const f of fields) {
     if (f.name === 'video') {
       perFieldTypes.set(f.name, ALLOWED_VIDEO_TYPES)
+      perFieldSizeLimits.set(f.name, MAX_VIDEO_FILE_SIZE_BYTES)
     } else {
       perFieldTypes.set(f.name, ALLOWED_IMAGE_TYPES)
+      perFieldSizeLimits.set(f.name, MAX_FILE_SIZE_BYTES)
     }
   }
   return multer({
     storage,
-    limits: { fileSize: MAX_FILE_SIZE_BYTES, files: MAX_FILES },
+    limits: { fileSize: MAX_VIDEO_FILE_SIZE_BYTES, files: MAX_FILES },
     fileFilter: (req, file, cb) => {
       const allowedTypes = perFieldTypes.get(file.fieldname) || ALLOWED_IMAGE_TYPES
       const allowedExts = getAllowedExtensionsForTypes(allowedTypes)
+      const sizeLimit = perFieldSizeLimits.get(file.fieldname) || MAX_FILE_SIZE_BYTES
+      if (file.size > sizeLimit) {
+        const limitMB = sizeLimit / 1024 / 1024
+        return cb(new ApiError(400, `File "${file.originalname}" exceeds the maximum allowed size of ${limitMB} MB for ${file.fieldname}`))
+      }
       if (isAllowedFile(file, allowedTypes, allowedExts)) {
         return cb(null, true)
       }
@@ -81,9 +91,11 @@ export const uploadFields = (fields) => {
 
 export const uploadArray = (field = 'media', maxCount = MAX_FILES, allowedTypes = ALLOWED_IMAGE_TYPES) => {
   const allowedExts = getAllowedExtensionsForTypes(allowedTypes)
+  const isVideoField = field === 'video' || (allowedTypes && allowedTypes.some(t => t.startsWith('video/')))
+  const fileSizeLimit = isVideoField ? MAX_VIDEO_FILE_SIZE_BYTES : MAX_FILE_SIZE_BYTES
   return multer({
     storage,
-    limits: { fileSize: MAX_FILE_SIZE_BYTES, files: maxCount },
+    limits: { fileSize: fileSizeLimit, files: maxCount },
     fileFilter: (req, file, cb) => {
       if (isAllowedFile(file, allowedTypes, allowedExts)) {
         return cb(null, true)

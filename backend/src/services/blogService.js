@@ -366,7 +366,34 @@ async function createBlog(data, imageFile, videoFile, contentFiles = [], homepag
 
 
   if (videoFile) {
-    throw failure(400, 'Video uploads must use the Cloudinary video upload endpoint')
+    if (!isVideoCloudinaryConfigured()) {
+      throw failure(503, 'Video upload service is not configured.')
+    }
+    try {
+      const uploaded = await uploadVideo(videoFile.buffer, videoFile.mimetype, 'blogs', videoFile.originalname)
+      createData.video = uploaded.url
+      const storageProvider = 'cloudinary'
+      createData.videoStorageProvider = storageProvider
+      createData.videoPlaybackUrl = uploaded.url
+      createData.videoThumbnailUrl = null
+      createData.videoUploadStatus = 'ready'
+      createData.videoCloudinaryId = uploaded.publicId
+      createData.videoAssetId = uploaded.assetId || null
+      createData.videoResourceType = uploaded.resourceType || 'video'
+      createData.videoCloudinaryType = uploaded.type || 'upload'
+      createData.videoCloudinaryVersion = uploaded.version ?? null
+      createData.videoFormat = uploaded.format || 'mp4'
+      createData.videoMimeType = 'video/mp4'
+      createData.videoDuration = uploaded.duration ?? null
+      createData.videoWidth = uploaded.width ?? null
+      createData.videoHeight = uploaded.height ?? null
+      createData.videoBytes = uploaded.bytes ?? null
+      createData.videoOriginalBytes = uploaded.bytes ?? null
+      createData.videoOriginalName = uploaded.originalName || videoFile.originalname
+    } catch (err) {
+      console.error('[blogService.createBlog] Video upload failed:', err?.message)
+      throw failure(500, `Video upload failed: ${err?.message || 'Unknown error'}`)
+    }
   }
 
   if (homepageCircularImageFile) {
@@ -497,12 +524,65 @@ async function updateBlog(id, data, imageFile, videoFile, contentFiles = [], rem
     // dedicated video_cloudinary_id so we remove the exact video resource
     // (resource_type: video) rather than treating it as an image.
     if (existing.video) {
-      // Preserve the existing video asset and URL.
+      if (existing.videoCloudinaryId) {
+        pathsToDelete.push({
+          publicId: existing.videoCloudinaryId,
+          resourceType: existing.videoResourceType || 'video',
+        })
+      } else {
+        const pid = extractPublicId(existing.video)
+        if (pid) pathsToDelete.push({ publicId: pid, resourceType: existing.videoResourceType || 'video' })
+      }
     }
 
-    throw failure(400, 'Video uploads must use the Cloudinary video upload endpoint')
-   } else if (removeVideo) {
+    if (!isVideoCloudinaryConfigured()) {
+      throw failure(503, 'Video upload service is not configured.')
+    }
+    try {
+      const uploaded = await uploadVideo(videoFile.buffer, videoFile.mimetype, 'blogs', videoFile.originalname)
+      updateData.video = uploaded.url
+      const storageProvider = 'cloudinary'
+      updateData.videoStorageProvider = storageProvider
+      updateData.videoPlaybackUrl = uploaded.url
+      updateData.videoThumbnailUrl = null
+      updateData.videoUploadStatus = 'ready'
+      updateData.videoCloudinaryId = uploaded.publicId
+      updateData.videoAssetId = uploaded.assetId || null
+      updateData.videoResourceType = uploaded.resourceType || 'video'
+      updateData.videoCloudinaryType = uploaded.type || 'upload'
+      updateData.videoCloudinaryVersion = uploaded.version ?? null
+      updateData.videoFormat = uploaded.format || 'mp4'
+      updateData.videoMimeType = 'video/mp4'
+      updateData.videoDuration = uploaded.duration ?? null
+      updateData.videoWidth = uploaded.width ?? null
+      updateData.videoHeight = uploaded.height ?? null
+      updateData.videoBytes = uploaded.bytes ?? null
+      updateData.videoOriginalBytes = uploaded.bytes ?? null
+      updateData.videoOriginalName = uploaded.originalName || videoFile.originalname
+    } catch (err) {
+      console.error('[blogService.updateBlog] Video upload failed:', err?.message)
+      throw failure(500, `Video upload failed: ${err?.message || 'Unknown error'}`)
+    }
+  } else if (removeVideo) {
     // Preserve provider assets even if the current record reference is removed.
+    updateData.video = null
+    updateData.videoCloudinaryId = null
+    updateData.videoAssetId = null
+    updateData.videoResourceType = null
+    updateData.videoCloudinaryType = null
+    updateData.videoCloudinaryVersion = null
+    updateData.videoFormat = null
+    updateData.videoMimeType = null
+    updateData.videoDuration = null
+    updateData.videoWidth = null
+    updateData.videoHeight = null
+    updateData.videoBytes = null
+    updateData.videoOriginalBytes = null
+    updateData.videoOriginalName = null
+    updateData.videoStorageProvider = null
+    updateData.videoPlaybackUrl = null
+    updateData.videoThumbnailUrl = null
+    updateData.videoUploadStatus = null
   }
 
    if (homepageCircularImageFile) {
@@ -520,7 +600,27 @@ async function updateBlog(id, data, imageFile, videoFile, contentFiles = [], rem
     // Preserve the existing homepage circular image reference and provider asset.
   }
 
-  let newContentAssets = contentAssets.filter((asset) => !(existing.mediaUrls || []).includes(asset.secureUrl))
+  // Start with existing media assets
+  let finalMediaAssets = Array.isArray(existing.mediaAssets) ? [...existing.mediaAssets] : []
+  let finalMediaUrls = Array.isArray(existing.mediaUrls) ? [...existing.mediaUrls] : []
+
+  // Remove media URLs that are in the removeMediaUrls list
+  if (removeMediaUrls && removeMediaUrls.length > 0) {
+    finalMediaAssets = finalMediaAssets.filter((asset) => !removeMediaUrls.includes(asset.secureUrl))
+    finalMediaUrls = finalMediaUrls.filter((url) => !removeMediaUrls.includes(url))
+  }
+
+  // Add new content assets from request body (pre-uploaded references)
+  // These are assets that are not already in the existing media
+  const newContentAssetsFromBody = contentAssets.filter(
+    (asset) => !finalMediaUrls.includes(asset.secureUrl)
+  )
+  if (newContentAssetsFromBody.length > 0) {
+    finalMediaAssets.push(...newContentAssetsFromBody)
+    finalMediaUrls.push(...newContentAssetsFromBody.map((asset) => asset.secureUrl))
+  }
+
+  // Upload and add new content files
   if (contentFiles && contentFiles.length > 0) {
     const uploads = await Promise.all(contentFiles.map(async (f) => {
       const isVideo = f.mimetype?.startsWith('video/')
@@ -532,7 +632,7 @@ async function updateBlog(id, data, imageFile, videoFile, contentFiles = [], rem
       }
       return uploadFile(f.buffer, f.mimetype, 'blogs', f.originalname)
     }))
-    newContentAssets = newContentAssets.concat(uploads.map((uploaded) => ({
+    const uploadedAssets = uploads.map((uploaded) => ({
       secureUrl: uploaded.url,
       publicId: uploaded.publicId || uploaded.path,
       assetId: uploaded.assetId || null,
@@ -546,15 +646,17 @@ async function updateBlog(id, data, imageFile, videoFile, contentFiles = [], rem
       width: uploaded.width ?? null,
       height: uploaded.height ?? null,
       bytes: uploaded.bytes ?? null,
-    })))
-  }
-  if (newContentAssets.length > 0) {
-    updateData.mediaAssets = [...(Array.isArray(existing.mediaAssets) ? existing.mediaAssets : []), ...newContentAssets]
-    updateData.mediaUrls = [...(existing.mediaUrls || []), ...newContentAssets.map((asset) => asset.secureUrl)]
+    }))
+    finalMediaAssets.push(...uploadedAssets)
+    finalMediaUrls.push(...uploadedAssets.map((asset) => asset.secureUrl))
   }
 
-  if (removeMediaUrls && removeMediaUrls.length > 0) {
-    // Preserve existing gallery references and provider assets.
+  if (finalMediaAssets.length > 0) {
+    updateData.mediaAssets = finalMediaAssets
+    updateData.mediaUrls = finalMediaUrls
+  } else {
+    updateData.mediaAssets = []
+    updateData.mediaUrls = []
   }
 
   const item = await prisma.blog.update({ where: { id }, data: updateData })

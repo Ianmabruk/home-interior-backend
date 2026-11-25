@@ -1,5 +1,5 @@
-import { ensureValidToken, attemptTokenRefresh } from './api'
 import { mediaService } from './mediaService'
+import { ensureValidToken, attemptTokenRefresh } from './api'
 
 export const UPLOAD_CONCURRENCY = 3
 export const MAX_RETRIES = 3
@@ -30,18 +30,12 @@ function jitter(base) {
   return base + Math.random() * base * 0.3
 }
 
-/**
- * Pre-warm the backend before starting uploads. On Render free-tier, the
- * server spins down after 15 minutes of inactivity, making the first request
- * take 30-60 seconds. A lightweight health-check request wakes the instance
- * so the subsequent upload doesn't pay the cold-start penalty.
- */
 export async function warmServer() {
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 15000)
     const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
-    await fetch(joinUrl(API_BASE_URL, '/health'), {
+    await fetch(`${API_BASE_URL}/health`, {
       method: 'GET',
       credentials: 'include',
       signal: controller.signal,
@@ -50,13 +44,6 @@ export async function warmServer() {
   } catch {
     // Non-fatal — the upload will still work, just possibly slower.
   }
-}
-
-function joinUrl(base, path) {
-  if (!path) return base
-  if (path.startsWith('http://') || path.startsWith('https://')) return path
-  if (path.startsWith('/')) return base + path
-  return `${base}/${path}`
 }
 
 export async function refreshCsrf() {
@@ -110,9 +97,6 @@ export async function uploadSingleImage(file, folder = 'portfolio/before', optio
     onStateChange?.('uploading')
 
     try {
-      // Ensure we have a valid token before each attempt — long uploads may
-      // cross the token expiry boundary. Retry on transient network errors
-      // (cold starts) but bail on genuine auth failures.
       try {
         await ensureValidToken()
       } catch (tokenErr) {
@@ -131,8 +115,10 @@ export async function uploadSingleImage(file, folder = 'portfolio/before', optio
         throw new Error(`Authentication required: ${tokenErr.message}`, { cause: tokenErr })
       }
 
-      const resAsset = await mediaService.upload(file, folder, {}, null, {
+      const resAsset = await mediaService.upload(file, folder, null, {
         onUploadProgress: onProgress,
+        onPhase: onStateChange,
+        signal,
       })
 
       onStateChange?.('uploaded')
@@ -151,7 +137,6 @@ export async function uploadSingleImage(file, folder = 'portfolio/before', optio
       const status = err?.response?.status
       const isAuthError = AUTH_STATUSES.has(status)
 
-      // Auth errors — try refreshing once, then retry if the request itself is retryable
       if (isAuthError && attempt < maxRetries) {
         try {
           await attemptTokenRefresh()
@@ -169,7 +154,6 @@ export async function uploadSingleImage(file, folder = 'portfolio/before', optio
             continue
           }
 
-          // Genuine auth failure — don't retry
           onStateChange?.('failed')
           throw new Error(`Authentication required: ${refreshErr.message}`, { cause: refreshErr })
         }
@@ -255,7 +239,7 @@ export async function uploadImageBatch(files, folder = 'portfolio/before', optio
       await semaphore.acquire()
       try {
         await uploadOne(idx)
-       } catch (err) {
+      } catch (err) {
         results[idx] = { error: err, fileName: files[idx]?.name }
         updateState(idx, 'failed', 0)
       } finally {
@@ -274,9 +258,6 @@ export async function uploadPortfolioImages(files, imageType, options = {}) {
   const { onImageProgress, onOverallProgress, signal } = options
   const folder = `portfolio/${imageType}`
 
-  // Warm the backend before starting any uploads. On Render free-tier, the
-  // server spins down after 15 minutes of inactivity; a lightweight
-  // health-check wakes the instance so uploads don't pay the cold-start penalty.
   await warmServer()
 
   const results = await uploadImageBatch(files, folder, {

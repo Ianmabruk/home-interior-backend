@@ -419,7 +419,7 @@ export const BlogForm = ({ blog, onSaved, onCancel }) => {
             } else if (item.type === 'featured-video') {
               uploadedVideoAsset = asset
               setVideoAsset(asset)
-              setVideoPreview(asset.playbackUrl || asset.secureUrl)
+              setVideoPreview(asset.secureUrl)
               setVideoUploadStage('Upload complete')
               setVideoUploadProgress(100)
             } else {
@@ -429,7 +429,7 @@ export const BlogForm = ({ blog, onSaved, onCancel }) => {
                   ? {
                       ...entry,
                       asset,
-                      preview: asset.playbackUrl || asset.secureUrl || entry.preview,
+                      preview: asset.secureUrl || entry.preview,
                       status: 'uploaded',
                       error: null,
                       progress: 100,
@@ -503,7 +503,7 @@ export const BlogForm = ({ blog, onSaved, onCancel }) => {
           ? {
               ...entry,
               asset,
-              preview: asset.playbackUrl || asset.secureUrl || entry.preview,
+              preview: asset.secureUrl || entry.preview,
               status: 'uploaded',
               error: null,
               retryable: false,
@@ -557,7 +557,7 @@ export const BlogForm = ({ blog, onSaved, onCancel }) => {
       const handlers = createUploadHandlers('featured-video', true, true)
       const asset = await uploadBlogMediaFile(videoFile, createBlogUploadId(), handlers)
       setVideoAsset(asset)
-      setVideoPreview(asset.playbackUrl || asset.secureUrl)
+      setVideoPreview(asset.secureUrl)
     } catch (uploadError) {
       if (uploadError?.name === 'AbortError' || uploadError?.code === 'ERR_CANCELED') return
       const message = uploadError?.message || 'Upload failed'

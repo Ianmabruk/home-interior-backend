@@ -10,14 +10,17 @@ function validateSavedVideoAsset(asset) {
   const isLegacyCloudinary = typeof asset.secureUrl === 'string'
     && asset.secureUrl.startsWith('https://res.cloudinary.com/')
     && asset.secureUrl.includes('/video/upload/')
+  // Accept both new format (resourceType + publicId) and legacy format
+  const hasValidResourceType = asset.resourceType === 'video' || !asset.resourceType
+  const hasValidUrl = typeof asset.secureUrl === 'string' && asset.secureUrl.startsWith('https://')
+  const hasValidPublicId = typeof asset.publicId === 'string' && asset.publicId.length > 0
+  
   if (
-    (asset.resourceType && asset.resourceType !== 'video')
-    || typeof asset.secureUrl !== 'string'
-    || (!isHyperserve && !isLegacyCloudinary && !isCloudinaryVideo)
+    !hasValidResourceType
+    || !hasValidUrl
+    || !hasValidPublicId
     || (isHyperserve && (!asset.providerAssetId || asset.uploadStatus !== 'ready'))
     || (isCloudinaryVideo && !asset.publicId)
-    || typeof asset.publicId !== 'string'
-    || !asset.publicId
   ) {
     throw failure(422, 'Invalid video asset. Upload and verify the video again.')
   }
@@ -29,13 +32,15 @@ function validateSavedVideoAsset(asset) {
 
 function validateSavedImageAsset(asset) {
   if (!asset) return null
+  // Accept both new format and legacy format
+  const hasValidResourceType = asset.resourceType === 'image' || !asset.resourceType
+  const hasValidUrl = typeof asset.secureUrl === 'string' && asset.secureUrl.startsWith('https://')
+  const hasValidPublicId = typeof asset.publicId === 'string' && asset.publicId.length > 0
+  
   if (
-    asset.resourceType !== 'image'
-    || typeof asset.secureUrl !== 'string'
-    || !asset.secureUrl.startsWith('https://res.cloudinary.com/')
-    || !asset.secureUrl.includes('/image/upload/')
-    || typeof asset.publicId !== 'string'
-    || !asset.publicId
+    !hasValidResourceType
+    || !hasValidUrl
+    || !hasValidPublicId
   ) {
     throw failure(422, 'Invalid image asset. Upload the image again.')
   }
@@ -64,12 +69,18 @@ function validateSavedMediaAssets(assets) {
       && typeof asset.secureUrl === 'string'
       && asset.secureUrl.startsWith('https://res.cloudinary.com/')
       && asset.secureUrl.includes('/video/upload/')
+    // More flexible validation - accept any valid Cloudinary URL or hyperserve asset
+    const hasValidResourceType = ['image', 'video'].includes(resourceType)
+    const hasValidUrl = typeof asset.secureUrl === 'string' && asset.secureUrl.startsWith('https://')
+    const hasValidPublicId = typeof asset.publicId === 'string' && asset.publicId.length > 0
+    const isValidCloudinaryAsset = isCloudinaryImage || isLegacyCloudinaryVideo || isCloudinaryVideo
+    const isValidHyperserveAsset = isHyperserveVideo
+    
     if (
-      !['image', 'video'].includes(resourceType)
-      || typeof asset.secureUrl !== 'string'
-      || (!isCloudinaryImage && !isLegacyCloudinaryVideo && !isHyperserveVideo && !isCloudinaryVideo)
-      || typeof asset.publicId !== 'string'
-      || !asset.publicId
+      !hasValidResourceType
+      || !hasValidUrl
+      || !hasValidPublicId
+      || (!isValidCloudinaryAsset && !isValidHyperserveAsset)
       || seen.has(asset.secureUrl)
     ) {
       throw failure(422, 'Invalid media reference. Upload the file again.')

@@ -18,6 +18,15 @@ const blogMediaAsset = z.object({
   bytes: z.number().nullable().optional(),
   originalBytes: z.number().nullable().optional(),
   compressedBytes: z.number().nullable().optional(),
+  // Legacy fields for backward compatibility
+  providerAssetId: z.string().nullable().optional(),
+  storageProvider: z.string().nullable().optional(),
+  mediaType: z.string().nullable().optional(),
+  playbackUrl: z.string().url().nullable().optional(),
+  thumbnailUrl: z.string().url().nullable().optional(),
+  originalFilename: z.string().nullable().optional(),
+  fileSize: z.number().nullable().optional(),
+  uploadStatus: z.string().nullable().optional(),
 })
 const blogMediaAssets = z.union([
   z.array(blogMediaAsset),

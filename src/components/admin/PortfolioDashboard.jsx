@@ -419,7 +419,7 @@ export const PortfolioDashboard = () => {
     }
 
     try {
-      const asset = await mediaService.upload(file, `portfolio/${imageType}`, {}, null, {
+      const asset = await mediaService.upload(file, `portfolio/${imageType}`, null, {
         onUploadProgress: (percent) => updateUploadImageState(id, { progress: percent }),
       })
 

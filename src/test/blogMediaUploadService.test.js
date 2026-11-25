@@ -29,8 +29,8 @@ describe('blog media upload retry', () => {
 
     await expect(resultPromise).resolves.toMatchObject({ resourceType: 'image' })
     expect(mediaService.upload).toHaveBeenCalledTimes(2)
-    expect(mediaService.upload).toHaveBeenNthCalledWith(1, file, 'blogs', {}, 'stable-upload-id-1234')
-    expect(mediaService.upload).toHaveBeenNthCalledWith(2, file, 'blogs', {}, 'stable-upload-id-1234')
+    expect(mediaService.upload).toHaveBeenNthCalledWith(1, file, 'blogs', 'stable-upload-id-1234')
+    expect(mediaService.upload).toHaveBeenNthCalledWith(2, file, 'blogs', 'stable-upload-id-1234')
   })
 
   it('does not retry a permanent upload rejection', async () => {

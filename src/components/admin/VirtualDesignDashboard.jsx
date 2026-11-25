@@ -109,27 +109,13 @@ const load = useCallback(async () => {
       setVideoUpload({
         fileName: file.name,
         originalBytes: file.size,
-        compressedBytes: 0,
         phase: 'preparing',
         progress: 0,
         error: '',
       })
       try {
-        const asset = await mediaService.upload(file, 'virtual-designs', {}, null, {
-          setCancelCompression: (cancel) => { videoCancelRef.current.compression = cancel },
-          setCancel: (cancel) => { videoCancelRef.current.upload = cancel },
+        const asset = await mediaService.upload(file, 'virtual-designs', null, {
           onPhase: (phase) => setVideoUpload((current) => current && ({ ...current, phase })),
-          onCompressionProgress: (progress, originalBytes) => setVideoUpload((current) => current && ({
-            ...current,
-            phase: progress < 20 ? 'preparing' : 'compressing',
-            progress,
-            originalBytes: originalBytes || current.originalBytes,
-          })),
-          onCompressionComplete: ({ compressedBytes }) => setVideoUpload((current) => current && ({
-            ...current,
-            compressedBytes,
-            progress: 0,
-          })),
           onUploadProgress: (progress) => setVideoUpload((current) => current && ({ ...current, progress })),
         })
         setVideoUpload((current) => current && ({ ...current, phase: 'completed', progress: 100 }))
