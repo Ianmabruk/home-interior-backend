@@ -159,7 +159,10 @@ export const blogSchemas = {
         mimeType: z.string().optional(),
       }),
     ]).optional(),
-    imageAsset: blogMediaAsset.optional(),
+    imageAsset: z.union([
+      z.string().transform((value) => JSON.parse(value)),
+      blogMediaAsset,
+    ]).optional(),
     mediaAssets: blogMediaAssets.optional(),
     removeVideo: z.union([z.boolean(), z.string()]).optional(),
   }),
@@ -210,7 +213,10 @@ export const blogSchemas = {
         mimeType: z.string().optional(),
       }),
     ]).optional(),
-    imageAsset: blogMediaAsset.optional(),
+    imageAsset: z.union([
+      z.string().transform((value) => JSON.parse(value)),
+      blogMediaAsset,
+    ]).optional(),
     mediaAssets: blogMediaAssets.optional(),
     removeMediaUrls: z.union([z.array(z.string()), z.string()]).optional(),
     removeVideo: z.union([z.boolean(), z.string()]).optional(),
