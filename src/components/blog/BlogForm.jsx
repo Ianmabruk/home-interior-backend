@@ -103,6 +103,7 @@ export const BlogForm = ({ blog, onSaved, onCancel }) => {
   const [uploadingMedia, setUploadingMedia] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
+  const [fieldErrors, setFieldErrors] = useState({})
 
   const imageInputRef = useRef(null)
   const videoRef = useRef(null)
@@ -273,6 +274,9 @@ export const BlogForm = ({ blog, onSaved, onCancel }) => {
 
   const handleFieldChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }))
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => { const next = { ...prev }; delete next[field]; return next })
+    }
     if (field === 'title' && !form.slug && !isEdit) {
       setForm((prev) => ({ ...prev, slug: slugify(value) }))
     }
@@ -580,6 +584,7 @@ export const BlogForm = ({ blog, onSaved, onCancel }) => {
     if (submitting || submissionLockRef.current) return
     submissionLockRef.current = true
     setError(null)
+    setFieldErrors({})
 
     const title = (form.title || '').trim()
     if (!title) {
@@ -638,9 +643,19 @@ export const BlogForm = ({ blog, onSaved, onCancel }) => {
       dispatchAdminDataChanged('blog-changed')
       onSaved?.(res.data)
     } catch (err) {
-      const msg = err?.response?.data?.message || err?.message || 'Failed to save blog'
-      setError(msg)
-      toast.error(`Failed to save blog: ${msg}`)
+      const backendErrors = err?.response?.data?.errors
+      if (backendErrors && Array.isArray(backendErrors)) {
+        const errorMessages = backendErrors.map(e => `${e.field}: ${e.message}`).join('; ')
+        const fieldErrorMap = {}
+        backendErrors.forEach(e => { fieldErrorMap[e.field] = e.message })
+        setFieldErrors(fieldErrorMap)
+        setError(errorMessages)
+        toast.error(`Validation failed: ${errorMessages}`)
+      } else {
+        const msg = err?.response?.data?.message || err?.message || 'Failed to save blog'
+        setError(msg)
+        toast.error(`Failed to save blog: ${msg}`)
+      }
     } finally {
       submissionLockRef.current = false
       setSubmitting(false)
@@ -792,10 +807,11 @@ export const BlogForm = ({ blog, onSaved, onCancel }) => {
             type="text"
             value={form.title}
             onChange={(e) => handleFieldChange('title', e.target.value)}
-            className="input-luxury"
+            className={`input-luxury ${fieldErrors.title ? 'border-[var(--error)]' : ''}`}
             placeholder="Enter blog title"
             required
           />
+          {fieldErrors.title && <p className="mt-1 text-xs text-[var(--error)]">{fieldErrors.title}</p>}
         </div>
 
         <div>
@@ -806,9 +822,10 @@ export const BlogForm = ({ blog, onSaved, onCancel }) => {
             type="text"
             value={form.subtitle}
             onChange={(e) => handleFieldChange('subtitle', e.target.value)}
-            className="input-luxury"
+            className={`input-luxury ${fieldErrors.subtitle ? 'border-[var(--error)]' : ''}`}
             placeholder="Optional subtitle"
           />
+          {fieldErrors.subtitle && <p className="mt-1 text-xs text-[var(--error)]">{fieldErrors.subtitle}</p>}
         </div>
 
         <div>
@@ -819,9 +836,10 @@ export const BlogForm = ({ blog, onSaved, onCancel }) => {
             type="text"
             value={form.slug}
             onChange={(e) => handleFieldChange('slug', e.target.value)}
-            className="input-luxury"
+            className={`input-luxury ${fieldErrors.slug ? 'border-[var(--error)]' : ''}`}
             placeholder="auto-generated from title"
           />
+          {fieldErrors.slug && <p className="mt-1 text-xs text-[var(--error)]">{fieldErrors.slug}</p>}
         </div>
       </div>
 
@@ -835,9 +853,10 @@ export const BlogForm = ({ blog, onSaved, onCancel }) => {
             list="blog-categories"
             value={form.category}
             onChange={(e) => handleFieldChange('category', e.target.value)}
-            className="input-luxury"
+            className={`input-luxury ${fieldErrors.category ? 'border-[var(--error)]' : ''}`}
             placeholder="Select or enter category"
           />
+          {fieldErrors.category && <p className="mt-1 text-xs text-[var(--error)]">{fieldErrors.category}</p>}
           <datalist id="blog-categories">
             {PREDEFINED_CATEGORIES.map((c) => (
               <option key={c} value={c} />
@@ -853,9 +872,10 @@ export const BlogForm = ({ blog, onSaved, onCancel }) => {
             type="text"
             value={form.author}
             onChange={(e) => handleFieldChange('author', e.target.value)}
-            className="input-luxury"
+            className={`input-luxury ${fieldErrors.author ? 'border-[var(--error)]' : ''}`}
             placeholder="Author name"
           />
+          {fieldErrors.author && <p className="mt-1 text-xs text-[var(--error)]">{fieldErrors.author}</p>}
         </div>
       </div>
 
@@ -884,7 +904,12 @@ export const BlogForm = ({ blog, onSaved, onCancel }) => {
         <textarea
           id="blog-content-editor"
           value={form.content}
-          onChange={(e) => setForm((prev) => ({ ...prev, content: e.target.value }))}
+          onChange={(e) => {
+            setForm((prev) => ({ ...prev, content: e.target.value }))
+            if (fieldErrors.content) {
+              setFieldErrors(prev => { const next = { ...prev }; delete next.content; return next })
+            }
+          }}
           className="input-luxury min-h-[200px] resize-y font-mono text-sm"
           placeholder="Write your article content here. Use HTML tags like <h2>, <strong>, <ul><li>, <a href='...'>"
         />
@@ -1043,9 +1068,10 @@ export const BlogForm = ({ blog, onSaved, onCancel }) => {
             type="text"
             value={form.tags}
             onChange={(e) => handleFieldChange('tags', e.target.value)}
-            className="input-luxury"
+            className={`input-luxury ${fieldErrors.tags ? 'border-[var(--error)]' : ''}`}
             placeholder="Comma-separated: interior, design, luxury"
           />
+          {fieldErrors.tags && <p className="mt-1 text-xs text-[var(--error)]">{fieldErrors.tags}</p>}
         </div>
 
         <div>
@@ -1055,10 +1081,11 @@ export const BlogForm = ({ blog, onSaved, onCancel }) => {
           <textarea
             value={form.metaDescription}
             onChange={(e) => handleFieldChange('metaDescription', e.target.value)}
-            className="input-luxury min-h-[56px] resize-y"
+            className={`input-luxury min-h-[56px] resize-y ${fieldErrors.metaDescription ? 'border-[var(--error)]' : ''}`}
             placeholder="SEO meta description (150-160 characters)"
             rows={2}
           />
+          {fieldErrors.metaDescription && <p className="mt-1 text-xs text-[var(--error)]">{fieldErrors.metaDescription}</p>}
         </div>
       </div>
 
@@ -1071,9 +1098,10 @@ export const BlogForm = ({ blog, onSaved, onCancel }) => {
             type="number"
             value={form.displayOrder}
             onChange={(e) => handleFieldChange('displayOrder', parseInt(e.target.value, 10) || 0)}
-            className="input-luxury"
+            className={`input-luxury ${fieldErrors.displayOrder ? 'border-[var(--error)]' : ''}`}
             min={0}
           />
+          {fieldErrors.displayOrder && <p className="mt-1 text-xs text-[var(--error)]">{fieldErrors.displayOrder}</p>}
         </div>
 
         <div>
@@ -1084,8 +1112,9 @@ export const BlogForm = ({ blog, onSaved, onCancel }) => {
             type="date"
             value={form.publishDate}
             onChange={(e) => handleFieldChange('publishDate', e.target.value)}
-            className="input-luxury"
+            className={`input-luxury ${fieldErrors.publishDate ? 'border-[var(--error)]' : ''}`}
           />
+          {fieldErrors.publishDate && <p className="mt-1 text-xs text-[var(--error)]">{fieldErrors.publishDate}</p>}
         </div>
 
         <div className="flex items-end gap-4">
