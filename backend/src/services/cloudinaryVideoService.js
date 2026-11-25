@@ -16,6 +16,8 @@ export function assertVideoCloudinaryConfigured() {
   }
 }
 
+const STANDARD_UPLOAD_LIMIT_BYTES = 100 * 1024 * 1024
+const CHUNK_SIZE_BYTES = 20 * 1024 * 1024
 const UPLOAD_TIMEOUT_MS = 600000
 const MAX_RETRIES = 2
 const RETRY_BASE_DELAY_MS = 3000
@@ -62,22 +64,14 @@ function isRetryableCloudinaryError(err) {
   return false
 }
 
-export const uploadVideo = async (buffer, mimetype, folder, originalName, uploadId = null) => {
-  if (!isVideoConfigured) {
-    assertVideoCloudinaryConfigured()
-  }
-
-  if (!mimetype?.startsWith('video/')) {
-    throw failure(400, 'Video Cloudinary upload only accepts video files.')
-  }
-
+async function uploadVideoStandard(buffer, mimetype, folder, originalName, uploadId) {
   const publicId = uploadId || `video-${Date.now()}-${Math.random().toString(36).slice(2)}`
   let lastError = null
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     if (attempt > 0) {
       const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1)
-      console.log(`[Cloudinary Video] Retrying upload (attempt ${attempt + 1}/${MAX_RETRIES + 1}) after ${delay}ms`)
+      console.log(`[Cloudinary Video] Retrying standard upload (attempt ${attempt + 1}/${MAX_RETRIES + 1}) after ${delay}ms`)
       await sleep(delay)
     }
 
@@ -103,7 +97,7 @@ export const uploadVideo = async (buffer, mimetype, folder, originalName, upload
             if (settled) return
             clearTimeout(timer)
             if (error) {
-              console.error('[Cloudinary Video] Upload stream error:', {
+              console.error('[Cloudinary Video] Standard upload stream error:', {
                 message: error.message,
                 http_code: error.http_code,
                 name: error.name,
@@ -142,7 +136,7 @@ export const uploadVideo = async (buffer, mimetype, folder, originalName, upload
       }
     } catch (err) {
       lastError = err
-      console.error('[Cloudinary Video] Upload failed:', {
+      console.error('[Cloudinary Video] Standard upload failed:', {
         message: err?.message,
         http_code: err?.http_code,
         name: err?.name,
@@ -159,6 +153,96 @@ export const uploadVideo = async (buffer, mimetype, folder, originalName, upload
   }
 
   throw lastError
+}
+
+async function uploadVideoChunked(buffer, mimetype, folder, originalName, uploadId) {
+  const publicId = uploadId || `video-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  let lastError = null
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1)
+      console.log(`[Cloudinary Video] Retrying chunked upload (attempt ${attempt + 1}/${MAX_RETRIES + 1}) after ${delay}ms`)
+      await sleep(delay)
+    }
+
+    try {
+      const uploadOptions = {
+        resource_type: 'video',
+        folder,
+        public_id: publicId,
+        overwrite: true,
+        quality: 'auto:good',
+        chunk_size: CHUNK_SIZE_BYTES,
+      }
+
+      const result = await withVideoConfigAsync(() =>
+        cloudinary.uploader.upload_large(buffer, uploadOptions)
+      )
+
+      if (!result?.secure_url) {
+        throw new Error('Cloudinary video chunked upload did not return a secure media URL')
+      }
+
+      const duration = Number(result.duration)
+      return {
+        url: result.secure_url,
+        originalUrl: result.secure_url,
+        assetId: result.asset_id || null,
+        publicId: result.public_id,
+        mimeType: mimetype,
+        originalName: originalName || null,
+        resourceType: result.resource_type || 'video',
+        type: result.type || 'upload',
+        version: result.version != null && Number.isFinite(Number(result.version))
+          ? Number(result.version)
+          : null,
+        format: result.format || null,
+        originalFormat: result.format || null,
+        duration: Number.isFinite(duration) ? duration : null,
+        width: Number.isFinite(Number(result.width)) ? Number(result.width) : null,
+        height: Number.isFinite(Number(result.height)) ? Number(result.height) : null,
+        bytes: Number.isFinite(Number(result.bytes)) ? Number(result.bytes) : null,
+      }
+    } catch (err) {
+      lastError = err
+      console.error('[Cloudinary Video] Chunked upload failed:', {
+        message: err?.message,
+        http_code: err?.http_code,
+        name: err?.name,
+        folder,
+        mimetype,
+        bufferLength: buffer?.length || buffer?.byteLength || 'unknown',
+        attempt,
+      })
+
+      if (attempt >= MAX_RETRIES || !isRetryableCloudinaryError(err)) {
+        throw err
+      }
+    }
+  }
+
+  throw lastError
+}
+
+export const uploadVideo = async (buffer, mimetype, folder, originalName, uploadId = null) => {
+  if (!isVideoConfigured) {
+    assertVideoCloudinaryConfigured()
+  }
+
+  if (!mimetype?.startsWith('video/')) {
+    throw failure(400, 'Video Cloudinary upload only accepts video files.')
+  }
+
+  const fileSize = buffer?.length || buffer?.byteLength || 0
+  const useChunkedUpload = fileSize > STANDARD_UPLOAD_LIMIT_BYTES
+
+  if (useChunkedUpload) {
+    console.log(`[Cloudinary Video] File size ${Math.round(fileSize / 1024 / 1024)} MB exceeds 100 MB standard limit, using chunked upload`)
+    return uploadVideoChunked(buffer, mimetype, folder, originalName, uploadId)
+  }
+
+  return uploadVideoStandard(buffer, mimetype, folder, originalName, uploadId)
 }
 
 export const deleteVideo = async (publicId) => {

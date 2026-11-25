@@ -45,6 +45,7 @@ const STAGE_LABELS = {
   [UPLOAD_STAGES.FILE_VALIDATION]: 'Validating file',
   [UPLOAD_STAGES.IMAGE_COMPRESSION]: 'Compressing image',
   [UPLOAD_STAGES.VIDEO_VALIDATION]: 'Validating video',
+  [UPLOAD_STAGES.VIDEO_COMPRESSION]: 'Compressing video',
   [UPLOAD_STAGES.SIGNATURE_GENERATION]: 'Generating upload signature',
   [UPLOAD_STAGES.AUTHENTICATION]: 'Authenticating',
   [UPLOAD_STAGES.CLOUDINARY_UPLOAD]: 'Uploading to media storage',
@@ -135,10 +136,10 @@ export const BlogForm = ({ blog, onSaved, onCancel }) => {
     if (!file) return 'No file provided'
     if (file.size === 0) return 'The selected file is empty'
 
-    const maxVideoBytes = 5 * 1024 * 1024 * 1024
+    const maxVideoBytes = 150 * 1024 * 1024
     if (field === 'video' ? file.size > maxVideoBytes : file.size > MAX_FILE_SIZE_BYTES) {
       return field === 'video'
-        ? 'Video exceeds the maximum allowed size of 5 GB'
+        ? 'Video exceeds the maximum allowed size of 150 MB'
         : `File exceeds the maximum allowed size of ${MAX_FILE_SIZE_MB} MB`
     }
 
@@ -155,8 +156,8 @@ export const BlogForm = ({ blog, onSaved, onCancel }) => {
         return `"${file.name}" is not a supported media file`
       }
       if (isContentVideo(file)) {
-        if (file.size > 5 * 1024 * 1024 * 1024) {
-          return `Video "${file.name}" exceeds the 5 GB limit`
+        if (file.size > 150 * 1024 * 1024) {
+          return `Video "${file.name}" exceeds the 150 MB limit`
         }
       } else if (file.size > MAX_FILE_SIZE_BYTES) {
         return `File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB} MB content media limit`

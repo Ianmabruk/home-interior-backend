@@ -95,7 +95,7 @@ export const uploadImage = async (buffer, mimetype, folder, originalName, upload
         const timer = setTimeout(() => {
           if (settled) return
           settled = true
-          reject(new Error('Cloudinary image upload timed out after 120000ms'))
+          reject(new Error('Cloudinary image upload timed out after 300000ms'))
         }, UPLOAD_TIMEOUT_MS)
         const stream = cloudinary.uploader.upload_stream(
           uploadOptions,

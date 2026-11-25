@@ -1,6 +1,6 @@
-export const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024
+export const MAX_FILE_SIZE_BYTES = 150 * 1024 * 1024
 export const MAX_FILE_SIZE_MB = MAX_FILE_SIZE_BYTES / 1024 / 1024
-export const MAX_REQUEST_SIZE_BYTES = 120 * 1024 * 1024
+export const MAX_REQUEST_SIZE_BYTES = 157286400
 
 export function formatUploadSizeError(fileName = '') {
   const prefix = fileName ? `File "${fileName}" ` : 'File '

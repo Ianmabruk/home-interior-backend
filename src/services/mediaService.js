@@ -1,12 +1,14 @@
 import { api, ensureValidToken } from './api'
+import { compressVideo, canCompressInBrowser, getVideoMetadata } from '../utils/videoCompression'
 
-const MAX_IMAGE_BYTES = 100 * 1024 * 1024
-const MAX_VIDEO_BYTES = 5 * 1024 * 1024 * 1024
+const MAX_IMAGE_BYTES = 150 * 1024 * 1024
+const MAX_VIDEO_BYTES = 150 * 1024 * 1024
 
 const UPLOAD_STAGES = {
   FILE_VALIDATION: 'FILE_VALIDATION',
   IMAGE_COMPRESSION: 'IMAGE_COMPRESSION',
   VIDEO_VALIDATION: 'VIDEO_VALIDATION',
+  VIDEO_COMPRESSION: 'VIDEO_COMPRESSION',
   SIGNATURE_GENERATION: 'SIGNATURE_GENERATION',
   AUTHENTICATION: 'AUTHENTICATION',
   CLOUDINARY_UPLOAD: 'CLOUDINARY_UPLOAD',
@@ -34,13 +36,13 @@ function validateFile(file) {
   }
   if (isVideoFile(file)) {
     if (file.size > MAX_VIDEO_BYTES) {
-      return { valid: false, stage: UPLOAD_STAGES.VIDEO_VALIDATION, code: 'VIDEO_TOO_LARGE', message: `Video exceeds maximum size of 5 GB` }
+      return { valid: false, stage: UPLOAD_STAGES.VIDEO_VALIDATION, code: 'VIDEO_TOO_LARGE', message: `Video exceeds maximum size of 150 MB` }
     }
     return { valid: true }
   }
   if (isImageFile(file)) {
     if (file.size > MAX_IMAGE_BYTES) {
-      return { valid: false, stage: UPLOAD_STAGES.FILE_VALIDATION, code: 'IMAGE_TOO_LARGE', message: `Image exceeds maximum size of 100 MB` }
+      return { valid: false, stage: UPLOAD_STAGES.FILE_VALIDATION, code: 'IMAGE_TOO_LARGE', message: `Image exceeds maximum size of 150 MB` }
     }
     return { valid: true }
   }
@@ -273,11 +275,47 @@ export const mediaService = {
       throw createUploadError(validation.stage, validation.code, validation.message)
     }
 
+    let fileToUpload = file
+    let compressionInfo = { compressed: false, originalSize: file.size, compressedSize: file.size }
+    let videoMetadata = { duration: null, width: null, height: null }
+
+    try {
+      videoMetadata = await getVideoMetadata(file)
+    } catch {
+      // Metadata extraction failed, continue anyway
+    }
+
+    const shouldCompress = file.size > MAX_VIDEO_BYTES * 0.9 || videoMetadata.duration > 300
+
+    if (shouldCompress && canCompressInBrowser()) {
+      onPhase?.(UPLOAD_STAGES.VIDEO_COMPRESSION)
+      try {
+        const result = await compressVideo(file, {}, (progress) => {
+          onUploadProgress?.(progress)
+        })
+        fileToUpload = result.file
+        compressionInfo = {
+          compressed: result.compressed,
+          originalSize: result.originalSize,
+          compressedSize: result.compressedSize,
+        }
+      } catch (compressError) {
+        console.warn('[mediaService] Video compression failed, uploading original:', compressError.message)
+        onPhase?.(UPLOAD_STAGES.VIDEO_COMPRESSION)
+      }
+    } else if (file.size > MAX_VIDEO_BYTES) {
+      throw createUploadError(UPLOAD_STAGES.VIDEO_VALIDATION, 'VIDEO_TOO_LARGE', `Video exceeds maximum size of 150 MB and cannot be compressed in this browser. Please compress the video before uploading.`)
+    }
+
+    if (fileToUpload.size > MAX_VIDEO_BYTES) {
+      throw createUploadError(UPLOAD_STAGES.VIDEO_VALIDATION, 'VIDEO_TOO_LARGE', `Video exceeds maximum size of 150 MB after compression. Please compress the video further before uploading.`)
+    }
+
     onPhase?.(UPLOAD_STAGES.AUTHENTICATION)
     await ensureValidToken()
 
     const formData = new FormData()
-    formData.append('media', file)
+    formData.append('media', fileToUpload)
     formData.append('folder', folder)
     if (uploadId) formData.append('uploadId', uploadId)
 
@@ -308,14 +346,14 @@ export const mediaService = {
       type: upload.type || 'upload',
       version: upload.version ?? null,
       format: upload.format || 'mp4',
-      mimeType: file.type || 'video/mp4',
+      mimeType: fileToUpload.type || 'video/mp4',
       originalName: file.name,
-      duration: upload.duration ?? null,
-      width: upload.width ?? null,
-      height: upload.height ?? null,
-      bytes: upload.bytes || file.size,
-      originalBytes: file.size,
-      compressedBytes: upload.bytes || file.size,
+      duration: upload.duration ?? videoMetadata.duration,
+      width: upload.width ?? videoMetadata.width,
+      height: upload.height ?? videoMetadata.height,
+      bytes: upload.bytes || fileToUpload.size,
+      originalBytes: compressionInfo.originalSize,
+      compressedBytes: compressionInfo.compressedSize,
       // Legacy fields for backward compatibility with backend database columns
       storageProvider: 'cloudinary',
       providerAssetId: upload.publicId,
@@ -323,7 +361,7 @@ export const mediaService = {
       thumbnailUrl: upload.thumbnailUrl || null,
       uploadStatus: 'ready',
       originalFilename: file.name,
-      fileSize: file.size,
+      fileSize: fileToUpload.size,
     }
   },
 
